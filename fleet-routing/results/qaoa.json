@@ -1,0 +1,86 @@
+{
+ "route_stops": [
+  63,
+  4,
+  75,
+  23
+ ],
+ "qubits": 16,
+ "tours": 24,
+ "optimal_tour": [
+  1,
+  2,
+  3,
+  4
+ ],
+ "optimal_m": 8302.0,
+ "worst_tour_m": 11885.0,
+ "brute_force_s": 9.544100612401962e-05,
+ "p_optimal_uniform_bitstring": 1.52587890625e-05,
+ "p_optimal_random_tour": 0.041666666666666664,
+ "penalty_A": 8.0,
+ "distance_scale_m": 3856.0,
+ "rows": [
+  {
+   "p": 1,
+   "p_optimal": 0.0011007107330583466,
+   "p_feasible": 0.02598444653148657,
+   "shots": 1000,
+   "shots_optimal": 3,
+   "shots_feasible": 28,
+   "best_tour_m_in_shots": 8302.0,
+   "found_optimum": true,
+   "qiskit_overlap": 1.0,
+   "gammas": [
+    -0.026419066275897123
+   ],
+   "betas": [
+    0.48042475040889326
+   ],
+   "optimise_s": 148.0
+  },
+  {
+   "p": 2,
+   "p_optimal": 0.00125613894882542,
+   "p_feasible": 0.029518845457001557,
+   "shots": 1000,
+   "shots_optimal": 0,
+   "shots_feasible": 19,
+   "best_tour_m_in_shots": 8307.0,
+   "found_optimum": false,
+   "qiskit_overlap": 1.0,
+   "gammas": [
+    -0.004268234811593704,
+    -0.028903993933106314
+   ],
+   "betas": [
+    0.4810630675100924,
+    0.4320352033189624
+   ],
+   "optimise_s": 153.2
+  },
+  {
+   "p": 3,
+   "p_optimal": 0.0014045607341221403,
+   "p_feasible": 0.032957065840137634,
+   "shots": 1000,
+   "shots_optimal": 2,
+   "shots_feasible": 28,
+   "best_tour_m_in_shots": 8302.0,
+   "found_optimum": true,
+   "qiskit_overlap": 1.0,
+   "gammas": [
+    -0.0011961538444593613,
+    -0.005604428045761823,
+    -0.030871224945419384
+   ],
+   "betas": [
+    0.577312512807168,
+    0.4523380089799608,
+    0.40090911649550626
+   ],
+   "optimise_s": 167.0
+  }
+ ],
+ "convention": "U_C=exp(-i g diag(E)), U_B=exp(-i b sum X); qubit k = bit k; Qiskit bound by name"
+}

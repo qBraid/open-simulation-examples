@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fleet Routing Race</title>
+<style>
+:root{
+  color-scheme:light;
+  --surface-0:#f3f4f1;--surface-1:#fcfcfb;--surface-2:#ecedea;--line:#d6d9d4;
+  --text-primary:#0b0b0b;--text-secondary:#52514e;--text-muted:#77766f;
+  --road:#c9ccc6;--stop:#77766f;--depot:#0b0b0b;
+  --s-pyvrp:#2a78d6;--s-ortools:#eb6834;--s-highs:#1baf7a;--bound:#52514e;
+  --bar:#2a78d6;
+}
+@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){
+  color-scheme:dark;
+  --surface-0:#111110;--surface-1:#1a1a19;--surface-2:#252523;--line:#34342f;
+  --text-primary:#ffffff;--text-secondary:#c3c2b7;--text-muted:#8f8e86;
+  --road:#3a3a36;--stop:#8f8e86;--depot:#ffffff;
+  --s-pyvrp:#3987e5;--s-ortools:#d95926;--s-highs:#199e70;--bound:#c3c2b7;
+  --bar:#3987e5;
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --surface-0:#111110;--surface-1:#1a1a19;--surface-2:#252523;--line:#34342f;
+  --text-primary:#ffffff;--text-secondary:#c3c2b7;--text-muted:#8f8e86;
+  --road:#3a3a36;--stop:#8f8e86;--depot:#ffffff;
+  --s-pyvrp:#3987e5;--s-ortools:#d95926;--s-highs:#199e70;--bound:#c3c2b7;
+  --bar:#3987e5;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--surface-0);color:var(--text-primary);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1200px;margin:0 auto;padding:22px 16px 60px}
+h1{font-size:24px;margin:0 0 4px;letter-spacing:-.01em}
+h2{font-size:15px;margin:0 0 8px}
+.sub{color:var(--text-secondary);margin:0 0 14px;max-width:80ch}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.muted{color:var(--text-muted)}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px}
+.card{background:var(--surface-1);border:1px solid var(--line);border-radius:10px;padding:14px}
+#map{position:relative;height:560px;padding:0;overflow:hidden}
+#map canvas{display:block;width:100%;height:100%}
+.maphint{position:absolute;left:12px;bottom:10px;font-size:12px;color:var(--text-muted);pointer-events:none}
+.tip{position:absolute;pointer-events:none;background:var(--surface-1);border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:12px;box-shadow:0 4px 14px rgba(0,0,0,.15);display:none;white-space:nowrap;z-index:5}
+.solver{display:grid;grid-template-columns:14px 1fr auto;gap:8px;align-items:center;width:100%;text-align:left;background:var(--surface-2);border:2px solid transparent;border-radius:8px;padding:8px 10px;margin:0 0 8px;color:var(--text-primary);font:inherit;cursor:pointer}
+.solver[aria-pressed="true"]{border-color:var(--text-primary)}
+.solver:disabled{cursor:default;opacity:.85}
+.sw{width:14px;height:14px;border-radius:4px}
+.solver b{display:block}
+.solver small{color:var(--text-secondary)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;font-size:13px}
+.kv dt{color:var(--text-muted)}.kv dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+svg text{fill:var(--text-secondary);font-size:11px}
+.axis line,.axis path{stroke:var(--line)}
+table{border-collapse:collapse;width:100%;font-size:12.5px;font-variant-numeric:tabular-nums}
+th,td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:right}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--text-muted);font-weight:500}
+.ok{font-weight:600}
+details summary{cursor:pointer;color:var(--text-secondary);font-size:12.5px;margin-top:8px}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--text-secondary);margin:0 0 6px}
+.legend i{display:inline-block;width:12px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.note{font-size:12.5px;color:var(--text-secondary);margin:8px 0 0}
+@media (max-width:900px){.grid,.row2{grid-template-columns:1fr}#map{height:420px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Fleet Routing Race</h1>
+  <p class="sub" id="sub"></p>
+  <div class="grid">
+    <div class="card" id="map"><div class="tip" id="maptip"></div><div class="maphint">drag to orbit · scroll to zoom · click a route to isolate it</div></div>
+    <div>
+      <div class="card">
+        <h2>Solvers raced (same 60 s, one process each)</h2>
+        <div id="solvers"></div>
+        <dl class="kv" id="summary"></dl>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <h2 id="rtitle">Route</h2>
+        <dl class="kv" id="rinfo"><dt>Selected</dt><dd>none; click a route</dd></dl>
+      </div>
+    </div>
+  </div>
+
+  <div class="row2">
+    <div class="card">
+      <h2>Best route length found against time</h2>
+      <div class="legend" id="clegend"></div>
+      <div style="position:relative"><svg id="conv" viewBox="0 0 560 250" width="100%" role="img" aria-label="Incumbent distance over time per solver"></svg><div class="tip" id="ctip"></div></div>
+      <details><summary>Table view</summary><table id="ctable"></table></details>
+    </div>
+    <div class="card">
+      <h2>Known-answer anchors (CVRPLIB)</h2>
+      <table id="anchors"></table>
+      <p class="note">Proven means the HiGHS lower bound meets the best route, so no better solution exists. For X-n101-k25 the best-known solution is reached, but the simple capacity cuts used here leave a certified gap. Closing it takes branch-cut-and-price.</p>
+    </div>
+  </div>
+
+  <div class="row2">
+    <div class="card">
+      <h2>Quantum readiness: QAOA on one 4-stop route</h2>
+      <div style="position:relative"><svg id="qbar" viewBox="0 0 560 230" width="100%" role="img" aria-label="Probability of sampling the optimal tour by QAOA depth"></svg><div class="tip" id="qtip"></div></div>
+      <p class="note" id="qnote"></p>
+    </div>
+    <div class="card">
+      <h2>What this does and doesn't show</h2>
+      <p class="note" id="qtext"></p>
+      <table id="qtable"></table>
+    </div>
+  </div>
+  <p class="note mono" id="stamp" style="margin-top:14px"></p>
+</div>
+
+<script>const D = /*__DATA__*/null;</script>
+<script>
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const SOLV = [["pyvrp","PyVRP (hybrid genetic search)"],["ortools","OR-Tools (guided local search)"],["highs","HiGHS (exact MIP, lower bound)"]];
+const km = m => (m/1000).toFixed(1)+" km";
+let current = D.winner, selected = null, onSolver = () => {}, onSelect = () => {};
+
+document.getElementById('sub').innerHTML =
+  `${D.stops.length-1} delivery stops and one depot in ${D.city}, on the real OpenStreetMap road network (${D.meta.graph_nodes.toLocaleString()} intersections, one-way streets respected). Vehicle capacity ${D.capacity}. Three open-source solvers race on the same problem. The best answer is <b>${km(D.best)}</b> and HiGHS certifies that nothing shorter than <b>${km(D.lower_bound)}</b> exists, which leaves a ${D.gap}% gap.`;
+const st = D.stamp;
+document.getElementById('stamp').textContent =
+  `Verified ${st.date} · ${st.host} · ${st.processes} processes × ${st.threads_per_solver} thread · ${st.time_limit_s}s budget · ${st.cost_credits} credits · env ${st.env}`;
+
+// ---------------- solver cards
+const sEl = document.getElementById('solvers');
+SOLV.forEach(([k,label])=>{
+  const s = D.solvers[k]; if(!s) return;
+  const b = document.createElement('button'); b.className='solver'; b.dataset.k=k;
+  const hasRoutes = s.routes.length>0;
+  const val = hasRoutes ? km(s.cost) : (s.lower_bound? "≥ "+km(s.lower_bound) : "none");
+  const extra = hasRoutes ? `${s.routes.length} vehicles · +${(100*(s.cost-D.lower_bound)/s.cost).toFixed(1)}% over bound` : "no routes in 60 s; proves the lower bound";
+  b.innerHTML = `<span class="sw" style="background:var(--s-${k})"></span><span><b>${label}</b><small>${extra}</small></span><span class="mono">${val}</span>`;
+  b.setAttribute('aria-pressed', k===current);
+  if(!hasRoutes) b.disabled = true;
+  b.onclick = ()=>{ current=k; [...sEl.children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.k===k)); selected=null; onSolver(); showRoute(); };
+  sEl.appendChild(b);
+});
+document.getElementById('summary').innerHTML =
+  `<dt>Winner</dt><dd>${D.winner}</dd><dt>Best</dt><dd>${km(D.best)}</dd><dt>Lower bound</dt><dd>${km(D.lower_bound)}</dd><dt>Certified gap</dt><dd>${D.gap}%</dd>`;
+
+function showRoute(){
+  const s = D.solvers[current], el = document.getElementById('rinfo');
+  if(selected==null){ el.innerHTML = `<dt>Selected</dt><dd>none; click a route</dd><dt>Vehicles</dt><dd>${s.routes.length}</dd><dt>Total</dt><dd>${km(s.cost)}</dd>`; return; }
+  const r = s.routes[selected];
+  el.innerHTML = `<dt>Vehicle</dt><dd>${selected+1} of ${s.routes.length}</dd><dt>Stops</dt><dd>${r.stops.length}</dd><dt>Load</dt><dd>${r.load} / ${D.capacity}</dd><dt>Distance</dt><dd>${km(r.m)}</dd>`;
+}
+showRoute();
+
+// ---------------- convergence chart (one axis: km)
+(function(){
+  const svg = document.getElementById('conv'), W=560,H=250,m={l:52,r:78,t:10,b:30};
+  const series = SOLV.map(([k])=>[k,(D.solvers[k]||{}).trace||[]]).filter(([k,t])=>t.some(p=>p[1]!=null));
+  const T = D.stamp.time_limit_s;
+  const ys = series.flatMap(([k,t])=>t.filter(p=>p[1]!=null).map(p=>p[1])).concat([D.lower_bound]);
+  const y0 = Math.min(...ys)*0.98, y1 = Math.max(...ys)*1.01;
+  const x = t => m.l + (Math.log10(Math.max(t,0.1))+1)/(Math.log10(T)+1)*(W-m.l-m.r);
+  const y = v => m.t + (1-(v-y0)/(y1-y0))*(H-m.t-m.b);
+  let g = '';
+  [0.1,1,10,T].forEach(t=>{ g+=`<line x1="${x(t)}" x2="${x(t)}" y1="${m.t}" y2="${H-m.b}" stroke="var(--line)" stroke-width="1"/><text x="${x(t)}" y="${H-m.b+16}" text-anchor="middle">${t}s</text>`; });
+  const ticks = 4; for(let i=0;i<=ticks;i++){ const v=y0+(y1-y0)*i/ticks; g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1" opacity=".6"/><text x="${m.l-6}" y="${y(v)+4}" text-anchor="end">${(v/1000).toFixed(0)} km</text>`; }
+  // lower bound
+  g += `<line x1="${m.l}" x2="${W-m.r}" y1="${y(D.lower_bound)}" y2="${y(D.lower_bound)}" stroke="var(--bound)" stroke-width="1.5" stroke-dasharray="5 4"/><text x="${W-m.r+6}" y="${y(D.lower_bound)+4}">bound</text>`;
+  const pts = {};
+  series.forEach(([k,t])=>{
+    const p = t.filter(q=>q[1]!=null); pts[k]=p;
+    let d = '';
+    p.forEach((q,i)=>{ const X=x(q[0]),Y=y(q[1]); d += i? `H${X}V${Y}` : `M${X},${Y}`; });
+    d += `H${x(T)}`;
+    g += `<path d="${d}" fill="none" stroke="var(--s-${k})" stroke-width="2" stroke-linejoin="round"/>`;
+    const last = p[p.length-1];
+    g += `<circle cx="${x(T)}" cy="${y(last[1])}" r="4" fill="var(--s-${k})" stroke="var(--surface-1)" stroke-width="2"/><text x="${W-m.r+8}" y="${y(last[1])+4}">${k}</text>`;
+  });
+  g += `<line id="cx" y1="${m.t}" y2="${H-m.b}" stroke="var(--text-muted)" stroke-width="1" visibility="hidden"/><rect x="${m.l}" y="${m.t}" width="${W-m.l-m.r}" height="${H-m.t-m.b}" fill="transparent" id="chit"/>`;
+  svg.innerHTML = g;
+  document.getElementById('clegend').innerHTML = series.map(([k])=>`<span><i style="background:var(--s-${k})"></i>${k}</span>`).join('')+`<span><i style="background:var(--bound);height:2px"></i>HiGHS lower bound</span>`;
+  const tip = document.getElementById('ctip'), cx = svg.querySelector('#cx');
+  const at = (p,t)=>{ let v=null; for(const q of p) if(q[0]<=t) v=q[1]; return v; };
+  svg.querySelector('#chit').addEventListener('mousemove', e=>{
+    const r = svg.getBoundingClientRect(), sx = (e.clientX-r.left)*W/r.width;
+    const t = Math.pow(10, (sx-m.l)/(W-m.l-m.r)*(Math.log10(T)+1)-1);
+    cx.setAttribute('x1',sx); cx.setAttribute('x2',sx); cx.setAttribute('visibility','visible');
+    tip.style.display='block'; tip.style.left=Math.min(e.clientX-r.left+12, r.width-170)+'px'; tip.style.top='8px';
+    tip.innerHTML = `<b>t = ${t<1?t.toFixed(2):t.toFixed(1)} s</b><br>`+series.map(([k])=>{const v=at(pts[k],t);return `<span style="color:var(--s-${k})">■</span> ${k}: ${v?km(v):'none yet'}`}).join('<br>')+`<br>bound: ${km(D.lower_bound)}`;
+  });
+  svg.querySelector('#chit').addEventListener('mouseleave',()=>{tip.style.display='none';cx.setAttribute('visibility','hidden')});
+  const cps=[1,5,10,30,60].filter(t=>t<=T);
+  document.getElementById('ctable').innerHTML = `<tr><th>solver</th>${cps.map(t=>`<th>${t}s</th>`).join('')}</tr>`+series.map(([k])=>`<tr><td>${k}</td>${cps.map(t=>{const v=at(pts[k],t);return `<td>${v?km(v):'none'}</td>`}).join('')}</tr>`).join('');
+})();
+
+// ---------------- anchors
+document.getElementById('anchors').innerHTML = `<tr><th>instance</th><th>known</th><th>best found</th><th>lower bound</th><th>status</th></tr>`+
+  D.anchors.map(a=>`<tr><td>${a.instance} <span class="muted">(${a.n})</span></td><td>${a.bks}</td><td>${a.best} <span class="muted">${a.winner}</span></td><td>${a.lower_bound}</td><td class="ok">${a.proven?'proven optimal':'gap '+a.gap+'%'}</td></tr>`).join('')+
+  `<tr><td colspan="5" class="muted" style="text-align:left">Time to the known answer (s), PyVRP / OR-Tools: `+D.anchors.map(a=>{const f=k=>{const r=a.table[k];if(!r)return'none';const ks=Object.keys(r).filter(x=>x.endsWith('s')&&r[x]!=null&&r[x]<=a.bks);return ks.length?ks[0]:'not reached'};return `${a.instance.split('-')[1]}: ${f('pyvrp')} / ${f('ortools')}`}).join(' · ')+`</td></tr>`;
+
+// ---------------- QAOA
+(function(){
+  const Q = D.qaoa, svg = document.getElementById('qbar'), W=560,H=230,m={l:52,r:120,t:12,b:34};
+  const rows = Q.rows, maxv = Math.max(...rows.map(r=>r.p_optimal), Q.p_optimal_random_tour)*1.15;
+  const bw = 46, gap = (W-m.l-m.r)/rows.length;
+  const y = v => m.t + (1-v/maxv)*(H-m.t-m.b);
+  let g = '';
+  for(let i=0;i<=4;i++){const v=maxv*i/4; g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" opacity=".6"/><text x="${m.l-6}" y="${y(v)+4}" text-anchor="end">${(100*v).toFixed(1)}%</text>`;}
+  rows.forEach((r,i)=>{
+    const X = m.l + gap*i + (gap-bw)/2, Y = y(r.p_optimal), h = H-m.b-Y;
+    g += `<path d="M${X},${H-m.b}V${Y+4}q0,-4 4,-4h${bw-8}q4,0 4,4V${H-m.b}Z" fill="var(--bar)" data-i="${i}" class="qb"/>`;
+    g += `<text x="${X+bw/2}" y="${Y-6}" text-anchor="middle" style="fill:var(--text-primary)">${(100*r.p_optimal).toFixed(2)}%</text><text x="${X+bw/2}" y="${H-m.b+16}" text-anchor="middle">p = ${r.p}</text>`;
+  });
+  const ref = (v,label)=>{ if(v>maxv) return ''; return `<line x1="${m.l}" x2="${W-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--bound)" stroke-dasharray="5 4" stroke-width="1.5"/><text x="${W-m.r+6}" y="${y(v)+4}">${label}</text>`; };
+  g += ref(Q.p_optimal_random_tour, 'random valid tour');
+  g += `<text x="${W-m.r+6}" y="${H-m.b-2}">random bitstring</text><text x="${W-m.r+6}" y="${H-m.b+11}">${(100*Q.p_optimal_uniform_bitstring).toFixed(4)}%</text>`;
+  svg.innerHTML = g;
+  const tip = document.getElementById('qtip');
+  svg.querySelectorAll('.qb').forEach(el=>{
+    el.addEventListener('mousemove',e=>{const r=rows[+el.dataset.i],b=svg.getBoundingClientRect();tip.style.display='block';tip.style.left=Math.min(e.clientX-b.left+12,b.width-200)+'px';tip.style.top=(e.clientY-b.top-10)+'px';
+      tip.innerHTML=`<b>depth p = ${r.p}</b><br>P(optimal tour) ${(100*r.p_optimal).toFixed(2)}%<br>P(valid tour) ${(100*r.p_feasible).toFixed(1)}%<br>${r.shots_optimal}/${r.shots} shots optimal<br>best in shots: ${r.best_tour_m_in_shots?km(r.best_tour_m_in_shots):'no valid tour'}`});
+    el.addEventListener('mouseleave',()=>tip.style.display='none');
+  });
+  const any = rows.find(r=>r.found_optimum);
+  document.getElementById('qnote').textContent =
+    `${Q.qubits} qubits, exact statevector simulation, ${rows[0].shots} shots per depth. Optimal tour ${km(Q.optimal_m)} (brute force over ${Q.tours} tours takes ${(Q.brute_force_s*1e3).toFixed(2)} ms). ${any?`The optimum first appears in the shots at p = ${any.p}.`:'The optimum never appears in the shots.'}`;
+  document.getElementById('qtext').innerHTML =
+    `QAOA solves one vehicle's 4-stop sequence, written as a QUBO over 16 qubits (stop × position). A classical computer enumerates all ${Q.tours} tours in well under a millisecond, and the classical solvers above route 80 stops across 13 vehicles in seconds. So this is a <b>readiness experiment</b>. It tests whether the encoding, angles and scoring are right, so that the same pipeline can move onto hardware and larger instances when the hardware can carry them. There is no advantage claim. Scoring counts drawn shots, the same way a QPU run would be scored, not the best amplitude.`;
+  document.getElementById('qtable').innerHTML = `<tr><th>p</th><th>P(optimal)</th><th>P(valid)</th><th>best in shots</th><th>Qiskit check</th></tr>`+
+    rows.map(r=>`<tr><td>${r.p}</td><td>${(100*r.p_optimal).toFixed(2)}%</td><td>${(100*r.p_feasible).toFixed(1)}%</td><td>${r.best_tour_m_in_shots?km(r.best_tour_m_in_shots):'none'}</td><td>${r.qiskit_overlap.toFixed(6)}</td></tr>`).join('');
+})();
+</script>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const host = document.getElementById('map');
+const ren = new THREE.WebGLRenderer({antialias:true}); ren.setPixelRatio(Math.min(devicePixelRatio,2));
+host.prepend(ren.domElement);
+const scene = new THREE.Scene();
+const cam = new THREE.PerspectiveCamera(40, 1, 0.01, 200);
+cam.position.set(-1.5, 5.2, 5.6);
+const ctl = new OrbitControls(cam, ren.domElement); ctl.enableDamping = true; ctl.maxPolarAngle = Math.PI*0.47;
+const col = n => new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue(n).trim());
+const P = p => new THREE.Vector3(p[0], 0, -p[1]);  // east = +x, north = -z
+
+// roads backdrop
+const rp = [];
+for(const seg of D.roads) for(let i=1;i<seg.length;i++){ rp.push(seg[i-1][0],0,-seg[i-1][1], seg[i][0],0,-seg[i][1]); }
+const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.Float32BufferAttribute(rp,3));
+const roadMat = new THREE.LineBasicMaterial({color:col('--road')});
+scene.add(new THREE.LineSegments(rg, roadMat));
+
+// stops: height = demand
+const stopMat = new THREE.MeshBasicMaterial({color:col('--stop')});
+const cyl = new THREE.CylinderGeometry(0.035,0.035,1,10); cyl.translate(0,0.5,0);
+const inst = new THREE.InstancedMesh(cyl, stopMat, D.stops.length-1);
+const M = new THREE.Matrix4();
+D.stops.slice(1).forEach((s,i)=>{ const h=0.02+D.demand[i+1]/25*0.22; M.makeScale(1,h,1).setPosition(s[0],0,-s[1]); inst.setMatrixAt(i,M); });
+scene.add(inst);
+const depotMat = new THREE.MeshBasicMaterial({color:col('--depot')});
+const depot = new THREE.Mesh(new THREE.BoxGeometry(0.16,0.4,0.16), depotMat);
+depot.position.copy(P(D.stops[0])).setY(0.2); scene.add(depot);
+
+// routes of the current solver
+let group = new THREE.Group(); scene.add(group);
+let tubes = [], vans = [];
+const vanGeo = new THREE.SphereGeometry(0.055, 14, 10);
+function build(){
+  scene.remove(group); group.traverse(o=>{o.geometry&&o.geometry.dispose()});
+  group = new THREE.Group(); tubes=[]; vans=[];
+  const s = D.solvers[current]; const c = col('--s-'+current);
+  s.routes.forEach((r,i)=>{
+    const pts = r.path.map(p=>P(p).setY(0.03));
+    const clean = pts.filter((p,k)=>k===0||p.distanceTo(pts[k-1])>1e-4);
+    const curve = new THREE.CatmullRomCurve3(clean, false, 'catmullrom', 0);
+    const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, Math.min(1200, clean.length*3), 0.018, 6, false),
+      new THREE.MeshBasicMaterial({color:c, transparent:true, opacity:.9}));
+    tube.userData.i = i; group.add(tube); tubes.push(tube);
+    // arc-length table for the van
+    const L=[0]; for(let k=1;k<clean.length;k++) L.push(L[k-1]+clean[k].distanceTo(clean[k-1]));
+    const van = new THREE.Mesh(vanGeo, new THREE.MeshBasicMaterial({color:col('--depot')}));
+    van.userData = {pts:clean, L, total:L[L.length-1], phase: i*0.37};
+    group.add(van); vans.push(van);
+  });
+  scene.add(group); paint();
+}
+function paint(){
+  tubes.forEach(t=>{ const on = selected==null || t.userData.i===selected; t.material.opacity = on? .92 : .12; t.material.transparent = true; });
+  vans.forEach((v,i)=>{ v.visible = selected==null || i===selected; });
+}
+onSolver = build; build();
+
+// picking
+const ray = new THREE.Raycaster(), mouse = new THREE.Vector2(), tip = document.getElementById('maptip');
+function pick(e){
+  const r = ren.domElement.getBoundingClientRect();
+  mouse.set(((e.clientX-r.left)/r.width)*2-1, -((e.clientY-r.top)/r.height)*2+1);
+  ray.setFromCamera(mouse, cam); const hit = ray.intersectObjects(tubes)[0];
+  return hit ? hit.object.userData.i : null;
+}
+ren.domElement.addEventListener('mousemove', e=>{
+  const i = pick(e), r = ren.domElement.getBoundingClientRect();
+  if(i==null){ tip.style.display='none'; ren.domElement.style.cursor=''; return; }
+  const rt = D.solvers[current].routes[i];
+  ren.domElement.style.cursor='pointer'; tip.style.display='block';
+  tip.style.left=Math.min(e.clientX-r.left+12, r.width-180)+'px'; tip.style.top=(e.clientY-r.top+12)+'px';
+  tip.innerHTML = `<b>Vehicle ${i+1}</b> · ${current}<br>${rt.stops.length} stops · load ${rt.load}/${D.capacity}<br>${(rt.m/1000).toFixed(1)} km on real streets`;
+});
+let down=null;
+ren.domElement.addEventListener('pointerdown', e=>down=[e.clientX,e.clientY]);
+ren.domElement.addEventListener('pointerup', e=>{
+  if(!down || Math.hypot(e.clientX-down[0], e.clientY-down[1])>4) return;
+  const i = pick(e); selected = (i===selected)? null : i; paint(); showRoute();
+});
+
+function theme(){
+  scene.background = col('--surface-1'); roadMat.color = col('--road'); stopMat.color = col('--stop'); depotMat.color = col('--depot');
+  build();
+}
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', theme);
+new MutationObserver(theme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+theme();
+
+function size(){ const w=host.clientWidth, h=host.clientHeight; ren.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix(); }
+new ResizeObserver(size).observe(host); size();
+
+const speed = 0.9; // km per second of animation
+const clock = new THREE.Clock();
+(function loop(){
+  const t = clock.getElapsedTime();
+  for(const v of vans){
+    const {pts,L,total,phase} = v.userData, cycle = total/speed + 1.2;
+    const s = Math.min(((t+phase*cycle) % cycle)*speed, total);
+    let k = 1; while(k<L.length-1 && L[k]<s) k++;
+    const a = pts[k-1], b = pts[k], f = (s-L[k-1])/Math.max(L[k]-L[k-1],1e-9);
+    v.position.lerpVectors(a,b,Math.min(Math.max(f,0),1)).setY(0.07);
+  }
+  ctl.update(); ren.render(scene, cam); requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

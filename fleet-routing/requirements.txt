@@ -1,0 +1,12 @@
+# Python 3.12. CPU-only; everything in this example runs on a 4-8 vCPU machine.
+pyvrp==0.14.0
+ortools==9.15.6755
+highspy==1.15.1
+scipy==1.18.1
+numpy==2.5.3
+vrplib==2.2.0
+osmnx==2.1.1
+networkx==3.7
+geopandas==1.2.0
+shapely==2.1.2
+qiskit==2.5.2
