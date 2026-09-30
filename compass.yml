@@ -1,0 +1,16 @@
+name: open-simulation-examples
+id: ari:cloud:compass:8526d2ba-687c-46b3-8b65-acaf550a9b39:component/141c5c30-d6a4-4eb9-b8dd-1a0c55663014/1d6eeeab-82fb-4981-a096-0972fd006791
+description: Engineering simulation with open-source solvers, orchestrated by agents on qBraid compute and visualized with three.js
+configVersion: 1
+typeId: SERVICE
+fields:
+  tier: 4
+links:
+  - name: null
+    type: REPOSITORY
+    url: https://github.com/qBraid/open-simulation-examples
+relationships:
+  DEPENDS_ON: []
+labels:
+  - source:github
+customFields: null
