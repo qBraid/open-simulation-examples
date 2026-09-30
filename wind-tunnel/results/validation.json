@@ -1,0 +1,80 @@
+{
+  "case": "2D laminar cylinder, Re = 100 (D = 1, U = 1, nu = 0.01), pimpleFoam, backward/linearUpwind",
+  "reference": {
+    "St": [
+      0.164,
+      0.166
+    ],
+    "Cd": [
+      1.33,
+      1.35
+    ],
+    "source": "unconfined-domain values reported across the Re = 100 literature (e.g. Park et al. 1998; Posdziech & Grundmann 2007)"
+  },
+  "meshes": [
+    {
+      "level": "coarse, walls \u00b110D",
+      "case": "cyl_coarse",
+      "cells": 7713,
+      "frames": false,
+      "t_window": [
+        100.006,
+        200.0
+      ],
+      "cycles": 16,
+      "St": 0.1673,
+      "St_cycle_std": 1e-05,
+      "Cd_mean": 1.3932,
+      "Cl_rms": 0.2444,
+      "Cl_amp": 0.3461
+    },
+    {
+      "level": "fine, walls \u00b110D",
+      "case": "cyl_fine",
+      "cells": 26992,
+      "frames": true,
+      "t_window": [
+        100.001,
+        200.0
+      ],
+      "cycles": 16,
+      "St": 0.1696,
+      "St_cycle_std": 1e-05,
+      "Cd_mean": 1.3914,
+      "Cl_rms": 0.2456,
+      "Cl_amp": 0.3477
+    },
+    {
+      "level": "coarse, walls \u00b130D",
+      "case": "cyl_coarse_w30",
+      "cells": 9971,
+      "frames": false,
+      "t_window": [
+        100.003,
+        200.0
+      ],
+      "cycles": 16,
+      "St": 0.1665,
+      "St_cycle_std": 1e-05,
+      "Cd_mean": 1.38,
+      "Cl_rms": 0.2386,
+      "Cl_amp": 0.338
+    },
+    {
+      "level": "fine, walls \u00b130D",
+      "case": "cyl_fine_w30",
+      "cells": 32661,
+      "frames": false,
+      "t_window": [
+        100.0,
+        200.0
+      ],
+      "cycles": 16,
+      "St": 0.1685,
+      "St_cycle_std": 1e-05,
+      "Cd_mean": 1.3807,
+      "Cl_rms": 0.245,
+      "Cl_amp": 0.3468
+    }
+  ]
+}

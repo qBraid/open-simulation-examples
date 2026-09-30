@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Virtual Wind Tunnel</title>
+<style>
+:root{
+  --ground:#f3f4f1;--surface:#fff;--surface-2:#e9ece7;--ink:#191d1f;--muted:#5a6469;--line:#d3d9d4;
+  --accent:#0f6e66;--good:#1d7f56;--warn:#b26a06;--stage:#0c1114;--stage-ink:#b9c7c3;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#0e1213;--surface:#161b1d;--surface-2:#1e2528;--ink:#e5eae8;--muted:#97a3a0;--line:#29342f;
+  --accent:#45c2b3;--good:#4cc38a;--warn:#e7a640;--stage:#070a0c;
+}}
+:root[data-theme="dark"]{
+  --ground:#0e1213;--surface:#161b1d;--surface-2:#1e2528;--ink:#e5eae8;--muted:#97a3a0;--line:#29342f;
+  --accent:#45c2b3;--good:#4cc38a;--warn:#e7a640;--stage:#070a0c;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:22px 16px 48px}
+h1{margin:0 0 4px;font-size:24px;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:0 0 14px;max-width:80ch}
+.tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.tabs button,.ctl button{font:500 13px system-ui,sans-serif;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:5px 12px;border-radius:999px;cursor:pointer}
+.tabs button[aria-selected="true"],.ctl button[aria-pressed="true"]{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+.grid{display:grid;grid-template-columns:1fr 300px;gap:14px}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+.stage{position:relative;background:var(--stage);border-radius:12px;overflow:hidden;border:1px solid var(--line);min-height:300px}
+.stage canvas{display:block;width:100%;height:560px}
+@media (max-width:640px){.stage canvas{height:360px}}
+.hud{position:absolute;left:12px;top:10px;color:var(--stage-ink);font:12px ui-monospace,Menlo,monospace;pointer-events:none}
+.legend{position:absolute;right:12px;bottom:12px;color:var(--stage-ink);font:11px ui-monospace,Menlo,monospace;text-align:right}
+.legend canvas{width:180px;height:10px;display:block;border-radius:2px;margin:3px 0}
+.ctl{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-top:10px;font-size:13px;color:var(--muted)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px}
+.panel h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;font-weight:600}
+table{border-collapse:collapse;width:100%;font-size:12.5px;margin-bottom:12px}
+td,th{padding:4px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:500}
+td.n{font-family:ui-monospace,Menlo,monospace;white-space:nowrap}
+.ok{color:var(--good)}.hi{color:var(--warn)}
+.stamp{font:11.5px/1.5 ui-monospace,Menlo,monospace;color:var(--muted);background:var(--surface-2);border-radius:8px;padding:8px 10px;white-space:pre-wrap}
+.note{font-size:12px;color:var(--muted);margin:8px 0 0}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Virtual Wind Tunnel</h1>
+  <p class="sub">OpenFOAM v2412 on qBraid. There are two cases. A 3D Ahmed reference car body is solved with steady RANS (k-ω SST) and compared against wind-tunnel data. A 2D cylinder at Re = 100 serves as the validation case, and its vortex street is animated from the solver output. Drag the 3D view to orbit and scroll to zoom.</p>
+  <div class="tabs" role="tablist">
+    <button role="tab" data-tab="car" aria-selected="true">Ahmed body · 3D RANS</button>
+    <button role="tab" data-tab="cyl" aria-selected="false">Cylinder Re = 100 · validation</button>
+  </div>
+  <div class="grid">
+    <div>
+      <div id="tab-car">
+        <div class="stage"><canvas id="c3d"></canvas>
+          <div class="hud" id="hud3d">loading three.js…</div>
+          <div class="legend"><span id="legTitle">Cp</span><canvas id="legBar" width="180" height="10"></canvas><span id="legRange"></span></div>
+        </div>
+        <div class="ctl">
+          <span>Colour</span>
+          <button data-color="cp" aria-pressed="true">pressure Cp</button>
+          <button data-color="speed" aria-pressed="false">speed |U|/U∞</button>
+          <span style="margin-left:6px">Show</span>
+          <button data-show="lines" aria-pressed="true">streamlines</button>
+          <button data-show="slice" aria-pressed="true">symmetry slice</button>
+          <button data-show="anim" aria-pressed="true">animate</button>
+        </div>
+      </div>
+      <div id="tab-cyl" hidden>
+        <div class="stage"><canvas id="c2d"></canvas>
+          <div class="hud" id="hud2d"></div>
+          <div class="legend">vorticity ω<sub>z</sub> D/U<canvas id="legBar2" width="180" height="10"></canvas>−4 · 0 · +4</div>
+        </div>
+        <p class="note">Snapshots come from the fine-mesh pimpleFoam solution, sampled every 0.25 D/U over two shedding periods and looped.</p>
+      </div>
+    </div>
+    <aside class="panel">
+      <h2>Validation</h2>
+      <table id="valTable"></table>
+      <h2>Ahmed body</h2>
+      <table id="carTable"></table>
+      <h2>Verification stamp</h2>
+      <div class="stamp" id="stamp"></div>
+      <p class="note" id="limits"></p>
+    </aside>
+  </div>
+</div>
+
+<script>const DATA = /*__DATA__*/null;</script>
+<script>
+// ---------- shared helpers (no three.js needed)
+function b64(s, T){const bin=atob(s),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new T(u.buffer)}
+// coolwarm diverging, t in [0,1]
+function coolwarm(t){t=Math.min(1,Math.max(0,t));const c=[[0.23,0.30,0.75],[0.55,0.69,0.99],[0.87,0.87,0.87],[0.96,0.62,0.49],[0.71,0.02,0.15]];const x=t*4,i=Math.min(3,Math.floor(x)),f=x-i;return c[i].map((v,k)=>v+(c[i+1][k]-v)*f)}
+// perceptual sequential (viridis-like), t in [0,1]
+function viridis(t){t=Math.min(1,Math.max(0,t));const c=[[0.27,0.00,0.33],[0.23,0.32,0.55],[0.13,0.57,0.55],[0.37,0.79,0.38],[0.99,0.91,0.14]];const x=t*4,i=Math.min(3,Math.floor(x)),f=x-i;return c[i].map((v,k)=>v+(c[i+1][k]-v)*f)}
+function legend(cv,fn){const g=cv.getContext('2d');for(let x=0;x<cv.width;x++){const c=fn(x/(cv.width-1));g.fillStyle=`rgb(${c.map(v=>v*255|0)})`;g.fillRect(x,0,1,cv.height)}}
+const CP_MIN=-1.2, CP_MAX=1.0, U_MAX=1.4;
+
+// tabs (viewer.html#cyl opens the validation tab directly)
+document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('[data-tab]').forEach(x=>x.setAttribute('aria-selected',x===b));
+  document.getElementById('tab-car').hidden=b.dataset.tab!=='car';
+  document.getElementById('tab-cyl').hidden=b.dataset.tab!=='cyl';
+  window.dispatchEvent(new Event('resize'));
+});
+
+if(location.hash==='#cyl')setTimeout(()=>document.querySelector('[data-tab="cyl"]').click(),0);
+
+// side panel
+(function(){
+  const v=DATA.validation, a=DATA.ahmed_forces, r=v.reference;
+  const cls=(x,lo,hi)=>x>=lo&&x<=hi?'ok':'hi';
+  document.getElementById('valTable').innerHTML=
+   `<tr><th>2D cylinder</th><th>St</th><th>C<sub>d</sub></th></tr>`+
+   v.meshes.map(m=>`<tr><td>${m.level} (${(m.cells/1000).toFixed(1)}k cells)</td><td class="n ${cls(m.St,r.St[0],r.St[1])}">${m.St.toFixed(4)}</td><td class="n ${cls(m.Cd_mean,r.Cd[0],r.Cd[1])}">${m.Cd_mean.toFixed(3)}</td></tr>`).join('')+
+   `<tr><td>reference</td><td class="n">${r.St[0]}–${r.St[1]}</td><td class="n">${r.Cd[0]}–${r.Cd[1]}</td></tr>`;
+  document.getElementById('carTable').innerHTML=
+   `<tr><th></th><th>C<sub>d</sub></th></tr>`+
+   `<tr><td>this run (${(a.cells/1e3).toFixed(0)}k cells, 35° slant)</td><td class="n">${a.Cd_mean.toFixed(3)}</td></tr>`+
+   `<tr><td>Ahmed et al. 1984, experiment</td><td class="n">${a.Cd_reference}</td></tr>`;
+  document.getElementById('stamp').textContent=DATA.stamp;
+  document.getElementById('limits').textContent=DATA.limits;
+})();
+
+// ---------- 2D cylinder animation
+(function(){
+  const C=DATA.cyl, fr=b64(C.frames,Uint8Array), NX=C.nx, NY=C.ny, NF=C.nf;
+  const cv=document.getElementById('c2d'), g=cv.getContext('2d');
+  const off=document.createElement('canvas');off.width=NX;off.height=NY;const og=off.getContext('2d');const img=og.createImageData(NX,NY);
+  const lut=[];for(let i=0;i<256;i++){const c=coolwarm((i-1)/254);lut.push(c.map(v=>v*255|0))}
+  legend(document.getElementById('legBar2'),coolwarm);
+  let k=0,last=0;
+  function draw(t){
+    requestAnimationFrame(draw);
+    if(document.getElementById('tab-cyl').hidden)return;
+    if(t-last<70)return; last=t;
+    const base=k*NX*NY;
+    for(let j=0;j<NY;j++)for(let i=0;i<NX;i++){const q=fr[base+(NY-1-j)*NX+i],o=(j*NX+i)*4;
+      if(q===0){img.data[o]=90;img.data[o+1]=96;img.data[o+2]=100;img.data[o+3]=255;continue}
+      const c=lut[q];img.data[o]=c[0];img.data[o+1]=c[1];img.data[o+2]=c[2];img.data[o+3]=255}
+    og.putImageData(img,0,0);
+    const W=cv.clientWidth,H=cv.clientHeight;if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H}
+    const s=Math.min(W/NX,H/NY),dw=NX*s,dh=NY*s,ox=(W-dw)/2,oy=(H-dh)/2;
+    g.fillStyle='#070a0c';g.fillRect(0,0,W,H);g.imageSmoothingEnabled=true;g.drawImage(off,ox,oy,dw,dh);
+    // cylinder outline (D = 1)
+    const [x0,x1]=C.x,[y0,y1]=C.y,px=ox+(0-x0)/(x1-x0)*dw,py=oy+(1-(0-y0)/(y1-y0))*dh,pr=0.5/(x1-x0)*dw;
+    g.fillStyle='#8a939a';g.beginPath();g.arc(px,py,pr,0,7);g.fill();
+    document.getElementById('hud2d').textContent=`pimpleFoam · Re = 100 · t = ${C.t[k].toFixed(2)} D/U · frame ${k+1}/${NF}`;
+    k=(k+1)%NF;
+  }
+  requestAnimationFrame(draw);
+})();
+</script>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<script type="module">
+const hud=document.getElementById('hud3d');
+let THREE, OrbitControls;
+try{ THREE=await import('three'); ({OrbitControls}=await import('three/addons/controls/OrbitControls.js')); }
+catch(e){ hud.textContent='three.js could not load from the CDN; the 3D view needs network access. The validation tab still works.'; throw e; }
+
+const A=DATA.ahmed;
+const verts=b64(A.verts,Float32Array), norms=b64(A.norms,Float32Array), tris=b64(A.tris,Uint32Array), cp=b64(A.cp,Float32Array);
+const lp=b64(A.line_pts,Float32Array), ls=b64(A.line_spd,Float32Array), lo=b64(A.line_offs,Uint32Array);
+
+const cv=document.getElementById('c3d');
+const ren=new THREE.WebGLRenderer({canvas:cv,antialias:true});ren.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x070a0c);
+const cam=new THREE.PerspectiveCamera(35,1,0.01,100);cam.up.set(0,0,1);cam.position.set(-1.5,-2.2,1.2);
+const ctl=new OrbitControls(cam,cv);ctl.target.set(0.9,0,0.2);ctl.enableDamping=true;
+scene.add(new THREE.HemisphereLight(0xdde8ff,0x202020,1.6));
+const sun=new THREE.DirectionalLight(0xffffff,1.6);sun.position.set(-2,-3,4);scene.add(sun);
+
+// body
+const bg=new THREE.BufferGeometry();
+bg.setAttribute('position',new THREE.BufferAttribute(verts,3));
+bg.setAttribute('normal',new THREE.BufferAttribute(norms,3));
+bg.setIndex(new THREE.BufferAttribute(tris,1));
+const bcol=new Float32Array(verts.length);bg.setAttribute('color',new THREE.BufferAttribute(bcol,3));
+const body=new THREE.Mesh(bg,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.55,metalness:.05}));
+scene.add(body);
+
+// ground
+const grid=new THREE.GridHelper(8,80,0x2c3a3a,0x1a2324);grid.rotation.x=Math.PI/2;grid.position.set(1.2,0,0);scene.add(grid);
+
+// symmetry-plane slice (y = 0)
+const [sx0,sx1,sz0,sz1]=A.slice_extent, SNX=A.slice_nx, SNZ=A.slice_nz;
+const su=b64(A.slice_u,Uint8Array), sc=b64(A.slice_cp,Uint8Array);
+const stex=new Uint8Array(SNX*SNZ*4);
+const tex=new THREE.DataTexture(stex,SNX,SNZ,THREE.RGBAFormat);tex.magFilter=THREE.LinearFilter;tex.minFilter=THREE.LinearFilter;tex.colorSpace=THREE.SRGBColorSpace;
+const slice=new THREE.Mesh(new THREE.PlaneGeometry(sx1-sx0,sz1-sz0),new THREE.MeshBasicMaterial({map:tex,transparent:true,opacity:.92,side:THREE.DoubleSide,depthWrite:false}));
+slice.rotation.x=Math.PI/2;slice.position.set((sx0+sx1)/2,0,(sz0+sz1)/2);scene.add(slice);
+
+// animated streamlines: dashes travel along each line at a speed proportional to the local |U|
+const segs=[];let nseg=0;for(let l=0;l+1<lo.length;l++)nseg+=lo[l+1]-lo[l]-1;
+const P=new Float32Array(nseg*6), S=new Float32Array(nseg*2), T=new Float32Array(nseg*2);
+let w=0;
+for(let l=0;l+1<lo.length;l++){let tau=Math.random()*3;
+  for(let i=lo[l];i<lo[l+1]-1;i++){
+    const ax=lp[3*i],ay=lp[3*i+1],az=lp[3*i+2],bx=lp[3*i+3],by=lp[3*i+4],bz=lp[3*i+5];
+    const d=Math.hypot(bx-ax,by-ay,bz-az), v=Math.max(.05,(ls[i]+ls[i+1])/2);
+    P.set([ax,ay,az,bx,by,bz],w*6);S[w*2]=ls[i];S[w*2+1]=ls[i+1];T[w*2]=tau;tau+=d/v;T[w*2+1]=tau;w++}}
+const lg=new THREE.BufferGeometry();
+lg.setAttribute('position',new THREE.BufferAttribute(P,3));lg.setAttribute('spd',new THREE.BufferAttribute(S,1));lg.setAttribute('tau',new THREE.BufferAttribute(T,1));
+const lmat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+  uniforms:{uT:{value:0},uAnim:{value:1}},
+  vertexShader:`attribute float spd;attribute float tau;varying float vS;varying float vT;void main(){vS=spd;vT=tau;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader:`uniform float uT;uniform float uAnim;varying float vS;varying float vT;
+    vec3 vir(float t){t=clamp(t,0.,1.);vec3 a=vec3(.27,.0,.33),b=vec3(.23,.32,.55),c=vec3(.13,.57,.55),d=vec3(.37,.79,.38),e=vec3(.99,.91,.14);
+      float x=t*4.;if(x<1.)return mix(a,b,x);if(x<2.)return mix(b,c,x-1.);if(x<3.)return mix(c,d,x-2.);return mix(d,e,x-3.);}
+    void main(){float ph=fract(vT*0.9-uT*0.9);float a=mix(.35,.12+.88*pow(1.-ph,6.),uAnim);gl_FragColor=vec4(vir(vS/1.4)*a*1.3,a);}`});
+const lines=new THREE.LineSegments(lg,lmat);scene.add(lines);
+
+// colour modes
+const legBar=document.getElementById('legBar');
+function setColor(mode){
+  for(let i=0;i<cp.length;i++){const c=mode==='cp'?coolwarm((cp[i]-CP_MIN)/(CP_MAX-CP_MIN)):[.62,.66,.68];bcol.set(c,3*i)}
+  bg.attributes.color.needsUpdate=true;
+  const src=mode==='cp'?sc:su, fn=mode==='cp'?coolwarm:viridis;
+  for(let j=0;j<SNZ;j++)for(let i=0;i<SNX;i++){const q=src[j*SNX+i],o=(j*SNX+i)*4;
+    if(q===0){stex[o+3]=0;continue}const t=(q-1)/254,c=fn(t);stex[o]=c[0]*255;stex[o+1]=c[1]*255;stex[o+2]=c[2]*255;
+    // Cp mode: fade the near-freestream band (Cp ~ 0) so the slice shows only where pressure departs from ambient
+    stex[o+3]=mode==='cp'?Math.min(230,Math.abs(t*(CP_MAX-CP_MIN)+CP_MIN)/0.35*230):220}
+  tex.needsUpdate=true;
+  legend(legBar,fn);
+  document.getElementById('legTitle').textContent=mode==='cp'?'pressure coefficient Cp':'speed |U| / U∞ (slice and streamlines)';
+  document.getElementById('legRange').textContent=mode==='cp'?`${CP_MIN} … ${CP_MAX}`:`0 … ${U_MAX}`;
+}
+document.querySelectorAll('[data-color]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-color]').forEach(x=>x.setAttribute('aria-pressed',x===b));setColor(b.dataset.color)});
+document.querySelectorAll('[data-show]').forEach(b=>b.onclick=()=>{const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);
+  if(b.dataset.show==='lines')lines.visible=on;else if(b.dataset.show==='slice')slice.visible=on;else lmat.uniforms.uAnim.value=on?1:0});
+setColor('cp');
+
+function size(){const W=cv.clientWidth,H=cv.clientHeight;if(!W)return;ren.setSize(W,H,false);cam.aspect=W/H;cam.updateProjectionMatrix()}
+new ResizeObserver(size).observe(cv);size();
+hud.textContent=`simpleFoam k-ω SST · U∞ = 40 m/s · Re_L = 2.8e6 · ${(A.cells/1e3).toFixed(0)}k cells (half model, mirrored) · ${lo.length-1} streamlines`;
+const clock=new THREE.Clock();
+(function loop(){requestAnimationFrame(loop);lmat.uniforms.uT.value=clock.getElapsedTime();ctl.update();ren.render(scene,cam)})();
+</script>
+</body>
+</html>
