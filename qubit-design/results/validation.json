@@ -1,0 +1,85 @@
+{
+  "pass": true,
+  "reference": "Palace v0.18.1 test/data/regression/ref/transmon/transmon_coarse",
+  "tolerances": {
+    "f": 0.0001,
+    "Q": 0.02,
+    "p": 0.02,
+    "Qext": 0.02
+  },
+  "rows": [
+    {
+      "name": "qubit mode f (GHz)",
+      "run": "4.0991155",
+      "ref": "4.0991155",
+      "rel": "8.9e-10",
+      "rel_value": 8.867766459038543e-10,
+      "tol": 0.0001,
+      "pass": true
+    },
+    {
+      "name": "qubit mode Q",
+      "run": "18553",
+      "ref": "18553",
+      "rel": "1.3e-09",
+      "rel_value": 1.3318822063265485e-09,
+      "tol": 0.02,
+      "pass": true
+    },
+    {
+      "name": "qubit mode junction EPR p",
+      "run": "0.99191",
+      "ref": "0.99191",
+      "rel": "7.3e-10",
+      "rel_value": 7.282889012428338e-10,
+      "tol": 0.02,
+      "pass": true
+    },
+    {
+      "name": "qubit mode Q_ext port 1",
+      "run": "3.262e+07",
+      "ref": "3.262e+07",
+      "rel": "1.9e-06",
+      "rel_value": 1.9104511235787573e-06,
+      "tol": 0.02,
+      "pass": true
+    },
+    {
+      "name": "resonator mode f (GHz)",
+      "run": "5.6032672",
+      "ref": "5.603266",
+      "rel": "2.2e-07",
+      "rel_value": 2.2251165815118136e-07,
+      "tol": 0.0001,
+      "pass": true
+    },
+    {
+      "name": "resonator mode Q",
+      "run": "7911.2",
+      "ref": "7911.2",
+      "rel": "1.1e-06",
+      "rel_value": 1.1198168506501094e-06,
+      "tol": 0.02,
+      "pass": true
+    },
+    {
+      "name": "resonator mode junction EPR p",
+      "run": "0.0014837",
+      "ref": "0.0014837",
+      "rel": "4.7e-07",
+      "rel_value": 4.7194567858494955e-07,
+      "tol": 0.02,
+      "pass": true
+    },
+    {
+      "name": "resonator mode Q_ext port 1",
+      "run": "2.792e+04",
+      "ref": "2.792e+04",
+      "rel": "2.4e-06",
+      "rel_value": 2.4052547485533554e-06,
+      "tol": 0.02,
+      "pass": true
+    }
+  ],
+  "note": "All 8 quantities within tolerance. Largest eigenfrequency deviation 2.2e-07 relative. Reference is Palace's own CI regression data for this example."
+}
