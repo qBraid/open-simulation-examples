@@ -1,0 +1,1 @@
+Verified 2026-09-30 · Palace v0.18.1 (CMake superbuild, conda-forge GCC 15.3 + Open MPI 5.0.11 + OpenBLAS) · qBraid subscription pod, 3 MPI ranks on shared CPUs · build 24 min, eigenmode solve 39.8 min, peak memory 3.4 GB · cost $0 (no instance) · validation: 8/8 quantities match Palace's regression reference

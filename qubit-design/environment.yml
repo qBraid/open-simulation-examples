@@ -1,0 +1,21 @@
+name: palace
+channels: [conda-forge]
+dependencies:
+  - python=3.12
+  - cxx-compiler
+  - c-compiler
+  - fortran-compiler
+  - cmake>=3.24
+  - make
+  - git
+  - pkg-config
+  - openmpi=5
+  - openblas
+  - libblas=*=*openblas
+  - liblapack=*=*openblas
+  - zlib
+  - gmsh
+  - python-gmsh
+  - numpy
+  - scipy
+  - meshio

@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Transmon Design Viewer</title>
+<style>
+:root{--bg:#f4f5f2;--surface:#fff;--surface-2:#eceee9;--ink:#1a1e20;--muted:#5b6569;--line:#d4d9d5;--accent:#0f6e66;
+  --q:#6b4fb3;--r:#0f6e66;--warn:#b26a06;--sim:#0b1013}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1213;--surface:#161b1d;--surface-2:#1f2629;--ink:#e5eae8;--muted:#98a3a0;--line:#2a3431;--accent:#45c2b3;--q:#a78bfa;--r:#45c2b3;--warn:#e7a640}}
+:root[data-theme="dark"]{--bg:#0e1213;--surface:#161b1d;--surface-2:#1f2629;--ink:#e5eae8;--muted:#98a3a0;--line:#2a3431;--accent:#45c2b3;--q:#a78bfa;--r:#45c2b3;--warn:#e7a640}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:22px 16px 60px}
+.eyebrow{font:12px ui-monospace,Menlo,monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:26px;margin:4px 0 6px}
+h2{font-size:15px;margin:0 0 8px}
+.lede{color:var(--muted);max-width:80ch;margin:0 0 16px}
+.grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:14px}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.stage{position:relative;background:var(--sim);border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+#view{width:100%;height:520px;display:block}
+@media (max-width:640px){#view{height:340px}}
+.bar{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:8px 12px;background:var(--surface);border-top:1px solid var(--line);font-size:13px}
+.bar button{font:12px ui-monospace,Menlo,monospace;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);padding:4px 10px;border-radius:6px;cursor:pointer}
+.bar button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.legend{position:absolute;right:12px;top:12px;font:11px ui-monospace,Menlo,monospace;color:#c9d4d1;text-align:right}
+.legend i{display:block;width:140px;height:8px;border-radius:2px;margin:4px 0 2px auto;background:linear-gradient(90deg,#000004,#3b0f70,#8c2981,#de4968,#fe9f6d,#fcfdbf)}
+.note{font-size:12.5px;color:var(--muted)}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{text-align:left;padding:5px 7px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:11px ui-monospace,Menlo,monospace;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);background:var(--surface-2)}
+td.n{font-family:ui-monospace,Menlo,monospace;white-space:nowrap}
+.tw{overflow-x:auto}
+.ok{color:var(--accent);font-weight:600}.bad{color:var(--warn);font-weight:600}
+svg text{fill:var(--muted);font:11px ui-monospace,Menlo,monospace}
+.stack>*+*{margin-top:14px}
+.stamp{font:12px ui-monospace,Menlo,monospace;color:var(--muted);margin-top:18px;border-top:1px solid var(--line);padding-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">qBraid · open simulation examples · qubit design</div>
+  <h1>Design a transmon, then run it</h1>
+  <p class="lede">A transmon qubit with a quarter-wave readout resonator, solved as a 3D eigenmode problem in AWS Palace (open-source finite elements). The run gives the mode frequencies, losses and junction energy participations. These become a circuit Hamiltonian, which is then simulated. The colour on the metal shows where each mode's electric field sits.</p>
+  <div class="grid">
+    <div class="stack">
+      <div class="stage">
+        <canvas id="view"></canvas>
+        <div class="legend"><span id="legendTitle">|E| on metal (log)</span><i></i><span>low → high</span></div>
+        <div class="bar">
+          <span>Mode</span><span id="modeBtns"></span>
+          <button id="flat" aria-pressed="false">top view</button>
+          <span class="note" id="modeInfo"></span>
+        </div>
+      </div>
+      <div class="card"><h2>Dispersive readout: resonator |S21| with the qubit in |g&gt; and |e&gt;</h2><svg id="readout" viewBox="0 0 640 200" width="100%"></svg>
+        <p class="note" id="readoutNote"></p></div>
+      <div class="card"><h2>Rabi oscillation with leakage to |2&gt; (3-level transmon, T1 from the design)</h2><svg id="rabi" viewBox="0 0 640 180" width="100%"></svg></div>
+    </div>
+    <div class="stack">
+      <div class="card"><h2>Validation against Palace's published reference</h2><table id="val"></table><p class="note" id="valNote"></p></div>
+      <div class="card"><h2>Derived Hamiltonian</h2><svg id="levels" viewBox="0 0 360 230" width="100%"></svg><table id="ham"></table></div>
+      <div class="card"><h2>Design vs. real IBM transmons</h2><div class="tw"><table id="dev"></table></div><p class="note" id="devNote"></p></div>
+    </div>
+  </div>
+  <div class="stamp" id="stamp"></div>
+</div>
+<script>window.DATA = __DATA__;</script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<script>
+// ---------- panels (plain JS, no dependency on three.js) ----------
+const D = window.DATA, $ = id => document.getElementById(id);
+const fmt = (x, d = 3) => (x === null || x === undefined) ? '–' : Number(x).toFixed(d);
+function line(svg, xs, ys, color, W, H, pad, xr, yr, dash) {
+  const sx = x => pad + (x - xr[0]) / (xr[1] - xr[0]) * (W - 2 * pad), sy = y => H - pad - (y - yr[0]) / (yr[1] - yr[0]) * (H - 2 * pad);
+  const d = xs.map((x, i) => (i ? 'L' : 'M') + sx(x).toFixed(1) + ',' + sy(ys[i]).toFixed(1)).join('');
+  svg.insertAdjacentHTML('beforeend', `<path d="${d}" fill="none" stroke="${color}" stroke-width="2" ${dash ? 'stroke-dasharray="5 4"' : ''}/>`);
+  return { sx, sy };
+}
+function axes(svg, W, H, pad, xl, yl) {
+  svg.insertAdjacentHTML('beforeend', `<line x1="${pad}" y1="${H - pad}" x2="${W - pad}" y2="${H - pad}" stroke="var(--line)"/><line x1="${pad}" y1="${pad}" x2="${pad}" y2="${H - pad}" stroke="var(--line)"/><text x="${W / 2}" y="${H - 6}" text-anchor="middle">${xl}</text><text x="10" y="${pad - 6}">${yl}</text>`);
+}
+// readout
+(() => {
+  const r = D.dyn.readout, svg = $('readout'), W = 640, H = 200, p = 32;
+  const f = r.f_GHz.map(x => (x - r.f_GHz[0]) * 1e3), xr = [0, f[f.length - 1]], yr = [0, 1.02];
+  axes(svg, W, H, p, `detuning from ${fmt(r.f_GHz[0], 4)} GHz (MHz)`, '|S21|');
+  line(svg, f, r.S21_g, 'var(--r)', W, H, p, xr, yr);
+  line(svg, f, r.S21_e, 'var(--q)', W, H, p, xr, yr, true);
+  svg.insertAdjacentHTML('beforeend', `<text x="${p + 8}" y="${H - p - 30}" style="fill:var(--r)">qubit in |g&gt;</text><text x="${p + 8}" y="${H - p - 14}" style="fill:var(--q)">qubit in |e&gt; (dashed)</text>`);
+  $('readoutNote').textContent = `The line shifts by ${fmt(Math.abs(r.separation_kHz), 0)} kHz, compared with a resonator linewidth of ${fmt(r.linewidth_kHz, 0)} kHz (χ/κ = ${fmt(D.ham.derived.chi_over_kappa, 2)}). A ratio near 0.5–1 is the usual target for fast, high-fidelity readout.`;
+})();
+// rabi
+(() => {
+  const r = D.dyn.rabi, svg = $('rabi'), W = 640, H = 180, p = 30;
+  axes(svg, W, H, p, 'time (ns)', 'population');
+  line(svg, r.t_ns, r.P1, 'var(--q)', W, H, p, [0, r.t_ns[r.t_ns.length - 1]], [0, 1.02]);
+  const m = Math.max(...r.P2), sc = 0.9 / Math.max(m, 1e-6);
+  line(svg, r.t_ns, r.P2.map(x => x * sc), 'var(--warn)', W, H, p, [0, r.t_ns[r.t_ns.length - 1]], [0, 1.02], true);
+  svg.insertAdjacentHTML('beforeend', `<text x="${W - p - 230}" y="${p - 6}" style="fill:var(--q)">P(|1&gt;), ${r.rabi_MHz} MHz drive</text><text x="${W - p - 230}" y="${p + 8}" style="fill:var(--warn)">P(|2&gt;) ×${sc.toFixed(0)} (max ${(m * 100).toFixed(2)}%)</text>`);
+})();
+// validation
+(() => {
+  const v = D.validation, rows = v.rows;
+  $('val').innerHTML = '<tr><th>quantity</th><th>this run</th><th>reference</th><th>rel. diff</th></tr>' +
+    rows.map(r => `<tr><td>${r.name}</td><td class="n">${r.run}</td><td class="n">${r.ref}</td><td class="n ${r.pass ? 'ok' : 'bad'}">${r.rel}</td></tr>`).join('');
+  $('valNote').textContent = v.note;
+})();
+// hamiltonian + level diagram
+(() => {
+  const h = D.ham, n = h.numerical, d = h.derived, fo = h.first_order;
+  const rows = [
+    ['qubit f01', fmt(n.f01_GHz, 4) + ' GHz', `linear mode ${fmt(h.inputs.mode_freqs_linear_GHz[h.inputs.qubit_mode_index], 4)} GHz`],
+    ['anharmonicity α', fmt(n.anharmonicity_GHz * 1e3, 1) + ' MHz', `first-order EPR ${fmt(fo.qubit_anharmonicity_GHz * 1e3, 1)} MHz`],
+    ['resonator', fmt(n.f_res_ground_GHz, 4) + ' GHz', `κ/2π = ${fmt(d.resonator_kappa_MHz * 1e3, 0)} kHz`],
+    ['dispersive shift 2χ', fmt(n.chi_full_GHz * 1e6, 0) + ' kHz', `first order ${fmt(fo.cross_kerr_chi_GHz * 1e6, 0)} kHz`],
+    ['E_J / E_C', fmt(d.EJ_over_EC, 1), `E_J/h = ${fmt(h.inputs.E_J_GHz, 2)} GHz`],
+    ['T1 (loss-limited)', fmt(d.qubit_T1_bound_us, 2) + ' µs', `Purcell alone ${fmt(d.qubit_T1_purcell_bound_us, 0)} µs`],
+  ];
+  $('ham').innerHTML = '<tr><th>parameter</th><th>value</th><th>check</th></tr>' + rows.map(r => `<tr><td>${r[0]}</td><td class="n">${r[1]}</td><td class="note">${r[2]}</td></tr>`).join('');
+  const svg = $('levels'), lv = n.levels_GHz.filter(l => l[0] < 12.5), W = 360, H = 230, top = 12, bot = 205, emax = Math.max(...lv.map(l => l[0])) * 1.04;
+  const y = e => bot - e / emax * (bot - top);
+  lv.forEach(([e, lab]) => {
+    const q = +lab[1], r = +lab[3], x = 30 + r * 105 + q * 22;
+    svg.insertAdjacentHTML('beforeend', `<line x1="${x}" x2="${x + 70}" y1="${y(e)}" y2="${y(e)}" stroke="${q ? 'var(--q)' : 'var(--r)'}" stroke-width="2"/><text x="${x + 72}" y="${y(e) + 4}">${lab}</text>`);
+  });
+  svg.insertAdjacentHTML('beforeend', `<text x="4" y="${bot + 18}">|qubit, photons&gt; · dressed energies up to ${emax.toFixed(1)} GHz</text>`);
+})();
+// devices
+(() => {
+  const h = D.ham, n = h.numerical, dv = D.devices;
+  const cell = (o, d = 3) => o ? `${fmt(o.median, d)}<br><span class="note">${fmt(o.p10, d)}–${fmt(o.p90, d)}</span>` : '<span class="note">n/p</span>';
+  $('dev').innerHTML = '<tr><th>device</th><th>f01 (GHz)</th><th>alpha (MHz)</th><th>T1 (us)</th><th>T2 (us)</th></tr>' +
+    `<tr><td><b>this design</b></td><td class="n">${fmt(n.f01_GHz, 3)}</td><td class="n">${fmt(n.anharmonicity_GHz * 1e3, 0)}</td><td class="n">${fmt(h.derived.qubit_T1_bound_us, 2)}*</td><td class="n">–</td></tr>` +
+    dv.map(x => `<tr><td>${x.device}<br><span class="note">${x.qbraid_status_now.toLowerCase()} · ${x.snapshot_date}</span></td><td class="n">${cell(x.f01_GHz)}</td><td class="n">${cell(x.anharmonicity_MHz, 0)}</td><td class="n">${cell(x.T1_us, 0)}</td><td class="n">${cell(x.T2_us, 0)}</td></tr>`).join('');
+  $('devNote').innerHTML = D.devNote;
+})();
+$('stamp').textContent = D.stamp;
+</script>
+<script type="module">
+const D = window.DATA;
+const cv = document.getElementById('view');
+const modes = D.geom.fields.map(f => f.label);
+let cur = 0;
+const btns = document.getElementById('modeBtns');
+modes.forEach((m, i) => { const b = document.createElement('button'); b.textContent = m; b.setAttribute('aria-pressed', i === 0); b.onclick = () => { cur = i; [...btns.children].forEach((x, j) => x.setAttribute('aria-pressed', j === i)); paint(); }; btns.appendChild(b); btns.append(' '); });
+const cmap = [[0, 0, 4], [59, 15, 112], [140, 41, 129], [222, 73, 104], [254, 159, 109], [252, 253, 191]];
+function color(t, out, o) { t = Math.min(1, Math.max(0, t)) * (cmap.length - 1); const i = Math.min(cmap.length - 2, Math.floor(t)), u = t - i; for (let k = 0; k < 3; k++) out[o + k] = (cmap[i][k] * (1 - u) + cmap[i + 1][k] * u) / 255; }
+let paint = () => {};
+try {
+  const THREE = await import('three'); const { OrbitControls } = await import('three/addons/controls/OrbitControls.js');
+  const ren = new THREE.WebGLRenderer({ canvas: cv, antialias: true }); ren.setPixelRatio(Math.min(devicePixelRatio, 2));
+  const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0b1013);
+  const g = D.geom, s = g.scale;
+  const cam = new THREE.PerspectiveCamera(35, 1, 0.01, 100); cam.up.set(0, 0, 1);
+  const ctl = new OrbitControls(cam, cv); ctl.enableDamping = true;
+  const [cx, cy] = g.center; ctl.target.set(0, 0, 0); cam.position.set(0.9, -3.4, 2.6);
+  // substrate slab
+  const [w, h, t] = g.substrate;
+  const slab = new THREE.Mesh(new THREE.BoxGeometry(w * s, h * s, t * s), new THREE.MeshStandardMaterial({ color: 0x33475a, transparent: true, opacity: 0.55, roughness: 0.6 }));
+  slab.position.set(0, 0, -t * s / 2 - 0.002); scene.add(slab);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.8)); const dl = new THREE.DirectionalLight(0xffffff, 1.2); dl.position.set(2, -3, 5); scene.add(dl);
+  // metal
+  const geo = new THREE.BufferGeometry();
+  const pos = new Float32Array(g.pos.length); for (let i = 0; i < g.pos.length; i += 3) { pos[i] = (g.pos[i] - cx) * s; pos[i + 1] = (g.pos[i + 1] - cy) * s; pos[i + 2] = g.pos[i + 2] * s; }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setIndex(g.idx);
+  const col = new Float32Array(pos.length); geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide }));
+  scene.add(mesh);
+  paint = () => {
+    const f = D.geom.fields[cur];
+    for (let i = 0; i < f.v.length; i++) color(f.v[i] / 255, col, i * 3);
+    geo.attributes.color.needsUpdate = true;
+    document.getElementById('modeInfo').textContent = f.info;
+  };
+  paint();
+  document.getElementById('flat').onclick = e => { const b = e.target, on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', on); if (on) cam.position.set(0, -0.001, 4.4); else cam.position.set(0.9, -3.4, 2.6); };
+  const size = () => { const W = cv.clientWidth, H = cv.clientHeight; ren.setSize(W, H, false); cam.aspect = W / H; cam.updateProjectionMatrix(); };
+  new ResizeObserver(size).observe(cv); size();
+  (function loop() { ctl.update(); ren.render(scene, cam); requestAnimationFrame(loop); })();
+} catch (e) {
+  cv.insertAdjacentHTML('afterend', `<p class="note" style="color:#c9d4d1;padding:10px">3D view unavailable (${e.message}). The panels still work.</p>`);
+}
+</script>
+</body>
+</html>
