@@ -1,0 +1,15 @@
+{
+  "case": "Ahmed body, 35 deg slant, half model with symmetry plane, moving ground, no stilts",
+  "solver": "OpenFOAM v2412 simpleFoam, k-omega SST, wall functions, linearUpwind",
+  "U_inf_m_s": 40.0,
+  "Re_L": 2.78e6,
+  "cells": 591870,
+  "iterations": 800,
+  "Cd_mean": 0.2574,
+  "Cd_std_last200": 0.0001,
+  "Cl_mean": 0.0381,
+  "Cd_reference": 0.257,
+  "reference": "Ahmed, Ramm & Faltin (1984), SAE 840300: Cd = 0.257 at 35 deg slant, Re_L = 4.29e6",
+  "wall_time_s": {"snappyHexMesh_serial": 162, "potentialFoam_plus_simpleFoam_3_ranks": 1300, "extract": 6},
+  "caveat": "Agreement to 0.2% is partly fortuitous: steady RANS with wall functions on a 0.6M-cell mesh without prism layers typically sits within 5-15% of this experiment, and the model omits the stilts and uses a moving ground rather than the experiment's stationary floor."
+}

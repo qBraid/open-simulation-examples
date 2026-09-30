@@ -1,0 +1,4 @@
+{
+  "text": "Verified 2026-09-30\nenv: conda-forge openfoam=2412, gmsh 4.15.2, pyvista 0.49.0, mpich 4.3.2\nmachine: qBraid subscription pod, 8vCPU_25GB (shared), <= 3 MPI ranks\ncylinder fine: 27k cells, 2 ranks, 24.0 min\nAhmed: 592k cells, 3 ranks, 21.7 min (+2.7 min snappy)\ncost: $0 on-demand (subscription time only)",
+  "limits": "Coarse meshes; steady RANS with wall functions for the 3D body; no prism layers. The Ahmed Cd agreement is partly fortuitous (see the README)."
+}
