@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Open Simulation Pathway</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#f3f4f1;--surface:#fff;--surface-2:#e9ece7;--ink:#191d1f;--muted:#5a6469;--line:#d3d9d4;
+  --accent:#0f6e66;--accent-soft:#d8eeea;
+  --h1:#0f6e66;--h1-soft:#d8eeea;--h2:#6b4fb3;--h2-soft:#ece6f8;--h3:#b26a06;--h3-soft:#fbeed6;
+  --good:#1d7f56;--good-soft:#dff3ea;--mid:#b26a06;--mid-soft:#fbeed6;--gap:#b3372b;--gap-soft:#f8e1de;
+  --shadow:0 1px 2px rgba(20,30,28,.06),0 8px 24px -18px rgba(20,30,28,.25);
+  --sim-bg:#0c1114;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#0e1213;--surface:#161b1d;--surface-2:#1e2528;--ink:#e5eae8;--muted:#97a3a0;--line:#29342f;
+  --accent:#45c2b3;--accent-soft:#143633;
+  --h1:#45c2b3;--h1-soft:#143633;--h2:#a78bfa;--h2-soft:#2a2340;--h3:#e7a640;--h3-soft:#3a2c12;
+  --good:#4cc38a;--good-soft:#16362a;--mid:#e7a640;--mid-soft:#3a2c12;--gap:#f07a6c;--gap-soft:#3b1d1a;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -18px rgba(0,0,0,.6);
+}}
+:root[data-theme="dark"]{
+  --ground:#0e1213;--surface:#161b1d;--surface-2:#1e2528;--ink:#e5eae8;--muted:#97a3a0;--line:#29342f;
+  --accent:#45c2b3;--accent-soft:#143633;
+  --h1:#45c2b3;--h1-soft:#143633;--h2:#a78bfa;--h2-soft:#2a2340;--h3:#e7a640;--h3-soft:#3a2c12;
+  --good:#4cc38a;--good-soft:#16362a;--mid:#e7a640;--mid-soft:#3a2c12;--gap:#f07a6c;--gap-soft:#3b1d1a;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font:15px/1.6 "IBM Plex Sans","Helvetica Neue",Arial,sans-serif}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+code{font-family:"IBM Plex Mono",Menlo,monospace;font-size:.88em;background:var(--surface-2);padding:.05em .35em;border-radius:4px}
+.wrap{max-width:1080px;margin:0 auto;padding:36px 20px 96px}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{margin:6px 0 10px;font:600 34px/1.15 "IBM Plex Serif",Georgia,serif;letter-spacing:-.01em;text-wrap:balance}
+h2{margin:0 0 10px;font:600 24px/1.2 "IBM Plex Serif",Georgia,serif;text-wrap:balance}
+h3{margin:18px 0 6px;font-size:16px}
+.lede{font-size:17px;color:var(--muted);max-width:70ch;margin:0}
+section{padding:30px 0;border-top:1px solid var(--line)}
+p{margin:0 0 12px;max-width:74ch}
+ul{padding-left:20px;margin:0 0 12px}li{margin:3px 0}
+nav.toc{display:flex;flex-wrap:wrap;gap:6px 18px;margin:22px 0 8px;font-size:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:14px}
+.g3{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+
+/* horizons */
+.hz{position:relative;border-top:4px solid var(--c);padding-top:12px}
+.hz .tag{display:inline-block;font:500 11.5px "IBM Plex Mono",monospace;padding:2px 9px;border-radius:999px;background:var(--cs);color:var(--c);margin-bottom:6px}
+.hz h3{margin:4px 0 6px;font:600 19px/1.25 "IBM Plex Serif",Georgia,serif}
+.hz p{font-size:14.5px}
+.hz .kpi{font:600 13px "IBM Plex Mono",monospace;color:var(--c)}
+.arrowrow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin:4px 0 0;font:500 11.5px "IBM Plex Mono",monospace;color:var(--muted);text-align:center}
+
+/* sim */
+.sim{background:var(--sim-bg);border-radius:12px;overflow:hidden;position:relative;border:1px solid var(--line)}
+#simview{width:100%;height:380px;display:block}
+.simbar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:10px 14px;background:var(--surface);border-top:1px solid var(--line);font-size:13.5px}
+.simbar button{font:500 12.5px "IBM Plex Mono",monospace;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);padding:4px 10px;border-radius:6px;cursor:pointer}
+.simbar button[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+.simbar label{display:flex;align-items:center;gap:6px;color:var(--muted)}
+.simstat{position:absolute;top:10px;left:12px;font:12px "IBM Plex Mono",monospace;color:#b9c7c3;pointer-events:none}
+
+/* sectors */
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0}
+.tabs button{font:500 13px "IBM Plex Sans",sans-serif;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:999px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+.sector h2{margin-bottom:4px}
+.inc{color:var(--muted);font-size:14px;margin-bottom:14px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;vertical-align:top;padding:7px 10px;border-bottom:1px solid var(--line)}
+th{font:500 11.5px "IBM Plex Mono",monospace;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);background:var(--surface-2)}
+tr:last-child td{border-bottom:0}
+td.n{font-family:"IBM Plex Mono",monospace;white-space:nowrap;font-size:12.5px}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.chip{display:inline-block;font:500 11.5px "IBM Plex Mono",monospace;padding:2px 9px;border-radius:999px;white-space:nowrap}
+.good{background:var(--good-soft);color:var(--good)}.mid{background:var(--mid-soft);color:var(--mid)}.gap{background:var(--gap-soft);color:var(--gap)}
+.h1c{background:var(--h1-soft);color:var(--h1)}.h2c{background:var(--h2-soft);color:var(--h2)}.h3c{background:var(--h3-soft);color:var(--h3)}
+.lanes{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:14px}
+.lane{border-left:3px solid var(--c);padding:2px 0 2px 12px;font-size:14px}
+.lane b{display:block;font:500 11.5px "IBM Plex Mono",monospace;letter-spacing:.05em;text-transform:uppercase;color:var(--c);margin-bottom:3px}
+.note{font-size:13px;color:var(--muted)}
+.skills span{display:inline-block;font:12px "IBM Plex Mono",monospace;background:var(--surface-2);border-radius:4px;padding:2px 8px;margin:2px 4px 2px 0}
+.skills span.l1{background:var(--h1-soft);color:var(--h1)}.skills span.l2{background:var(--h2-soft);color:var(--h2)}.skills span.l3{background:var(--h3-soft);color:var(--h3)}
+
+/* bars */
+.bar{display:grid;grid-template-columns:150px 1fr 70px;gap:10px;align-items:center;font-size:13px;margin:5px 0}
+.bar .t{height:14px;background:var(--surface-2);border-radius:3px;overflow:hidden}
+.bar .t i{display:block;height:100%;background:var(--accent)}
+.bar .v{font-family:"IBM Plex Mono",monospace;font-size:12px;text-align:right}
+.bar.hl .t i{background:var(--h3)}
+.wave{border-top:4px solid var(--c)}
+.wave ol{padding-left:18px;margin:6px 0 0;font-size:14px}
+@media (max-width:640px){#simview{height:260px}.bar{grid-template-columns:100px 1fr 56px}h1{font-size:27px}.arrowrow{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="eyebrow">qBraid · sector skills survey · 30 September 2026 · internal draft</div>
+  <h1>Open Simulation Pathway</h1>
+  <p class="lede">What qBraid can offer engineers and scientists today with open-source solvers run by agents on on-demand compute, where quantum fits now, and where it could fit later. It also covers which skills to build first, and where the open-source tools really match the commercial ones and where they don't.</p>
+  <nav class="toc">
+    <a href="#horizons">1 · Three horizons</a><a href="#demo">2 · Live demo</a><a href="#why">3 · Why orchestration closes the gap</a>
+    <a href="#sectors">4 · Sector map</a><a href="#cost">5 · Cost picture</a><a href="#skills">6 · Skill architecture</a><a href="#plan">7 · Build order</a><a href="#decide">8 · Decisions for you</a>
+  </nav>
+</header>
+
+<section id="horizons">
+  <div class="eyebrow">1 · the pitch, in one picture</div>
+  <h2>Three horizons, one platform</h2>
+  <p>Customers should be able to use the same environments, agents and compute from day one, whether or not they ever touch a QPU. Horizon 1 is what pays today. Horizons 2 and 3 are why the work is on qBraid and not a generic cloud.</p>
+  <div class="grid g3" style="margin-top:14px">
+    <div class="card hz" style="--c:var(--h1);--cs:var(--h1-soft)">
+      <span class="tag">Horizon 1 · value today</span>
+      <h3>Open-source solvers, run by agents</h3>
+      <p>OpenFOAM, FEniCSx, HiGHS, cuOpt, OpenMM, Palace, MuJoCo and others, packaged as qBraid environments. Agents set up the cases, run them on CPU and GPU instances billed by the hour, check the results against known answers, and render them in the browser with three.js.</p>
+      <div class="kpi">$0 license · $0.24–$5.49/h compute</div>
+    </div>
+    <div class="card hz" style="--c:var(--h2);--cs:var(--h2-soft)">
+      <span class="tag">Horizon 2 · quantum today</span>
+      <h3>Quantum as a benchmarked co-processor</h3>
+      <p>The classical pipeline stays in charge. A small subproblem (a QUBO, an active space, a sampled distribution) goes to a QPU or GPU simulator through the same agent, and the answer is always scored against the classical baseline. The quantum-inspired methods are useful now. Real advantage is not claimed.</p>
+      <div class="kpi">readiness experiments, not production</div>
+    </div>
+    <div class="card hz" style="--c:var(--h3);--cs:var(--h3-soft)">
+      <span class="tag">Horizon 3 · fault-tolerant future</span>
+      <h3>Drop-in quantum kernels</h3>
+      <p>Phase estimation for strongly correlated chemistry and materials is the most credible case. Quadratic speedups for Monte Carlo and search come after that, and only where overheads allow. A customer whose workflow already runs on qBraid swaps in a kernel. They don't rebuild the workflow.</p>
+      <div class="kpi">thousands of logical qubits</div>
+    </div>
+  </div>
+  <div class="arrowrow"><span>customers come for this ─▶</span><span>stay and experiment with this ─▶</span><span>and are positioned for this</span></div>
+</section>
+
+<section id="demo">
+  <div class="eyebrow">2 · the wow factor, concretely</div>
+  <h2>A wind tunnel running in your browser</h2>
+  <p>A 2D lattice-Boltzmann solve of flow past an obstacle, running live in this page and drawn with three.js. Height and colour show the flow, and the vortex street forms by itself. Drag to orbit. On an instance, the same idea runs as XLB or OpenFOAM in 3D with far larger grids, and the agent streams the fields back into a viewer like this one.</p>
+  <div class="sim">
+    <canvas id="simview"></canvas>
+    <div class="simstat" id="simstat">starting…</div>
+    <div class="simbar">
+      <span>Obstacle</span>
+      <button data-ob="cyl" aria-pressed="true">cylinder</button>
+      <button data-ob="wing" aria-pressed="false">airfoil</button>
+      <button data-ob="plate" aria-pressed="false">plate</button>
+      <span style="margin-left:6px">Field</span>
+      <button data-fd="curl" aria-pressed="true">vorticity</button>
+      <button data-fd="speed" aria-pressed="false">speed</button>
+      <label>inflow <input id="u0" type="range" min="0.04" max="0.14" step="0.01" value="0.10"></label>
+      <label>viscosity <input id="nu" type="range" min="0.008" max="0.06" step="0.002" value="0.018"></label>
+      <button id="reset">reset</button>
+    </div>
+  </div>
+  <p class="note" style="margin-top:8px">About 200×80 cells at roughly 10 steps per frame, D2Q9 BGK with bounce-back walls. If three.js can't load from the CDN, it falls back to a flat 2D view. This is a demo, not a validated solver. The CFD skill would check the Strouhal number for a cylinder at Re=100 (about 0.164) before trusting anything.</p>
+</section>
+
+<section id="why">
+  <div class="eyebrow">3 · the thesis</div>
+  <h2>Why agents change what open source can compete with</h2>
+  <p>In most of these fields the solver is not what separates open source from commercial tools. The gap is everything around the solver: the GUI, meshing, case setup, validated defaults, support, and an engineer who knows the tool. Those are what agents are good at. The one field where the solver itself is the gap is hard mixed-integer optimization, and the page says so.</p>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card">
+      <h3 style="margin-top:0">What the commercial tools sell, and what covers it on qBraid</h3>
+      <table>
+        <tr><th>Commercial moat</th><th>qBraid answer</th></tr>
+        <tr><td>GUI and wizards</td><td>An agent turns plain English into a case, and the canvas shows the result</td></tr>
+        <tr><td>Meshing</td><td>build123d/CadQuery → gmsh → snappyHexMesh, plus an automatic mesh-convergence study</td></tr>
+        <tr><td>Validated defaults</td><td>A known-answer benchmark for each skill, stamped with date, environment, instance and cost</td></tr>
+        <tr><td>HPC licence packs</td><td>Fan out to up to 5 instances, with no per-core licence cost</td></tr>
+        <tr><td>Support engineers</td><td>A skill for each tool, the troubleshoot ladder, and issue reports that feed back into the platform</td></tr>
+        <tr><td>Post-processing</td><td>trame, vtk.js and three.js viewers in the Agent Canvas</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">An honesty check: MIP is still a real gap</h3>
+      <p class="note" style="margin-bottom:8px">Mittelmann MIPLIB2017, 8 threads, 27 Apr 2026. Shifted geometric-mean time relative to the fastest solver (lower is better). Gurobi withdrew from these benchmarks in 2024.</p>
+      <div class="bar"><span>COPT (commercial)</span><span class="t"><i style="width:10%"></i></span><span class="v">1.00 · 91%</span></div>
+      <div class="bar hl"><span>HiGHS (MIT)</span><span class="t"><i style="width:74%"></i></span><span class="v">7.36 · 68%</span></div>
+      <div class="bar hl"><span>SCIP (Apache)</span><span class="t"><i style="width:99%"></i></span><span class="v">9.93 · 57%</span></div>
+      <p class="note" style="margin:10px 0 8px">LPfeas, 12 Jun 2026: on LP the GPU solver is in first place.</p>
+      <div class="bar hl"><span>cuOpt 26.06 (Apache, GPU)</span><span class="t"><i style="width:6%"></i></span><span class="v">1.07 · 95%</span></div>
+      <div class="bar"><span>COPT (commercial)</span><span class="t"><i style="width:10%"></i></span><span class="v">1.67 · 100%</span></div>
+      <div class="bar hl"><span>HiGHS</span><span class="t"><i style="width:100%"></i></span><span class="v">17.24 · 86%</span></div>
+      <p class="note" style="margin-top:8px">What to say: "At parity or better on LP and routing. Behind on hard MIP, where agent-run solver racing and decomposition narrow the gap." Don't say "Gurobi-class on everything."</p>
+    </div>
+  </div>
+</section>
+
+<section id="sectors">
+  <div class="eyebrow">4 · sector by sector</div>
+  <h2>The sector map</h2>
+  <p>For each sector: the commercial tools, the open-source stack (GitHub stars and licences pulled live today), how close the open tools really are, the compute it needs, the visual hook, and the honest quantum story.</p>
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <div id="sector" class="card sector"></div>
+  <p class="note" style="margin-top:8px">Parity is a judgement of solver quality for typical industrial use, not a benchmark result. Every parity claim needs a verified run before it is published. Commercial prices are order-of-magnitude figures from public reports. The vendors quote privately.</p>
+</section>
+
+<section id="cost">
+  <div class="eyebrow">5 · the price argument</div>
+  <h2>What a design study costs</h2>
+  <p>A worked example: an aerodynamic sweep of 20 OpenFOAM cases at about 2 hours each on <code>cpu-64v-256g</code>, plus training a surrogate on <code>gpu-h100-sxm</code>. Compute prices are live from <code>qbraid compute list</code>. AI agent usage comes from the same credit pool and has to be counted too.</p>
+  <div class="grid g2" style="margin-top:10px">
+    <div class="card">
+      <div class="bar hl"><span>20 × 2 h on 64 vCPU</span><span class="t"><i style="width:62%"></i></span><span class="v">$153.60</span></div>
+      <div class="bar hl"><span>Surrogate, 4 h on H100</span><span class="t"><i style="width:9%"></i></span><span class="v">$21.48</span></div>
+      <div class="bar hl"><span>Agent usage (estimate)</span><span class="t"><i style="width:12%"></i></span><span class="v">~$25–50</span></div>
+      <div class="bar"><span><b>Study total</b></span><span class="t"><i style="width:100%;background:var(--ink)"></i></span><span class="v"><b>~$200–225</b></span></div>
+      <p class="note" style="margin-top:8px">The agent-usage line is a placeholder until a verified run measures it. That run is the first job of the CFD skill.</p>
+    </div>
+    <div class="card">
+      <table>
+        <tr><th>Commercial seat (indicative)</th><th>Order of magnitude</th></tr>
+        <tr><td>CFD (Fluent / STAR-CCM+) + HPC packs</td><td class="n">$20k–60k+/yr</td></tr>
+        <tr><td>Multiphysics (COMSOL + modules)</td><td class="n">$10k–40k</td></tr>
+        <tr><td>MIP solver (Gurobi / CPLEX commercial)</td><td class="n">$10k–50k+/yr</td></tr>
+        <tr><td>EM (HFSS / CST)</td><td class="n">$30k–80k+/yr</td></tr>
+        <tr><td>Drug discovery suite (Schrödinger)</td><td class="n">$50k–250k+/yr</td></tr>
+      </table>
+      <p class="note" style="margin-top:8px">The fair comparison is not licence versus compute. It is "a year of seat plus an engineer's setup time" versus "pay per study, with setup done by the agent." Check these ranges with sales before any of them appear in public copy.</p>
+    </div>
+  </div>
+</section>
+
+<section id="skills">
+  <div class="eyebrow">6 · how this lands in the skills architecture</div>
+  <h2>Fits the existing layers, with one new cross-cutting skill</h2>
+  <p>This plugs straight into the design record's four layers. Environments stay tool-specific (a <code>cfd-stack</code>, not an "aerospace env"), and sector skills stay thin routers. What's new is a family of <b>simulation method skills</b> that every sector shares. The one I'd build first is <code>sim-viz</code>, because it's where the wow comes from.</p>
+  <div class="grid g3" style="margin-top:12px">
+    <div class="card"><div class="skills"><b style="font-size:13px">Layer 1 · env + skill pairs</b><br>
+      <span class="l1">optimization-stack</span><span class="l1">cfd-stack</span><span class="l1">fea-stack</span><span class="l1">em-qhw-stack</span><span class="l1">md-cofold-stack</span><span class="l1">chemistry-stack</span><span class="l1">robotics-sim</span><span class="l1">energy-systems</span><span class="l1">earth-sim</span><span class="l1">quant-finance</span></div>
+      <p class="note" style="margin-top:8px">The C++ ones (OpenFOAM, SU2, MOOSE, Palace, GROMACS) use the <code>qbraid_3ob4vi</code> packaging skill for relocatable native environments, which is the same path as the QGSS C++ and Intel SDK work.</p></div>
+    <div class="card"><div class="skills"><b style="font-size:13px">Layer 2 · shared simulation methods</b><br>
+      <span class="l2">sim-viz</span><span class="l2">geometry-to-mesh</span><span class="l2">verification-and-validation</span><span class="l2">sweep-and-surrogate</span><span class="l2">solver-racing</span><span class="l2">qubo-formulation</span><span class="l2">benchmarking-discipline</span></div>
+      <p class="note" style="margin-top:8px"><code>sim-viz</code> covers a VTK/glTF export feeding a three.js page, or trame on an instance exposed through the Lab proxy, and either one ends up in the canvas. <code>sweep-and-surrogate</code> covers running a sweep across instances, training a PhysicsNeMo surrogate, and exporting it to ONNX so it responds to sliders in real time in the browser.</p></div>
+    <div class="card"><div class="skills"><b style="font-size:13px">Layer 3 · sector routers</b><br>
+      <span class="l3">aerospace-automotive</span><span class="l3">supply-chain</span><span class="l3">pharma</span><span class="l3">materials</span><span class="l3">quantum-hardware-design</span><span class="l3">energy</span><span class="l3">finance</span><span class="l3">robotics</span><span class="l3">climate-geo</span></div>
+      <p class="note" style="margin-top:8px">Each router has the same three-horizon block ("value today / quantum today / quantum future") so the story is told the same way in every sector.</p></div>
+  </div>
+</section>
+
+<section id="plan">
+  <div class="eyebrow">7 · recommended order</div>
+  <h2>Build order: flagship demos first</h2>
+  <p>Each wave follows the design record's process: run it for real on qBraid, write the skill from that run with a verification stamp, have a cold agent test it, then publish through the signed release path. Every verified run also doubles as a showcase for the Explore page.</p>
+  <div class="grid g3" style="margin-top:12px">
+    <div class="card wave" style="--c:var(--h1)"><b>Wave 1 · three flagships</b>
+      <ol>
+        <li><b>Virtual wind tunnel.</b> cfd-stack (OpenFOAM + XLB), sim-viz, and V&amp;V against the Re=100 cylinder and the lid-driven cavity.</li>
+        <li><b>Fleet routing on a live map.</b> optimization-stack (cuOpt, PyVRP, HiGHS) with solver-racing, then the same small instance run as QAOA. This lines up with the IBM webinar.</li>
+        <li><b>Design a qubit, then run it.</b> Palace + Qiskit Metal → Hamiltonian → CUDA-Q simulation → compared with real device calibrations. Nobody else can tell this story.</li>
+      </ol></div>
+    <div class="card wave" style="--c:var(--h2)"><b>Wave 2 · breadth</b>
+      <ol>
+        <li><b>Virtual screening:</b> Boltz batches on L4s, then OpenMM or OpenFE on the top hits, a 3D chemical-space cloud, and Mol* poses. This feeds the planned pharma router.</li>
+        <li><b>Topology optimisation:</b> FEniCSx, with the part evolving live in three.js.</li>
+        <li><b>Robot policy:</b> train with MuJoCo on a GPU, then run the policy in the browser with MuJoCo WASM + three.js.</li>
+      </ol></div>
+    <div class="card wave" style="--c:var(--h3)"><b>Wave 3 · the rest of the map</b>
+      <ol>
+        <li>Energy (PyPSA scenario ensembles on a map), reusing optimization-stack.</li>
+        <li>Weather (Earth2Studio + Aurora ensembles on a Cesium globe).</li>
+        <li>Finance (QuantLib and Riskfolio with GPU Monte Carlo), plus materials (MLIP pre-screening → DFT).</li>
+      </ol></div>
+  </div>
+</section>
+
+<section id="decide">
+  <div class="eyebrow">8 · where I need you</div>
+  <h2>Decisions for you</h2>
+  <ul>
+    <li><b>Wave 1:</b> are these the right three? I'd keep "design a qubit" in, because it's the one only qBraid can do.</li>
+    <li><b>Environment size:</b> one <code>cfd-stack</code> with OpenFOAM, SU2 and XLB together, or one environment per solver? Per solver is cleaner but gives the catalog more entries.</li>
+    <li><b>Where the pathway goes:</b> this page is an internal draft. A public version needs marketing copy, the verified numbers, and a legal check on prices and licences.</li>
+    <li><b>Licence rules:</b> skills recommend only OSI-licensed code and commercially usable weights. That excludes FluidX3D and the GraphCast weights, and the AGPL tools (OpenBB) get a warning.</li>
+    <li><b>Home disk</b> is at 96% (2 GB free). Solver builds need to go on an on-demand instance or the overlay, not <code>$HOME</code>.</li>
+  </ul>
+</section>
+</div>
+
+<script>
+const S = [
+ {id:"opt",name:"Optimization & supply chain",inc:"Gurobi · IBM CPLEX · FICO Xpress · Blue Yonder / Kinaxis planning",
+  oss:[["HiGHS","MIT","1.9k","LP/MIP; default solver in SciPy and JuMP"],["NVIDIA cuOpt","Apache-2.0","1.1k","GPU LP (PDLP), routing, MIP beta"],["OR-Tools CP-SAT","Apache-2.0","14.1k","scheduling and constraint programming"],["SCIP","Apache-2.0","0.7k","MIP/MINLP, branch-and-price framework"],["PyVRP","MIT","0.7k","state-of-the-art routing heuristics (grew out of a EURO-NeurIPS 2022 winning entry)"],["Timefold","Apache-2.0","1.8k","workforce and shift planning"],["Pyomo · CVXPY","BSD · Apache","2.5k · 6.4k","modelling layers"]],
+  parity:["mid","LP/routing at parity; hard MIP 7–10× behind"],
+  compute:"cpu-32v-128g ($1.92/h) to race solvers; gpu-l4 or h100 for cuOpt",
+  viz:"deck.gl or three.js map with animated vehicle routes; the branch-and-bound tree growing in 3D; a live Gantt chart",
+  orch:"Solver racing: HiGHS, SCIP, CP-SAT and cuOpt run at once on separate instances, and the first proven optimum wins. The agent writes the model from plain English, warm-starts and decomposes it.",
+  q1:"QUBO/QAOA on instances of up to ~100 variables, and annealer hybrids. Worth running as a benchmark against HiGHS. No advantage at business scale.",
+  q2:"Grover-type quadratic speedups inside branch-and-bound, but fault-tolerance overheads cancel them for most sizes. Quantum-inspired heuristics (tensor networks, simulated bifurcation) can be used now.",
+  skills:[["l1","optimization-stack"],["l2","solver-racing"],["l2","qubo-formulation"],["l3","supply-chain"]]},
+ {id:"cfd",name:"Fluid dynamics (CFD)",inc:"Ansys Fluent / CFX · Siemens STAR-CCM+ · COMSOL CFD",
+  oss:[["OpenFOAM","GPL-3.0","2.3k","finite volume, production grade; used in automotive, marine and motorsport"],["SU2","LGPL-2.1","1.8k","compressible aero, adjoint shape optimisation"],["XLB (Autodesk)","Apache-2.0","0.5k","GPU lattice-Boltzmann in JAX/Warp"],["PhiFlow","MIT","1.9k","differentiable fluids, ML in the loop"],["NVIDIA PhysicsNeMo","Apache-2.0","3.3k","physics-ML surrogates"],["neuraloperator","MIT","3.9k","Fourier neural operators"],["FluidX3D","non-commercial","5.3k","very fast, but <b>its licence rules it out</b>"]],
+  parity:["good","solver at parity; the gap is meshing, GUI and support"],
+  compute:"cpu-64v-256g ($3.84/h) for OpenFOAM with MPI; gpu-h100-sxm ($5.37/h) for XLB and surrogates",
+  viz:"Streamlines and vortex isosurfaces around the uploaded geometry in three.js; ParaView over trame streamed into the canvas; the live demo above",
+  orch:"CAD → gmsh/snappyHexMesh → automatic mesh-independence study → a sweep across instances → a surrogate trained on the sweep → an interactive design explorer in the browser.",
+  q1:"No practical use. Quantum lattice-Boltzmann and linear-solver studies work at toy size only. Quantum-inspired tensor-train (QTT) compression is real, classical and usable today.",
+  q2:"HHL-style solvers hit state-preparation and readout bottlenecks, so full-field advantage is doubtful. A long-horizon case exists for scalar outputs such as drag.",
+  skills:[["l1","cfd-stack"],["l2","geometry-to-mesh"],["l2","verification-and-validation"],["l2","sweep-and-surrogate"],["l3","aerospace-automotive"]]},
+ {id:"fea",name:"Structural & multiphysics (FEA)",inc:"COMSOL Multiphysics · Ansys Mechanical · Abaqus",
+  oss:[["FEniCSx","LGPL-3.0","1.2k","weak-form DSL, the open equivalent of COMSOL's equation-based modelling"],["MOOSE (INL)","LGPL-2.1","2.4k","coupled multiphysics, used for nuclear qualification work"],["MFEM","BSD-3","2.3k","GPU/exascale finite elements"],["deal.II · Firedrake","LGPL","1.7k · 0.7k","research-grade finite elements"],["scikit-fem","BSD-3","0.7k","pure Python and lightweight"],["CalculiX · Code_Aster · Elmer","GPL","n/a","Abaqus-style input; industrial multiphysics"]],
+  parity:["good","strong for linear and multiphysics; behind Abaqus on contact and composites"],
+  compute:"cpu-8v to 32v for most models; GPU with MFEM for large topology optimisation",
+  viz:"A deformed mesh with a von Mises heatmap in three.js; the topology-optimised part growing frame by frame",
+  orch:"LLMs are unusually good at turning physics into UFL weak forms. The agent checks each model against a manufactured solution before a real run, then runs the optimisation loops.",
+  q1:"Nothing practical.",
+  q2:"Fault-tolerant linear algebra, with the same caveats as CFD. Long horizon.",
+  skills:[["l1","fea-stack"],["l2","verification-and-validation"],["l2","sim-viz"],["l3","aerospace-automotive"]]},
+ {id:"em",name:"Electromagnetics & quantum hardware",inc:"Ansys HFSS · CST Studio · Lumerical · Sonnet",
+  oss:[["AWS Palace","Apache-2.0","0.6k","3D FEM on GPUs, built for superconducting-qubit design"],["Meep","GPL-2.0","1.8k","FDTD for photonics"],["openEMS","GPL-3.0","0.7k","FDTD for RF and antennas"],["Qiskit Metal","Apache-2.0","0.4k","qubit chip layout and analysis"],["KQCircuits (IQM)","GPL-3.0","0.2k","production qubit layouts"],["gdsfactory · KLayout","MIT · GPL","1.0k · 1.2k","photonic and chip layout"],["scikit-rf","BSD-3","0.9k","network and S-parameter analysis"]],
+  parity:["good","Palace is used by a qubit maker; Meep is the photonics research standard"],
+  compute:"gpu-a100 or h100 for Palace eigenmode runs; CPU for Meep sweeps",
+  viz:"The chip layout in 3D with |E| field overlays; resonator modes animated; S-parameter plots",
+  orch:"The closed loop only qBraid has: layout → Palace eigenmodes → energy participation → Hamiltonian → CUDA-Q or Qiskit dynamics → compared with real calibrations from qbraid devices get.",
+  q1:"Here quantum is the customer. Classical EM simulation designs the qubits that qBraid then runs.",
+  q2:"The same tools design the next generation of fault-tolerant chips.",
+  skills:[["l1","em-qhw-stack"],["l2","sim-viz"],["l3","quantum-hardware-design"]]},
+ {id:"drug",name:"Drug discovery & biomolecules",inc:"Schrödinger (Glide, FEP+, Desmond) · MOE · Discovery Studio",
+  oss:[["Boltz","MIT","4.2k","AF3-class co-folding with binding-affinity prediction"],["Chai-1","Apache-2.0","2.0k","co-folding"],["OpenFold","Apache-2.0","3.4k","AlphaFold2 reproduction you can train"],["OpenMM","MIT/LGPL","2.0k","GPU molecular dynamics"],["GROMACS","LGPL-2.1","1.0k","best-in-class MD throughput"],["OpenFE","MIT","n/a","open free-energy perturbation"],["RDKit","BSD-3","3.6k","cheminformatics base layer"]],
+  parity:["mid","MD at parity; FEP+ is still the benchmark for free-energy accuracy"],
+  compute:"gpu-l4 ($0.49/h) for Boltz batches; gpu-h100 for FEP and long MD",
+  viz:"A 3D chemical-space cloud (UMAP of the screened library, coloured by score) in three.js; Mol* poses; MD trajectory playback",
+  orch:"Screening funnel: a coordinator splits the ligand library, several GPU workers run Boltz, the top hits go to MD and FEP, and every stage is checked against known binders.",
+  q1:"Active-space ground states of small fragments with SQD on IBM hardware, at a few dozen qubits. Classical methods win, so this is research.",
+  q2:"The most credible case: fault-tolerant phase estimation for strongly correlated metal centres (P450, FeMoco). Estimates run from hundreds of thousands to about a million physical qubits.",
+  skills:[["l1","md-cofold-stack"],["l1","chemistry-stack"],["l2","benchmarking-discipline"],["l3","pharma"]]},
+ {id:"mat",name:"Materials & quantum chemistry",inc:"VASP · Gaussian · BIOVIA Materials Studio · Q-Chem",
+  oss:[["PySCF + GPU4PySCF","Apache-2.0","1.7k · 0.4k","Python-first quantum chemistry; DFT on GPU"],["Quantum ESPRESSO · CP2K","GPL","n/a · 1.2k","plane-wave and mixed-basis DFT"],["Psi4","LGPL-3.0","1.2k","wavefunction methods"],["LAMMPS","GPL-2.0","3.1k","large-scale MD with ML potentials"],["MACE · ASE · pymatgen","MIT · LGPL · MIT","n/a","ML potentials and the workflow layer"]],
+  parity:["good","QE and CP2K compete with VASP for most tasks"],
+  compute:"gpu-a100 or h100 for GPU4PySCF and MLIP; cpu-64v for plane-wave DFT",
+  viz:"Crystal structures and phonon modes animated in three.js; electrolyte MD playback",
+  orch:"High-throughput funnel: MLIP pre-screen → DFT confirmation, with the agent handling k-point and cutoff convergence.",
+  q1:"A proving ground for VQE, SQD and QPE on small active spaces, on CUDA-Q GPU simulators and QPUs.",
+  q2:"Fault-tolerant phase estimation for strongly correlated materials (catalysts, superconductors).",
+  skills:[["l1","chemistry-stack"],["l2","vqe (SQD)"],["l3","materials"]]},
+ {id:"robot",name:"Robotics & physics simulation",inc:"MATLAB Simulink + Simscape · MSC Adams",
+  oss:[["MuJoCo","Apache-2.0","15.4k","contact physics; official WebAssembly build"],["Genesis","Apache-2.0","30.0k","GPU-parallel multi-physics for robotics"],["Newton","Apache-2.0","5.7k","NVIDIA, DeepMind and Disney; hosted by the Linux Foundation"],["Drake","BSD-3","4.2k","model-based control and planning"],["Rerun","Apache-2.0","11.5k","multimodal visualisation"]],
+  parity:["good","the research standard; behind Simulink on code generation and certified toolchains"],
+  compute:"gpu-h100 or rtx-4090 for parallel RL training",
+  viz:"The highest wow per unit of effort: a trained policy running live in the canvas with MuJoCo WASM + three.js + ONNX",
+  orch:"The agent sweeps reward designs and domain randomisation across GPUs, exports the best policy to ONNX, and ships a browser demo.",
+  q1:"Nothing credible. Say so.",
+  q2:"Speculative QML only. Leave it out of the pitch.",
+  skills:[["l1","robotics-sim"],["l2","sim-viz"],["l3","robotics"]]},
+ {id:"fin",name:"Finance & risk",inc:"Bloomberg PORT · MSCI Barra / RiskMetrics · Numerix",
+  oss:[["QuantLib","BSD-style","7.6k","pricing library used inside banks"],["Riskfolio-Lib","BSD-3","4.5k","portfolio optimisation"],["PyPortfolioOpt","MIT","6.1k","mean-variance and Black-Litterman"],["cvxportfolio","GPL-3.0","1.3k","multi-period optimisation"],["OpenBB","<b>AGPL-3.0</b>","73.7k","research terminal; the licence needs a warning"]],
+  parity:["mid","the maths is at parity; the moat is market data, not solvers"],
+  compute:"GPU Monte Carlo (CuPy/JAX) on an L4 or A100 for VaR/XVA scenarios",
+  viz:"Volatility surfaces in 3D; an animated efficient frontier; risk heatmaps",
+  orch:"Scenario ensembles fanned out across GPUs; the agent enforces out-of-sample backtesting discipline.",
+  q1:"Small portfolio QUBOs and amplitude-estimation demos. Toy scale.",
+  q2:"A quadratic Monte Carlo speedup needs fault tolerance: about 7.5k logical qubits for a derivative-pricing benchmark (Chakrabarti et al., 2021).",
+  skills:[["l1","quant-finance"],["l2","qubo-formulation"],["l3","finance"]]},
+ {id:"grid",name:"Energy & power grids",inc:"Siemens PSS/E · PLEXOS · PowerWorld · PowerFactory",
+  oss:[["PyPSA","MIT","2.2k","capacity expansion; used in national and EU planning studies"],["pandapower","BSD-3","1.3k","power flow and state estimation"],["VeraGrid (ex-GridCal)","MPL-2.0","0.6k","planning and power flow with a GUI"],["PowSyBl (RTE)","MPL-2.0","n/a","grid-operator toolchain"]],
+  parity:["good","PyPSA is a real PLEXOS alternative; its speed depends on the LP/MIP solver underneath"],
+  compute:"cpu-32v with HiGHS; cuOpt on a GPU for large LPs",
+  viz:"Animated power flows on a deck.gl or Cesium map; the capacity mix over time",
+  orch:"Weather-year × policy scenario ensembles, one per instance, reusing optimization-stack.",
+  q1:"Unit-commitment QUBOs at toy scale.",
+  q2:"As for optimisation.",
+  skills:[["l1","energy-systems"],["l2","solver-racing"],["l3","energy"]]},
+ {id:"earth",name:"Weather, climate & subsurface",inc:"Commercial forecast services · SLB Petrel / Eclipse · CGG",
+  oss:[["NVIDIA Earth2Studio","Apache-2.0","1.2k","AI weather model runner"],["Microsoft Aurora","MIT","1.0k","foundation model for the atmosphere"],["GraphCast / WeatherNext","code Apache; <b>weights non-commercial</b>","7.7k","check the weights licence"],["WRF","public domain","1.8k","numerical weather prediction"],["OPM Flow","GPL-3.0","0.2k","reservoir simulation; reads Eclipse decks"],["Devito","MIT","0.7k","seismic imaging DSL"]],
+  parity:["good","ML weather models match or beat operational numerical forecasts on many skill scores"],
+  compute:"gpu-h100 for ensemble forecasts in minutes; CPU for OPM",
+  viz:"A Cesium or three.js globe with animated wind particles, one of the most striking demos available",
+  orch:"Ensemble forecasts checked against ERA5 reanalysis, with the agent handling data staging.",
+  q1:"Nothing practical.",
+  q2:"Speculative.",
+  skills:[["l1","earth-sim"],["l2","sweep-and-surrogate"],["l3","climate-geo"]]}
+];
+const pc={good:"good",mid:"mid",gap:"gap"};
+const tabs=document.getElementById('tabs'), box=document.getElementById('sector');
+function render(i){
+  const s=S[i];
+  [...tabs.children].forEach((b,j)=>b.setAttribute('aria-selected',j===i));
+  box.innerHTML=`<h2>${s.name}</h2><div class="inc">Commercial: ${s.inc}</div>
+  <div style="margin-bottom:10px"><span class="chip ${pc[s.parity[0]]}">parity: ${s.parity[1]}</span></div>
+  <div class="tbl"><table><tr><th>Open-source stack</th><th>Licence</th><th>★ GitHub</th><th>Role</th></tr>
+  ${s.oss.map(o=>`<tr><td><b>${o[0]}</b></td><td class="n">${o[1]}</td><td class="n">${o[2]}</td><td>${o[3]}</td></tr>`).join('')}</table></div>
+  <div class="lanes">
+   <div class="lane" style="--c:var(--h1)"><b>Horizon 1 · agentic orchestration</b>${s.orch}<div class="note" style="margin-top:6px">Compute: ${s.compute}</div></div>
+   <div class="lane" style="--c:var(--accent)"><b>The visual hook</b>${s.viz}</div>
+   <div class="lane" style="--c:var(--h2)"><b>Horizon 2 · quantum today</b>${s.q1}</div>
+   <div class="lane" style="--c:var(--h3)"><b>Horizon 3 · quantum future</b>${s.q2}</div>
+  </div>
+  <div class="skills" style="margin-top:14px"><span style="background:none;padding-left:0;color:var(--muted)">skills →</span>${s.skills.map(k=>`<span class="${k[0]}">${k[1]}</span>`).join('')}</div>`;
+  try{localStorage.setItem('pathway-tab',i)}catch(e){}
+}
+S.forEach((s,i)=>{const b=document.createElement('button');b.textContent=s.name;b.setAttribute('role','tab');b.onclick=()=>render(i);tabs.appendChild(b)});
+let t0=0;try{t0=+localStorage.getItem('pathway-tab')||0}catch(e){}
+render(Math.min(t0,S.length-1));
+</script>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<script type="module">
+// ---- D2Q9 lattice-Boltzmann ----
+const W=200,H=80,N=W*H;
+const ex=[0,1,0,-1,0,1,-1,-1,1], ey=[0,0,1,0,-1,1,1,-1,-1], wt=[4/9,1/9,1/9,1/9,1/9,1/36,1/36,1/36,1/36], opp=[0,3,4,1,2,7,8,5,6];
+let f=new Float32Array(9*N), g=new Float32Array(9*N);
+const rho=new Float32Array(N), ux=new Float32Array(N), uy=new Float32Array(N), curl=new Float32Array(N), bar=new Uint8Array(N);
+let u0=0.10, nu=0.018, obstacle='cyl', field='curl', steps=0;
+function feq(i,r,vx,vy){const eu=ex[i]*vx+ey[i]*vy,u2=vx*vx+vy*vy;return wt[i]*r*(1+3*eu+4.5*eu*eu-1.5*u2)}
+function setEq(c,r,vx,vy){for(let i=0;i<9;i++)f[i*N+c]=feq(i,r,vx,vy)}
+function buildObstacle(){
+  bar.fill(0);const cx=48,cy=H/2+1;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    let on=false;
+    if(obstacle==='cyl'){on=(x-cx)**2+(y-cy)**2<=8.5*8.5}
+    else if(obstacle==='plate'){on=Math.abs(x-cx)<=1&&Math.abs(y-cy)<=11}
+    else{ // NACA-ish symmetric airfoil at angle of attack
+      const a=-0.26,dx=x-(cx-16),dy=y-cy,xr=dx*Math.cos(a)-dy*Math.sin(a),yr=dx*Math.sin(a)+dy*Math.cos(a),c=40;
+      if(xr>=0&&xr<=c){const t=xr/c,th=5*0.15*c*(0.2969*Math.sqrt(t)-0.126*t-0.3516*t*t+0.2843*t**3-0.1015*t**4);on=Math.abs(yr)<=th}
+    }
+    bar[y*W+x]=on?1:0;
+  }
+}
+function reset(){buildObstacle();for(let c=0;c<N;c++)setEq(c,1,u0,0);steps=0}
+function step(){
+  const om=1/(3*nu+0.5);
+  for(let c=0;c<N;c++){
+    if(bar[c])continue;
+    let r=0,vx=0,vy=0;
+    for(let i=0;i<9;i++){const v=f[i*N+c];r+=v;vx+=v*ex[i];vy+=v*ey[i]}
+    vx/=r;vy/=r;rho[c]=r;ux[c]=vx;uy[c]=vy;const u2=1.5*(vx*vx+vy*vy);
+    for(let i=0;i<9;i++){const eu=ex[i]*vx+ey[i]*vy,k=i*N+c;f[k]+=om*(wt[i]*r*(1+3*eu+4.5*eu*eu-u2)-f[k])}
+  }
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const c=y*W+x;
+    for(let i=0;i<9;i++){
+      const sx=x-ex[i],sy=y-ey[i];
+      if(sx<0||sx>=W||sy<0||sy>=H){g[i*N+c]=f[i*N+c];continue}
+      const s=sy*W+sx;
+      g[i*N+c]=bar[s]?f[opp[i]*N+c]:f[i*N+s];
+    }
+  }
+  [f,g]=[g,f];
+  for(let y=0;y<H;y++){setEq(y*W,1,u0,0);const c=y*W+W-1,d=y*W+W-2;for(let i=0;i<9;i++)f[i*N+c]=f[i*N+d]}
+  for(let x=0;x<W;x++){setEq(x,1,u0,0);setEq((H-1)*W+x,1,u0,0)}
+  steps++;
+}
+function computeCurl(){for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const c=y*W+x;curl[c]=(uy[c+1]-uy[c-1])-(ux[c+W]-ux[c-W])}}
+function color(c,out,o){
+  if(bar[c]){out[o]=.55;out[o+1]=.6;out[o+2]=.62;return}
+  if(field==='curl'){const v=Math.tanh(curl[c]*18);
+    if(v>=0){out[o]=.95;out[o+1]=.95-.7*v;out[o+2]=.92-.8*v}else{out[o]=.95+.8*v;out[o+1]=.95+.45*v;out[o+2]=.95}
+    const k=1-Math.abs(v);out[o]=out[o]*(1-.6*k)+.08*k;out[o+1]=out[o+1]*(1-.6*k)+.1*k;out[o+2]=out[o+2]*(1-.6*k)+.12*k;
+  }else{const s=Math.min(1,Math.hypot(ux[c],uy[c])/(u0*1.7));
+    out[o]=Math.min(1,.27+1.5*s*s*s);out[o+1]=.05+.85*s;out[o+2]=.33+.5*Math.sin(Math.PI*s*.9)}
+}
+function height(c){return bar[c]?3:(field==='curl'?Math.tanh(curl[c]*18)*2.2:Math.hypot(ux[c],uy[c])/u0*2.4)}
+
+// UI
+const stat=document.getElementById('simstat');
+document.querySelectorAll('[data-ob]').forEach(b=>b.onclick=()=>{obstacle=b.dataset.ob;document.querySelectorAll('[data-ob]').forEach(x=>x.setAttribute('aria-pressed',x===b));reset()});
+document.querySelectorAll('[data-fd]').forEach(b=>b.onclick=()=>{field=b.dataset.fd;document.querySelectorAll('[data-fd]').forEach(x=>x.setAttribute('aria-pressed',x===b))});
+document.getElementById('u0').oninput=e=>u0=+e.target.value;
+document.getElementById('nu').oninput=e=>nu=+e.target.value;
+document.getElementById('reset').onclick=reset;
+reset();
+
+const cv=document.getElementById('simview');
+let draw;
+try{
+  const THREE=await import('three');const {OrbitControls}=await import('three/addons/controls/OrbitControls.js');
+  const ren=new THREE.WebGLRenderer({canvas:cv,antialias:true});ren.setPixelRatio(Math.min(devicePixelRatio,2));
+  const scene=new THREE.Scene();scene.background=new THREE.Color(0x0c1114);
+  const cam=new THREE.PerspectiveCamera(38,1,0.1,1000);cam.position.set(-20,-120,95);
+  const ctl=new OrbitControls(cam,cv);ctl.enableDamping=true;ctl.target.set(10,0,0);
+  const geo=new THREE.PlaneGeometry(W,H,W-1,H-1);const col=new Float32Array(N*3);geo.setAttribute('color',new THREE.BufferAttribute(col,3));
+  const mat=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide});
+  const mesh=new THREE.Mesh(geo,mat);scene.add(mesh);
+  const pos=geo.attributes.position;
+  function size(){const w=cv.clientWidth,h=cv.clientHeight;ren.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()}
+  new ResizeObserver(size).observe(cv);size();
+  draw=()=>{computeCurl();
+    for(let j=0;j<H;j++){const y=H-1-j;for(let x=0;x<W;x++){const v=j*W+x,c=y*W+x;pos.setZ(v,height(c));color(c,col,v*3)}}
+    pos.needsUpdate=true;geo.attributes.color.needsUpdate=true;ctl.update();ren.render(scene,cam)};
+}catch(e){
+  const ctx=cv.getContext('2d');const img=ctx.createImageData(W,H);const tmp=new Float32Array(3);
+  const off=document.createElement('canvas');off.width=W;off.height=H;const octx=off.getContext('2d');
+  draw=()=>{computeCurl();for(let y=0;y<H;y++)for(let x=0;x<W;x++){const c=y*W+x,o=((H-1-y)*W+x)*4;color(c,tmp,0);img.data[o]=tmp[0]*255;img.data[o+1]=tmp[1]*255;img.data[o+2]=tmp[2]*255;img.data[o+3]=255}
+    octx.putImageData(img,0,0);cv.width=cv.clientWidth;cv.height=cv.clientHeight;ctx.imageSmoothingEnabled=true;ctx.drawImage(off,0,0,cv.width,cv.height)};
+  stat.dataset.fb='1';
+}
+let last=performance.now(),fps=0;
+function loop(t){
+  for(let k=0;k<10;k++)step();
+  draw();fps=fps*.9+100/(t-last+1e-3)*1;last=t;
+  stat.textContent=`LBM D2Q9 · ${W}×${H} · step ${steps} · Re≈${Math.round(u0*17/nu)}${stat.dataset.fb?' · 2D fallback':''}`;
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
