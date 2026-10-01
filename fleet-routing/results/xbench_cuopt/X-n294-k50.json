@@ -1,0 +1,1 @@
+{"instance": "X-n294-k50", "n": 293, "bks": 47161.0, "time_limit_s": 70.3, "cost": 47227, "routes": 51, "objective": 47227.0, "runtime": 70.58, "mode": "default+k1", "gap_pct": 0.1399, "stamp": {"date": "2026-10-01", "host": "qBraid pool gpu-l4 box (NVIDIA L4 24 GB)", "solver": "cuopt-cu12 26.08", "python": "3.12.3", "protocol": "Tmax = 0.1 x 2.4 n s, 1 seed"}}

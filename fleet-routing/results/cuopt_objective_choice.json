@@ -1,0 +1,1 @@
+{"default": {"cost": 31271, "routes": 25, "objective": 31271.0, "runtime": 24.52}, "fixedcost": {"cost": 27653, "routes": 26, "objective": 27653.0, "runtime": 24.52}, "default+k1": {"cost": 27591, "routes": 26, "objective": 27591.0, "runtime": 24.52}}
