@@ -1,7 +1,7 @@
 """2D cylinder mesh for Re=100 validation (D=1), extruded one cell for OpenFOAM.
 
-Usage: python mesh.py <coarse|fine> <out.msh> [half_width]
-Domain: x in [-10, 25] D, y in [-hw, hw] D; hw = 10 by default (5% blockage). Quad-dominant mesh with a
+Usage: python mesh.py <coarse|fine> <out.msh> [half_width] [inlet_dist]
+Domain: x in [-xin, 25] D, y in [-hw, hw] D; hw = 10 and xin = 10 by default (5% blockage). Quad-dominant mesh with a
 structured boundary layer on the cylinder, extruded to one hex/prism layer.
 """
 import sys
@@ -10,6 +10,8 @@ import gmsh
 level = sys.argv[1]
 out = sys.argv[2]
 hw = float(sys.argv[3]) if len(sys.argv) > 3 else 10.0
+xin = float(sys.argv[4]) if len(sys.argv) > 4 else 10.0
+XOUT = 25.0
 P = {"coarse": dict(n=96, h0=0.02, hwake=0.12, hfar=0.8),
      "fine": dict(n=192, h0=0.01, hwake=0.06, hfar=0.5)}[level]
 
@@ -17,7 +19,7 @@ gmsh.initialize()
 gmsh.option.setNumber("General.Terminal", 0)
 gmsh.model.add("cyl")
 occ = gmsh.model.occ
-box = occ.addRectangle(-10, -hw, 0, 35, 2 * hw)
+box = occ.addRectangle(-xin, -hw, 0, xin + XOUT, 2 * hw)
 disk = occ.addDisk(0, 0, 0, 0.5, 0.5)
 surf, _ = occ.cut([(2, box)], [(2, disk)])
 occ.synchronize()
@@ -28,9 +30,9 @@ for dim, tag in curves:
     xmin, ymin, _, xmax, ymax, _ = gmsh.model.getBoundingBox(dim, tag)
     if xmax - xmin < 1.01 and ymax - ymin < 1.01:
         cyl_curves.append(tag)
-    elif xmax < -9.99:
+    elif xmax < -xin + 0.01:
         edges["inlet"] = tag
-    elif xmin > 24.99:
+    elif xmin > XOUT - 0.01:
         edges["outlet"] = tag
     else:
         edges.setdefault("sides", []).append(tag)
@@ -79,9 +81,9 @@ for dim, tag in gmsh.model.getEntities(2):
         front.append(tag)
     elif xmax - xmin < 1.01 and ymax - ymin < 1.01:
         cyl.append(tag)
-    elif xmax < -9.99:
+    elif xmax < -xin + 0.01:
         inlet.append(tag)
-    elif xmin > 24.99:
+    elif xmin > XOUT - 0.01:
         outlet.append(tag)
     else:
         sides.append(tag)
