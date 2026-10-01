@@ -59,8 +59,8 @@ def part_a(vol, corr, mu):
     L = cp.asarray(np.linalg.cholesky(cov))
     posg = cp.asarray(pos); mug = cp.asarray(mu * h)
     rows = []
-    for n in [10**k for k in range(3, 9)]:
-        reps, chunk = (32 if n < 10**8 else 8), min(n, 10**7)
+    for n in [10**k for k in range(3, int(os.environ.get("MC_MAX_EXP", "8")) + 1)]:
+        reps, chunk = (32 if n < 10**8 else 8), min(n, int(os.environ.get("MC_CHUNK", 10**7)))
         v_est, e_est = [], []
         t0 = time.perf_counter()
         for r in range(reps):
@@ -141,7 +141,7 @@ def part_b(vol, corr):
     h = H_DAYS / 252
     out = {"n_options": len(b["qty"]), "n_underlyings": N_ASSET}
     # GPU timing
-    n_gpu = 2_000_000
+    n_gpu = int(os.environ.get("MC_BOOK_N", "2000000"))
     revalue(cp, b, cp.random.standard_normal((1000, N_ASSET)), cl, vol, h)  # warm-up / JIT
     cp.cuda.Stream.null.synchronize()
     t0 = time.perf_counter(); losses = []
