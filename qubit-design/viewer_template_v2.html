@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Transmon Design Studio</title>
+<style>
+:root{
+  --bg:#f4f5f2;--panel:#ffffff;--panel2:#eef0ec;--ink:#15191b;--muted:#5b6568;--line:#d5dbd6;
+  --accent:#0e6f8f;--accent2:#b5531a;--good:#1d7f56;--warn:#a86a06;--bad:#b3372b;
+  --scene-bg:#e9ecef;--shadow:0 1px 2px rgba(0,0,0,.06),0 10px 30px -20px rgba(0,0,0,.35);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0b0e10;--panel:#14191c;--panel2:#1b2226;--ink:#e6ecea;--muted:#9aa6a3;--line:#283237;
+  --accent:#4cc3e6;--accent2:#f0a060;--good:#4cc38a;--warn:#e7a640;--bad:#f07a6c;--scene-bg:#07090b;
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 10px 30px -20px rgba(0,0,0,.8);}}
+:root[data-theme="dark"]{
+  --bg:#0b0e10;--panel:#14191c;--panel2:#1b2226;--ink:#e6ecea;--muted:#9aa6a3;--line:#283237;
+  --accent:#4cc3e6;--accent2:#f0a060;--good:#4cc38a;--warn:#e7a640;--bad:#f07a6c;--scene-bg:#07090b;
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 10px 30px -20px rgba(0,0,0,.8);}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:16px 20px 6px;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px}
+h1{margin:0;font-size:22px;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:13px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:14px;padding:8px 20px 24px}
+@media (max-width:1000px){.layout{grid-template-columns:1fr;padding:8px 12px 24px}}
+.stage{position:relative;background:var(--scene-bg);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);min-height:520px;height:72vh}
+.stage canvas{display:block;width:100%;height:100%}
+.tabs{position:absolute;top:10px;left:10px;display:flex;gap:6px;z-index:3}
+.tabs button,.ctl button{font:600 12.5px system-ui;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:6px 11px;border-radius:999px;cursor:pointer}
+.tabs button[aria-pressed="true"],.ctl button[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+.ctl{position:absolute;left:10px;right:10px;bottom:10px;z-index:3;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;background:color-mix(in srgb,var(--panel) 88%,transparent);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+.ctl label{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12.5px}
+.ctl input[type=range]{width:150px;accent-color:var(--accent)}
+.caption{position:absolute;top:52px;left:12px;max-width:min(460px,80%);z-index:3;background:color-mix(in srgb,var(--panel) 90%,transparent);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:8px 12px;font-size:13px;display:none}
+.caption b{display:block;margin-bottom:2px}
+.legend{position:absolute;top:10px;right:10px;z-index:3;background:color-mix(in srgb,var(--panel) 88%,transparent);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:11.5px;color:var(--muted);width:200px}
+.legend .bar{height:10px;border-radius:3px;margin:4px 0 2px}
+.legend .ends{display:flex;justify-content:space-between}
+.hud{position:absolute;right:10px;bottom:64px;z-index:3;font:600 12px ui-monospace,Menlo,monospace;color:var(--muted);text-align:right;white-space:pre}
+.cards{display:flex;flex-direction:column;gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow)}
+.card h3{margin:0 0 8px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.kpi{background:var(--panel2);border-radius:8px;padding:6px 8px}
+.kpi .v{font:700 17px ui-monospace,Menlo,monospace}
+.kpi .l{font-size:11px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+td,th{padding:4px 6px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--muted);font-weight:600;font-size:11.5px}
+td.n{font-family:ui-monospace,Menlo,monospace;text-align:right}
+.note{font-size:11.5px;color:var(--muted);margin-top:6px}
+.chip{display:inline-block;font:700 11px system-ui;padding:2px 8px;border-radius:999px}
+.ok{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+.mid{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+svg text{fill:var(--muted);font:11px system-ui}
+.wide{grid-column:1/-1}
+.row2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}
+footer{padding:0 20px 20px;color:var(--muted);font-size:12px}
+.fallback{position:absolute;inset:0;display:none;align-items:center;justify-content:center;color:var(--muted);text-align:center;padding:20px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Transmon Design Studio</h1>
+  <span class="sub" id="stamp"></span>
+  <span style="flex:1"></span>
+  <div class="ctl" style="position:static;background:none;border:0;padding:0;backdrop-filter:none">
+    <button id="tourBtn">▶ Guided tour</button>
+    <button id="themeBtn" title="toggle theme">◐ Theme</button>
+  </div>
+</header>
+<div class="layout">
+  <div>
+    <div class="stage" id="stage">
+      <canvas id="cv"></canvas>
+      <div class="fallback" id="fallback">3D view needs WebGL and the three.js CDN (cdn.jsdelivr.net). The panels on the right still work.</div>
+      <div class="tabs">
+        <button id="tabChip" aria-pressed="true">Chip &amp; modes</button>
+        <button id="tabLoss" aria-pressed="false">Loss map &amp; evolution</button>
+      </div>
+      <div class="caption" id="caption"></div>
+      <div class="legend" id="legend"></div>
+      <div class="hud" id="hud"></div>
+      <div class="ctl" id="ctlChip">
+        <label>design <select id="chipSel"></select></label>
+        <label>qubit mode <input id="modeMix" type="range" min="0" max="1" step="0.001" value="0"> resonator</label>
+        <button id="modeAuto" aria-pressed="true">morph</button>
+        <label><input id="glowChk" type="checkbox" checked> glow</label>
+      </div>
+      <div class="ctl" id="ctlLoss" style="display:none">
+        <label>design <input id="iterSl" type="range" min="0" max="1" step="0.001" value="0"></label>
+        <button id="iterPlay" aria-pressed="false">▶ evolve</button>
+        <label><input id="beadsChk" type="checkbox" checked> loss beads</label>
+        <span id="iterName" style="font:600 12.5px ui-monospace,Menlo,monospace"></span>
+      </div>
+    </div>
+    <div class="row2" style="margin-top:12px">
+      <div class="card"><h3>Energy levels &amp; dispersive readout</h3><canvas id="lv" width="640" height="300" style="width:100%;height:auto"></canvas>
+        <div class="note" id="lvNote"></div></div>
+      <div class="card"><h3>Geometry sweep: loss vs island shape</h3><svg id="sw" viewBox="0 0 640 300" style="width:100%;height:auto"></svg>
+        <div class="note">Each point: one island width W and trench gap G, with the length rescaled to the same total capacitance (same E<sub>C</sub>). Larger, farther-apart edges store less energy in the lossy surface layers.</div></div>
+    </div>
+  </div>
+  <div class="cards">
+    <div class="card" id="kcard"><h3>Final design</h3><div class="kpis" id="kpis"></div><div class="note" id="kNote"></div></div>
+    <div class="card"><h3>T1 vs IBM devices</h3><svg id="cmp" viewBox="0 0 360 250" style="width:100%;height:auto"></svg>
+      <div class="note" id="cmpNote"></div></div>
+    <div class="card"><h3>T1 budget (predicted)</h3><div id="budget"></div></div>
+    <div class="card"><h3>Validation</h3><div id="val"></div></div>
+  </div>
+</div>
+<footer id="foot"></footer>
+<script>window.DATA = __DATA__;</script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<script>
+// ---------- panels (plain JS, no three.js needed) ----------
+const D = window.DATA, $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmt = (v, d=0) => (v==null||!isFinite(v)) ? "–" : Number(v).toFixed(d);
+const params = new URLSearchParams(location.hash.slice(1));
+if (params.get("theme")) document.documentElement.dataset.theme = params.get("theme");
+$("themeBtn").onclick = () => { const r=document.documentElement; const cur = r.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"); r.dataset.theme = cur==="dark"?"light":"dark"; drawPanels(); window.__retheme && window.__retheme(); };
+$("stamp").textContent = D.stamp;
+const FINAL = D.designs.find(d => d.kind === "final") || D.designs[D.designs.length-1];
+const V1 = D.designs.find(d => d.kind === "v1");
+
+function kpis(){
+  const h = FINAL.ham, b = FINAL.ham.T1_budget;
+  const items = [
+    [fmt(h.f01_GHz,3)+" GHz","f01"],[fmt(h.alpha_MHz,0)+" MHz","anharmonicity α"],[fmt(h.EJ_over_EC,1),"E_J / E_C"],
+    [fmt(h.g_MHz,0)+" MHz","g (qubit–readout)"],[fmt(h.chi_MHz,2)+" MHz","χ (half pull)"],[fmt(h.chi_over_kappa,2),"χ / κ"],
+    [fmt(b.ganjam2024_raw.T1_total_us,0)+"–"+fmt(b.ganjam2024_calibrated.T1_total_us,0)+" µs","T1 predicted, Ta"],
+    [fmt(h.T1_purcell_filtered_us/1000,1)+" ms","Purcell limit (filter)"],[fmt(h.Rn_kOhm_AB,1)+" kΩ","junction R_n target"]];
+  $("kpis").innerHTML = items.map(([v,l]) => `<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
+  $("kNote").innerHTML = `Island ${fmt(FINAL.kw.W)} × ${fmt(FINAL.kw.L)} µm in a ${fmt(FINAL.kw.G)} µm trench, Ta on sapphire. T1 is a <b>prediction</b> of the geometry-limited lifetime under published loss tangents (range: our participation as computed, and rescaled to Wang 2015's pipeline). It is not a measurement.`;
+}
+function budget(){
+  const rows = [["ganjam2024_raw","Ta/sapphire (Ganjam 2024)","raw"],["ganjam2024_calibrated","Ta/sapphire (Ganjam 2024)","calibrated"],
+                ["wang2015_raw","Al/sapphire (Wang 2015)","raw"],["wang2015_calibrated","Al/sapphire (Wang 2015)","calibrated"]];
+  const tr = (d) => rows.map(([k,lab,c]) => { const b=d.ham.T1_budget[k]; return `<tr><td>${lab}<br><span class="note">${c}</span></td><td class="n">${fmt(b.T1_surface_us,0)}</td><td class="n">${b.T1_bulk_us?fmt(b.T1_bulk_us,0):"–"}</td><td class="n"><b>${fmt(b.T1_total_us,0)}</b></td></tr>`;}).join("");
+  $("budget").innerHTML = `<table><tr><th>loss model</th><th>surface µs</th><th>bulk µs</th><th>total µs</th></tr>${tr(FINAL)}</table>
+   <div class="note">v1 geometry under the same Ta model: <b>${fmt(V1.ham.T1_budget.ganjam2024_raw.T1_total_us,0)}–${fmt(V1.ham.T1_budget.ganjam2024_calibrated.T1_total_us,0)} µs</b>. Purcell (with a Q=30 filter) is included in each total. Junction leads use Wang 2015's measured lead participation; quasiparticles, radiation and packaging are not modelled.</div>`;
+}
+function validation(){
+  const v = D.validation;
+  $("val").innerHTML = `<table>
+   <tr><th>check</th><th>ours</th><th>reference</th><th></th></tr>
+   ${v.rows.map(r=>`<tr><td>${r.label}</td><td class="n">${r.ours}</td><td class="n">${r.ref}</td><td><span class="chip ${r.verdict==='match'?'ok':'mid'}">${r.verdict}</span></td></tr>`).join("")}
+  </table><div class="note">${v.note}</div>`;
+}
+function compareChart(){
+  const svg = $("cmp"), W=360, H=250, m={l:92,r:14,t:10,b:28};
+  const devs = D.devices.filter(d=>d.T1_us&&d.T1_us.median).map(d=>({name:`IBM ${d.device} (${d.qubits}q)`, med:d.T1_us.median, lo:d.T1_us.p10, hi:d.T1_us.p90}));
+  const b = FINAL.ham.T1_budget, b1 = V1.ham.T1_budget;
+  const ours = [{name:"this design (Ta)", lo:b.ganjam2024_raw.T1_total_us, hi:b.ganjam2024_calibrated.T1_total_us, ours:1},
+                {name:"v1 design (Ta)", lo:b1.ganjam2024_raw.T1_total_us, hi:b1.ganjam2024_calibrated.T1_total_us, ours:2}];
+  const all = [...ours, ...devs]; const xmax = Math.max(...all.map(d=>d.hi||d.med))*1.1;
+  const x = v => m.l + v/xmax*(W-m.l-m.r), rowH=(H-m.t-m.b)/all.length;
+  let s=""; for (let t=0;t<=xmax;t+= xmax>600?200:100){ s+=`<line x1="${x(t)}" x2="${x(t)}" y1="${m.t}" y2="${H-m.b}" stroke="${css('--line')}"/><text x="${x(t)}" y="${H-10}" text-anchor="middle">${t}</text>`; }
+  s+=`<text x="${(m.l+W)/2}" y="${H}" text-anchor="middle">T1 (µs)</text>`;
+  all.forEach((d,i)=>{ const y=m.t+rowH*(i+0.5);
+    s+=`<text x="${m.l-6}" y="${y+4}" text-anchor="end" style="fill:${d.ours?css('--ink'):css('--muted')};font-weight:${d.ours?700:400}">${d.name}</text>`;
+    if(d.ours){ s+=`<rect x="${x(d.lo)}" y="${y-rowH*0.3}" width="${Math.max(2,x(d.hi)-x(d.lo))}" height="${rowH*0.6}" rx="3" fill="${d.ours===1?css('--accent'):css('--muted')}" opacity="${d.ours===1?0.85:0.45}"/>`;}
+    else { s+=`<line x1="${x(d.lo)}" x2="${x(d.hi)}" y1="${y}" y2="${y}" stroke="${css('--accent2')}" stroke-width="2"/><circle cx="${x(d.med)}" cy="${y}" r="4.5" fill="${css('--accent2')}"/>`; }
+  });
+  svg.innerHTML = s;
+  $("cmpNote").innerHTML = "Bars: our predicted geometry-limited T1 (low end: participation as computed; high end: rescaled to Wang 2015's pipeline), Ta on sapphire with Ganjam 2024 loss tangents. Dots: IBM median with 10th–90th percentile across qubits, from dated calibration snapshots in qiskit-ibm-runtime (2025-02-26). <b>Predicted vs measured: not the same thing.</b>";
+}
+function sweepChart(){
+  const svg=$("sw"), W=640,H=300,m={l:60,r:16,t:16,b:40};
+  const rows=D.sweep; if(!rows.length){svg.innerHTML="";return;}
+  const xs=rows.map(r=>r.W), ys=rows.map(r=>r.T1_surface_bulk_ganjam_raw_us);
+  const xmax=Math.max(...xs)*1.1, ymax=Math.max(...ys)*1.15;
+  const x=v=>m.l+v/xmax*(W-m.l-m.r), y=v=>H-m.b-v/ymax*(H-m.t-m.b);
+  const Gs=[...new Set(rows.map(r=>r.G))].sort((a,b)=>a-b);
+  const cols=[css('--accent'),css('--accent2'),css('--good'),css('--bad')];
+  let s="";
+  for(let t=0;t<=ymax;t+=ymax>600?200:100){s+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(t)}" y2="${y(t)}" stroke="${css('--line')}"/><text x="${m.l-6}" y="${y(t)+4}" text-anchor="end">${t}</text>`;}
+  for(let t=0;t<=xmax;t+=50){s+=`<text x="${x(t)}" y="${H-m.b+16}" text-anchor="middle">${t}</text>`;}
+  s+=`<text x="${(m.l+W)/2}" y="${H-6}" text-anchor="middle">island width W (µm)</text><text x="14" y="${(H)/2}" transform="rotate(-90 14 ${H/2})" text-anchor="middle">predicted T1, Ta (raw, µs)</text>`;
+  Gs.forEach((g,gi)=>{ const pts=rows.filter(r=>r.G===g).sort((a,b)=>a.W-b.W);
+    s+=`<polyline fill="none" stroke="${cols[gi%4]}" stroke-width="2" points="${pts.map(r=>x(r.W)+','+y(r.T1_surface_bulk_ganjam_raw_us)).join(' ')}"/>`;
+    pts.forEach(r=>{ s+=`<circle cx="${x(r.W)}" cy="${y(r.T1_surface_bulk_ganjam_raw_us)}" r="${r.fits?5:4}" fill="${r.fits?cols[gi%4]:'none'}" stroke="${cols[gi%4]}" stroke-width="2"><title>W=${r.W} G=${r.G} L=${fmt(r.L_target)} µm, p_surf=${r.p_sum.toExponential(2)}</title></circle>`;});
+    s+=`<text x="${m.l+8}" y="${m.t+14+gi*15}" text-anchor="start" style="fill:${cols[gi%4]};font-weight:700">G = ${g} µm</text>`;
+  });
+  const f=rows.find(r=>r.W===FINAL.kw.W&&r.G===FINAL.kw.G);
+  if(f){s+=`<circle cx="${x(f.W)}" cy="${y(f.T1_surface_bulk_ganjam_raw_us)}" r="10" fill="none" stroke="${css('--ink')}" stroke-width="1.5" stroke-dasharray="3 2"/><text x="${x(f.W)+12}" y="${y(f.T1_surface_bulk_ganjam_raw_us)-10}" style="fill:${css('--ink')};font-weight:700">chosen</text>`;}
+  svg.innerHTML=s;
+}
+let lvT=0;
+function levels(){
+  const c=$("lv"), g=c.getContext("2d"), W=c.width, H=c.height, h=FINAL.ham;
+  g.clearRect(0,0,W,H);
+  const ink=css('--ink'), mut=css('--muted'), ac=css('--accent'), ac2=css('--accent2');
+  // transmon levels from E_J,E_C (computed in JS: charge basis)
+  const lv = h.levels_GHz || [0,h.f01_GHz,2*h.f01_GHz+h.alpha_MHz/1000];
+  const harm = [0,h.f01_GHz,2*h.f01_GHz,3*h.f01_GHz];
+  const ymax=Math.max(...lv)*1.08, y=v=>H-24-v/ymax*(H-44);
+  g.font="12px system-ui"; g.lineWidth=2;
+  const x0=70,x1=230;
+  lv.forEach((e,i)=>{ g.strokeStyle=ac; g.beginPath(); g.moveTo(x0,y(e)); g.lineTo(x1,y(e)); g.stroke();
+    g.fillStyle=ink; g.fillText(`|${i}⟩  ${e.toFixed(3)} GHz`,x1+8,y(e)+4);
+    if(i<harm.length){ g.setLineDash([4,4]); g.strokeStyle=mut; g.lineWidth=1; g.beginPath(); g.moveTo(x0-40,y(harm[i])); g.lineTo(x0-6,y(harm[i])); g.stroke(); g.setLineDash([]); g.lineWidth=2;}
+  });
+  g.fillStyle=mut; g.fillText("harmonic",x0-62,y(harm[2])-6);
+  // pulsing 0->1 transition
+  const p=(Math.sin(lvT*2.2)+1)/2; g.strokeStyle=ac2; g.globalAlpha=0.35+0.65*p; g.beginPath(); g.moveTo(x0+40,y(lv[0])); g.lineTo(x0+40,y(lv[1])); g.stroke(); g.globalAlpha=1;
+  g.fillStyle=ac2; g.fillText(`f01`,x0+46,(y(lv[0])+y(lv[1]))/2);
+  if(lv.length>2){ g.fillStyle=ink; g.fillText(`α = ${h.alpha_MHz.toFixed(0)} MHz`,x0+46,(y(lv[1])+y(lv[2]))/2+4); }
+  // resonator lines, pulled by the qubit state
+  const xr0=440, xr1=600, fr=h.fr_GHz, pull=h.pull_2chi_MHz/1000;
+  const amp = 60; // exaggeration for visibility
+  [["qubit |0⟩",0],["qubit |1⟩",1]].forEach(([lab,s],i)=>{
+    const yy = y(fr) + (s? -pull*amp/ymax*(H-44) : 0) + (i? -10:10);
+    g.strokeStyle= s? ac2: ac; g.beginPath(); g.moveTo(xr0,yy); g.lineTo(xr1,yy); g.stroke();
+    g.fillStyle=ink; g.fillText(`readout, ${lab}`,xr0,yy-6);
+  });
+  g.fillStyle=mut; g.fillText(`resonator ${fr.toFixed(2)} GHz; pull 2χ = ${h.pull_2chi_MHz.toFixed(2)} MHz (×${amp} for display)`,xr0-60,H-8);
+  $("lvNote").innerHTML=`Transmon levels from exact diagonalisation (E<sub>J</sub>=${h.EJ_GHz.toFixed(2)} GHz, E<sub>C</sub>=${(h.EC_GHz*1000).toFixed(0)} MHz). The resonator frequency depends on the qubit state (dispersive readout); κ = 2χ = ${h.kappa_MHz.toFixed(2)} MHz maximises readout SNR.`;
+}
+function drawPanels(){ kpis(); budget(); validation(); compareChart(); sweepChart(); levels(); }
+drawPanels();
+(function anim(){ if(!document.hidden){ lvT+=0.016; levels(); } setTimeout(()=>requestAnimationFrame(anim), 60); })();
+$("foot").innerHTML = "Palace (AWS) 3D FEM, DeviceLayout.jl geometry, two-step surface-participation method after Wang et al., APL 107, 162601 (2015). Loss tangents: Wang 2015; Ganjam et al., Nat. Commun. 15, 3687 (2024). IBM data: qiskit-ibm-runtime fake-backend snapshots. All numbers are reproducible from qubit-design/ in this repository.";
+</script>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+
+const D = window.DATA, $ = id => document.getElementById(id);
+const cv = $("cv");
+let renderer;
+try { renderer = new THREE.WebGLRenderer({canvas:cv, antialias:true, preserveDrawingBuffer:true}); }
+catch(e){ $("fallback").style.display="flex"; throw e; }
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.9;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+const pmrem = new THREE.PMREMGenerator(renderer);
+const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+const isDark = () => (document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"))==="dark";
+
+// ---------- shared colormap (inferno-like) ----------
+const GLSL_CMAP = `
+vec3 inferno(float t){ t=clamp(t,0.,1.);
+  const vec3 c0=vec3(0.0002,0.0016,-0.0194), c1=vec3(0.1065,0.5640,3.9327), c2=vec3(11.6025,-3.9729,-15.9424),
+  c3=vec3(-41.7039,17.4364,44.3541), c4=vec3(77.1629,-33.4023,-81.8073), c5=vec3(-71.3194,32.6261,73.2095), c6=vec3(25.1311,-12.2426,-23.0703);
+  return c0+t*(c1+t*(c2+t*(c3+t*(c4+t*(c5+t*c6))))); }`;
+function inferno(t){ t=Math.min(1,Math.max(0,t)); const c=[[0.0002,0.0016,-0.0194],[0.1065,0.5640,3.9327],[11.6025,-3.9729,-15.9424],[-41.7039,17.4364,44.3541],[77.1629,-33.4023,-81.8073],[-71.3194,32.6261,73.2095],[25.1311,-12.2426,-23.0703]];
+  const r=[0,1,2].map(k=>{let v=c[6][k]; for(let i=5;i>=0;i--) v=c[i][k]+t*v; return Math.min(1,Math.max(0,v));}); return new THREE.Color(r[0],r[1],r[2]); }
+function legend(title, lo, hi){
+  const stops=[...Array(12).keys()].map(i=>{const c=inferno(i/11); return `rgb(${c.r*255|0},${c.g*255|0},${c.b*255|0}) ${i/11*100}%`;}).join(",");
+  $("legend").innerHTML=`<b style="color:var(--ink)">${title}</b><div class="bar" style="background:linear-gradient(90deg,${stops})"></div><div class="ends"><span>${lo}</span><span>${hi}</span></div>`;
+}
+
+// ---------- materials ----------
+const metalMat = () => new THREE.MeshPhysicalMaterial({color:0x7d8894, metalness:0.9, roughness:0.5, envMap:envTex, envMapIntensity:0.5, side:THREE.DoubleSide});
+const sapphireMat = () => new THREE.MeshPhysicalMaterial({color:0x2c5d86, metalness:0, roughness:0.12, transmission:0.0, ior:1.77, envMap:envTex, envMapIntensity:0.25, transparent:true, opacity:0.95});
+
+// =========================== scene A: chip & modes ===========================
+const sA = new THREE.Scene(); const camA = new THREE.PerspectiveCamera(35,1,0.01,200);
+sA.add(new THREE.HemisphereLight(0xdfe9ff,0x1b2030,0.6)); const keyA=new THREE.DirectionalLight(0xffffff,0.55); keyA.position.set(-4,4,1.2); sA.add(keyA);
+const chipKeys = Object.keys(D.chip);
+const chipSel=$("chipSel"); chipKeys.forEach(k=>{const o=document.createElement("option"); o.value=k; o.textContent=D.chip[k].info.label; chipSel.appendChild(o);});
+const chipGroup = new THREE.Group(); sA.add(chipGroup);
+let fieldMat=null, chipScale=1;
+function buildChip(key){
+  chipGroup.clear();
+  const c=D.chip[key]; const P=new Float32Array(c.pos); const lo=c.lo, hi=c.hi;
+  const cx=(lo[0]+hi[0])/2, cy=(lo[1]+hi[1])/2; chipScale = 4/(hi[0]-lo[0]);
+  for(let i=0;i<P.length;i+=3){ P[i]=(P[i]-cx)*chipScale; P[i+1]=(P[i+1]-cy)*chipScale; P[i+2]=P[i+2]*chipScale; }
+  const g=new THREE.BufferGeometry(); g.setAttribute("position",new THREE.BufferAttribute(P,3)); g.setIndex(c.idx); g.computeVertexNormals();
+  g.setAttribute("f0", new THREE.BufferAttribute(new Float32Array(c.fields[0].map(v=>v/255)),1));
+  g.setAttribute("f1", new THREE.BufferAttribute(new Float32Array(c.fields[1].map(v=>v/255)),1));
+  const metal=new THREE.Mesh(g, metalMat()); chipGroup.add(metal);
+  fieldMat=new THREE.ShaderMaterial({ transparent:true, depthWrite:false, blending:THREE.AdditiveBlending, side:THREE.DoubleSide,
+    uniforms:{mixv:{value:0},time:{value:0},gain:{value:1.0}},
+    vertexShader:`attribute float f0; attribute float f1; uniform float mixv; varying float v; void main(){ v=mix(f0,f1,mixv); vec3 p=position; p.z+=0.0015; gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.0);} `,
+    fragmentShader:GLSL_CMAP+`uniform float time; uniform float gain; varying float v; void main(){ float b=0.82+0.18*sin(time*3.0 - v*6.0); float a=smoothstep(0.08,0.9,v); gl_FragColor=vec4(inferno(v)*a*b*gain*2.4, a); }` });
+  chipGroup.add(new THREE.Mesh(g, fieldMat));
+  const w=(hi[0]-lo[0])*chipScale, hgt=(hi[1]-lo[1])*chipScale, th=0.35;
+  const sub=new THREE.Mesh(new THREE.BoxGeometry(w*1.02,hgt*1.02,th), sapphireMat()); sub.position.z=-th/2-0.002; chipGroup.add(sub);
+  $("hud").textContent = c.info.modes.join("\n");
+}
+// =========================== scene B: loss map & evolution ===========================
+const sB = new THREE.Scene(); const camB = new THREE.PerspectiveCamera(35,1,0.1,20000);
+sB.add(new THREE.HemisphereLight(0xdfe9ff,0x1b2030,0.55)); const keyB=new THREE.DirectionalLight(0xffffff,0.55); keyB.position.set(-900,900,250); sB.add(keyB);
+const lossGroup=new THREE.Group(); sB.add(lossGroup);
+const seq = D.designs; // v1, sweep..., final (ordered by the builder)
+const ZEX = 4.0; // metal thickness exaggeration for visibility: 0.2 um film drawn 4 um thick
+function shape(ring){ const s=new THREE.Shape(); ring.forEach(([x,y],i)=> i? s.lineTo(x,y): s.moveTo(x,y)); s.closePath(); return s; }
+function lerpRing(a,b,t){ if(a.length!==b.length) return t<0.5?a:b; return a.map((p,i)=>[p[0]+(b[i][0]-p[0])*t, p[1]+(b[i][1]-p[1])*t]); }
+let beadA=null, beadB=null;
+function beads(d){
+  if(!d.density) return null;
+  const n=d.density.x.length, pos=new Float32Array(n*3), q=new Float32Array(n);
+  const qs=d.density.q, qmax=Math.max(...qs), qmin=qmax-2.5;
+  for(let i=0;i<n;i++){ pos[3*i]=d.density.x[i]; pos[3*i+1]=d.density.y[i]; pos[3*i+2]=ZEX+1.2; q[i]=Math.min(1,Math.max(0,(qs[i]-qmin)/(qmax-qmin))); }
+  const g=new THREE.BufferGeometry(); g.setAttribute("position",new THREE.BufferAttribute(pos,3)); g.setAttribute("q",new THREE.BufferAttribute(q,1));
+  const m=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,uniforms:{time:{value:0},alpha:{value:1},px:{value:renderer.getPixelRatio()}},
+    vertexShader:`attribute float q; varying float vq; uniform float time; uniform float px; void main(){ vq=q; vec4 mv=modelViewMatrix*vec4(position,1.0); float pulse=0.75+0.25*sin(time*2.0 - position.y*0.02); gl_PointSize=px*(2.4+7.0*q*q)*pulse*(1500.0/-mv.z); gl_Position=projectionMatrix*mv; }`,
+    fragmentShader:GLSL_CMAP+`varying float vq; uniform float alpha; void main(){ vec2 c=gl_PointCoord-0.5; float r=dot(c,c); if(r>0.25) discard; float a=(1.0-r*4.0); gl_FragColor=vec4(inferno(0.28+0.72*vq)*a*(0.75+0.7*vq)*alpha, a*alpha); }`});
+  return new THREE.Points(g,m);
+}
+const beadCache=new Map(); const lossMetal=metalMat(); lossMetal.color.setHex(0x4e5661); let lossSub=null; const metalMeshes=[];
+function beadsFor(i){ if(!beadCache.has(i)){ const b=beads(seq[i]); if(b){ b.renderOrder=2; lossGroup.add(b);} beadCache.set(i,b);} return beadCache.get(i); }
+function buildLoss(t){
+  const n=seq.length-1, f=Math.min(n-1e-9,Math.max(0,t*n)), i=Math.floor(f), u=f-i, A=seq[i], B=seq[Math.min(n,i+1)];
+  const P={}; ["island","claw","trench","clawhole"].forEach(k=>P[k]=lerpRing(A.polys[k],B.polys[k],u));
+  const ext={depth:ZEX,bevelEnabled:false};
+  const gnd=new THREE.Shape(); const R=700; gnd.moveTo(-R,-450); gnd.lineTo(R,-450); gnd.lineTo(R,1350); gnd.lineTo(-R,1350); gnd.closePath();
+  gnd.holes.push(shape(P.trench)); gnd.holes.push(shape(P.clawhole));
+  metalMeshes.forEach(m=>{ lossGroup.remove(m); m.geometry.dispose(); }); metalMeshes.length=0;
+  [gnd, shape(P.island), shape(P.claw)].forEach(sh=>{ const m=new THREE.Mesh(new THREE.ExtrudeGeometry(sh,ext), lossMetal); lossGroup.add(m); metalMeshes.push(m); });
+  if(!lossSub){ lossSub=new THREE.Mesh(new THREE.BoxGeometry(2*R,1800,120), sapphireMat()); lossSub.position.set(0,450,-60.5); lossGroup.add(lossSub); }
+  beadCache.forEach(b=>b&&(b.visible=false));
+  beadA=beadsFor(i); beadB=(u>0&&B!==A)?beadsFor(Math.min(n,i+1)):null;
+  const show=$("beadsChk").checked;
+  if(beadA){ beadA.material.uniforms.alpha.value=1-u; beadA.visible=show; } if(beadB){ beadB.material.uniforms.alpha.value=u; beadB.visible=show; }
+  const cur = u<0.5?A:B;
+  $("iterName").textContent = `${cur.name}: W ${cur.kw.W.toFixed(0)}, G ${cur.kw.G.toFixed(0)}, L ${cur.kw.L.toFixed(0)} µm` + (cur.summary? `   p_surf ${cur.summary.p_sum.toExponential(2)}   T1(Ta) ${cur.summary.T1_raw.toFixed(0)}–${cur.summary.T1_cal.toFixed(0)} µs`:"");
+  $("hud").textContent = "loss beads: participation per µm of edge\nmetal drawn 20× thicker than the 0.2 µm film";
+}
+// =========================== composer, controls, tour ===========================
+let active="chip";
+const controlsA=new OrbitControls(camA,cv), controlsB=new OrbitControls(camB,cv); controlsB.enabled=false;
+[controlsA,controlsB].forEach(c=>{c.enableDamping=true; c.dampingFactor=0.08;});
+camA.position.set(0.4,-3.6,3.2); controlsA.target.set(0,0,0);
+camB.position.set(250,-650,900); controlsB.target.set(0,350,0);
+const composer=new EffectComposer(renderer); const rp=new RenderPass(sA,camA); composer.addPass(rp);
+const bloom=new UnrealBloomPass(new THREE.Vector2(512,512),0.9,0.45,0.78); composer.addPass(bloom); composer.addPass(new OutputPass());
+function setScene(s){ active=s; $("tabChip").setAttribute("aria-pressed",s==="chip"); $("tabLoss").setAttribute("aria-pressed",s==="loss");
+  $("ctlChip").style.display=s==="chip"?"flex":"none"; $("ctlLoss").style.display=s==="loss"?"flex":"none";
+  controlsA.enabled=s==="chip"; controlsB.enabled=s==="loss"; rp.scene= s==="chip"?sA:sB; rp.camera= s==="chip"?camA:camB;
+  if(s==="chip"){ legend("mode |E| on metal (log, 3 decades)","low","high"); $("hud").textContent=D.chip[chipSel.value].info.modes.join("\n"); }
+  else { legend("surface participation per µm of edge (log, 2.5 decades)","low","high"); buildLoss(+$("iterSl").value); }
+  retheme(); }
+function retheme(){ const bg=new THREE.Color(isDark()?0x07090b:0xe9ecef); sA.background=bg; sB.background=bg; bloom.strength=isDark()?0.9:0.45; }
+window.__retheme=retheme;
+$("tabChip").onclick=()=>setScene("chip"); $("tabLoss").onclick=()=>setScene("loss");
+chipSel.onchange=()=>buildChip(chipSel.value);
+$("modeAuto").onclick=e=>{const b=e.currentTarget; b.setAttribute("aria-pressed", b.getAttribute("aria-pressed")!=="true");};
+$("glowChk").onchange=e=>{ bloom.enabled=e.target.checked; };
+$("iterSl").oninput=e=>buildLoss(+e.target.value);
+$("beadsChk").onchange=()=>[beadA,beadB].forEach(b=>b&&(b.visible=$("beadsChk").checked));
+let playing=false; $("iterPlay").onclick=e=>{playing=!playing; e.currentTarget.setAttribute("aria-pressed",playing); e.currentTarget.textContent=playing?"❚❚ pause":"▶ evolve";};
+function resize(){ const r=$("stage").getBoundingClientRect(); renderer.setSize(r.width,r.height,false); composer.setSize(r.width,r.height); [camA,camB].forEach(c=>{c.aspect=r.width/r.height; c.updateProjectionMatrix();}); }
+new ResizeObserver(resize).observe($("stage"));
+// tour: [scene, camera pos, target, mode mix or design t, caption]
+const fin = D.designs.length-1;
+const TOUR=[
+ ["chip",[0.4,-3.6,3.2],[0,0,0],0,"<b>The chip.</b> Readout resonator (meander), feedline and the transmon island, in tantalum on sapphire. Colour shows the qubit mode's electric field on the metal, from a Palace 3D eigenmode solve."],
+ ["chip",[0.9,-0.7,1.0],[0.9,0.35,0],0,"<b>Qubit mode.</b> The field concentrates in the trench around the island. That is where the stored energy, and the surface loss, lives."],
+ ["chip",[-0.6,-1.8,1.8],[-0.4,0.2,0],1,"<b>Resonator mode.</b> Morphing to the readout mode: its energy sits along the meander, and only a little leaks onto the qubit through the claw."],
+ ["loss",[250,-650,900],[0,350,0],0,"<b>Where the loss is.</b> Each bead is a piece of metal edge; brightness is how much of the qubit's energy sits in the 3-nm lossy layers there. The v1 island is thin with a tight trench, so its edges are hot."],
+ ["loss",[120,-120,260],[40,30,0],0,"<b>Edges dominate.</b> Fields diverge near thin-film edges; the trench walls and island corners carry most of the surface participation."],
+ ["loss",[300,-800,1100],[0,350,0],1,"<b>Design evolution.</b> Sweeping island width and trench gap at fixed capacitance. Wider, farther-apart edges dilute the field, cutting surface participation; the chosen design balances this against footprint."],
+];
+let tour=-1, tourT=0, camFrom=null;
+function tourStep(k){ tour=k; if(k>=TOUR.length){ tour=-1; $("caption").style.display="none"; $("tourBtn").textContent="▶ Guided tour"; return; }
+  const [s,pos,tgt,v,txt]=TOUR[k]; setScene(s); const cam=s==="chip"?camA:camB, ctl=s==="chip"?controlsA:controlsB;
+  camFrom={p:cam.position.clone(),t:ctl.target.clone(),P:new THREE.Vector3(...pos),T:new THREE.Vector3(...tgt),cam,ctl,v,s}; tourT=0;
+  if(s==="chip") $("modeAuto").setAttribute("aria-pressed","false");
+  $("caption").innerHTML=txt+`<div class="note">step ${k+1} / ${TOUR.length} · click to continue</div>`; $("caption").style.display="block"; $("tourBtn").textContent="■ stop tour"; }
+$("tourBtn").onclick=()=> tour>=0? tourStep(TOUR.length): tourStep(0);
+$("caption").onclick=()=> tour>=0 && tourStep(tour+1);
+// ---------- loop ----------
+buildChip(chipSel.value); setScene(params0("scene")||"chip");
+function params0(k){ return new URLSearchParams(location.hash.slice(1)).get(k); }
+if(params0("mode")) { $("modeMix").value=params0("mode"); $("modeAuto").setAttribute("aria-pressed","false"); }
+if(params0("design")) { $("iterSl").value=params0("design"); if(active==="loss") buildLoss(+params0("design")); }
+if(params0("tour")) tourStep(+params0("tour"));
+const clock=new THREE.Clock(); let t=0;
+renderer.setAnimationLoop(()=>{
+  if(document.hidden) return;
+  const dt=Math.min(0.05,clock.getDelta()); t+=dt;
+  if(fieldMat){ fieldMat.uniforms.time.value=t;
+    if($("modeAuto").getAttribute("aria-pressed")==="true"){ const m=(Math.sin(t*0.45)+1)/2; fieldMat.uniforms.mixv.value=m; $("modeMix").value=m; }
+    else fieldMat.uniforms.mixv.value=+$("modeMix").value; }
+  [beadA,beadB].forEach(b=>b&&(b.material.uniforms.time.value=t));
+  if(playing && active==="loss"){ let v=+$("iterSl").value+dt*0.06; if(v>1){v=1; playing=false; $("iterPlay").setAttribute("aria-pressed","false"); $("iterPlay").textContent="▶ evolve";} $("iterSl").value=v; buildLoss(v); }
+  if(tour>=0 && camFrom){ tourT=Math.min(1,tourT+dt*0.6); const e=tourT<0.5?2*tourT*tourT:1-Math.pow(-2*tourT+2,2)/2;
+    camFrom.cam.position.lerpVectors(camFrom.p,camFrom.P,e); camFrom.ctl.target.lerpVectors(camFrom.t,camFrom.T,e);
+    if(camFrom.s==="chip"){ const m=camFrom.v*e + (1-e)*(+$("modeMix").value); $("modeMix").value=m; fieldMat.uniforms.mixv.value=m; }
+    else if(tourT<1){ const v=camFrom.v; const cur=+$("iterSl").value; const nv=cur+(v-cur)*Math.min(1,dt*1.5); $("iterSl").value=nv; buildLoss(nv); } }
+  (active==="chip"?controlsA:controlsB).update();
+  composer.render();
+});
+</script>
+</body>
+</html>

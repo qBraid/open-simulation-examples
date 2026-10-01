@@ -201,8 +201,12 @@ def participation(layout, grids, C, x0, s_table, t=0.003, eps_i=10.0, delta=0.02
         # S_i are dimensionless per K^2 per unit length (um-based in 2D -> consistent)
         # p_edge = (eps0 t / 2U) * sum K^2 [V^2/m] * S * dl[m]
         f = 0.5 * EPS0 * t * 1e-6 / U
+        dens = np.zeros(len(pts))
         for kind in ("MS", "MA", "SA"):
             per[name][f"{kind}_edge"] = float(f * np.sum(K**2 * S(kind, g) * dl * 1e-6))
+            dens += f * K**2 * S(kind, g) * 1e-6  # participation per um of edge
+        res.setdefault("edge_density", []).extend(
+            [[round(float(x), 2), round(float(y), 2), float(d)] for (x, y), d in zip(pts, dens)])
         per[name]["edge_len_um"] = float(dl.sum())
         per[name]["K_rms"] = float(np.sqrt(np.mean(K**2)))
         per[name]["g_median_um"] = float(np.median(g))
