@@ -10,13 +10,14 @@
 :root[data-theme="dark"]{--bg:#0d1113;--panel:#151a1d;--panel2:#1d2427;--ink:#e6ebe9;--muted:#97a3a0;--line:#2a3431;--accent:#45c2b3;--good:#4cc38a;--bad:#f07a6c;--warn:#e7a640;--scene:#0b0f12}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:14px/1.5 "Inter","Helvetica Neue",Arial,sans-serif}
+body{display:flex;flex-direction:column}
 header{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;padding:12px 16px;border-bottom:1px solid var(--line)}
 header h1{margin:0;font-size:18px;font-weight:650;letter-spacing:-.01em}
 header .sub{color:var(--muted);font-size:13px}
 .tabs{display:flex;gap:6px;margin-left:auto}
 button{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:5px 11px;border-radius:7px;cursor:pointer}
 button[aria-pressed="true"],button.on{background:var(--accent);border-color:var(--accent);color:#fff}
-main{display:grid;grid-template-columns:1fr 340px;height:calc(100% - 54px)}
+main{display:grid;grid-template-columns:1fr 340px;flex:1;min-height:0}
 #stage{position:relative;background:var(--scene);min-height:340px}
 #stage canvas{display:block;width:100%;height:100%}
 aside{border-left:1px solid var(--line);background:var(--panel);overflow:auto;padding:14px 16px}
@@ -57,7 +58,7 @@ svg text{fill:var(--muted);font-size:10.5px}
     <button data-tab="pose" aria-pressed="true">Poses</button>
     <button data-tab="aff" aria-pressed="false">Affinity</button>
     <button data-tab="bench" aria-pressed="false">Benchmark</button>
-    <button id="theme" title="Toggle theme">◐</button>
+    <button id="theme" title="Toggle light and dark">Theme</button>
   </div>
 </header>
 <main>
@@ -77,6 +78,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 const D = window.DATA;
+{ const th = new URLSearchParams(location.search).get('theme'); if (th) document.documentElement.dataset.theme = th; }
 const $ = s => document.querySelector(s);
 const stage = $('#stage'), hud = $('#hud'), side = $('#side'), controlsEl = $('#controls'), cap = $('#caption'), tip = $('#tip');
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -123,7 +125,7 @@ function ribbon(chains) {
     const pts = s.p.map(p => new THREE.Vector3(...p));
     if (pts.length < 2) continue;
     const curve = new THREE.CatmullRomCurve3(pts, false, 'centripetal');
-    const r = s.t === 'H' ? 0.85 : s.t === 'E' ? 0.62 : 0.28;
+    const r = s.t === 'H' ? 0.6 : s.t === 'E' ? 0.46 : 0.2;
     const geo = new THREE.TubeGeometry(curve, Math.max(6, pts.length * 7), r, s.t === 'C' ? 8 : 12, false);
     if (s.t === 'E') geo.scale(1, 1, 1);
     const m = new THREE.MeshStandardMaterial({ color: SS[s.t], roughness: 0.42, metalness: 0.05, envMapIntensity: 0.6 });
@@ -133,7 +135,7 @@ function ribbon(chains) {
 }
 function ballStick(mol, carbon, opacity = 1) {
   const n = mol.a.length, g = new THREE.Group();
-  const matA = new THREE.MeshPhysicalMaterial({ roughness: 0.25, metalness: 0.0, clearcoat: 0.6, transparent: opacity < 1, opacity, depthWrite: opacity >= 1 });
+  const matA = new THREE.MeshPhysicalMaterial({ roughness: 0.25, metalness: 0.0, clearcoat: 0.6, emissive: new THREE.Color(carbon), emissiveIntensity: 0.18, transparent: opacity < 1, opacity, depthWrite: opacity >= 1 });
   const atoms = new THREE.InstancedMesh(sphereG, matA, n);
   const col = new THREE.Color();
   mol.a.forEach((a, i) => { col.setHex(a[0] === 'C' ? carbon : (CPK[a[0]] ?? 0xcccccc)); atoms.setColorAt(i, col); });
@@ -144,11 +146,11 @@ function ballStick(mol, carbon, opacity = 1) {
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _v = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0), _s = new THREE.Vector3();
 function placeBallStick(g, pos) {
   const { atoms, bonds, mol } = g.userData;
-  pos.forEach((p, i) => { const r = mol.a[i][0] === 'H' ? 0.18 : 0.34; _m.compose(_v.set(...p), _q.identity(), _s.set(r, r, r)); atoms.setMatrixAt(i, _m); });
+  pos.forEach((p, i) => { const r = mol.a[i][0] === 'H' ? 0.22 : 0.46; _m.compose(_v.set(...p), _q.identity(), _s.set(r, r, r)); atoms.setMatrixAt(i, _m); });
   mol.b.forEach((b, k) => {
     const a = new THREE.Vector3(...pos[b[0]]), c = new THREE.Vector3(...pos[b[1]]);
     const mid = a.clone().add(c).multiplyScalar(0.5), dir = c.clone().sub(a), len = dir.length();
-    _q.setFromUnitVectors(_up, dir.normalize()); const w = b[2] >= 2 ? 0.16 : 0.12;
+    _q.setFromUnitVectors(_up, dir.normalize()); const w = b[2] >= 2 ? 0.17 : 0.13;
     _m.compose(mid, _q, _s.set(w, len, w)); bonds.setMatrixAt(k, _m);
   });
   atoms.instanceMatrix.needsUpdate = true; bonds.instanceMatrix.needsUpdate = true;
@@ -159,7 +161,7 @@ function pocketSurface(s) {
   const cols = new Float32Array(s.c.length * 3), c = new THREE.Color();
   s.c.forEach((k, i) => { c.setHex(SURF[k]); cols.set([c.r, c.g, c.b], i * 3); });
   geo.setAttribute('color', new THREE.BufferAttribute(cols, 3)); geo.setIndex(s.f); geo.computeVertexNormals();
-  const m = new THREE.MeshPhysicalMaterial({ vertexColors: true, transparent: true, opacity: 0.3, roughness: 0.35, clearcoat: 0.4, side: THREE.DoubleSide, depthWrite: false });
+  const m = new THREE.MeshPhysicalMaterial({ vertexColors: true, transparent: true, opacity: 0.2, roughness: 0.35, clearcoat: 0.4, side: THREE.DoubleSide, depthWrite: false });
   return new THREE.Mesh(geo, m);
 }
 function label(text) {
@@ -169,7 +171,7 @@ function label(text) {
   x.fillStyle = '#fff'; x.font = `600 ${fs}px Inter,Arial`; x.fillText(text, 12, fs - 2);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true }));
-  sp.scale.set(w / 40, (fs + 18) / 40, 1); sp.renderOrder = 10; return sp;
+  sp.scale.set(w / 58, (fs + 18) / 58, 1); sp.renderOrder = 10; return sp;
 }
 function lerpPos(a, b, t) { return a.map((p, i) => [p[0] + (b[i][0] - p[0]) * t, p[1] + (b[i][1] - p[1]) * t, p[2] + (b[i][2] - p[2]) * t]); }
 function rmsdOf(a, b) { let s = 0; a.forEach((p, i) => { s += (p[0] - b[i][0]) ** 2 + (p[1] - b[i][1]) ** 2 + (p[2] - b[i][2]) ** 2; }); return Math.sqrt(s / a.length); }
@@ -182,9 +184,13 @@ function loadComplex(k) {
   pose.xt = xt;
   pose.ghost = ballStick(c.xtal, 0x3ddc84, 0.42); placeBallStick(pose.ghost, xt); pose.root.add(pose.ghost);
   if (c.pred) { pose.pred = ballStick(c.xtal, 0x22b8cf, 1); pose.root.add(pose.pred); pose.morph = 0; placeBallStick(pose.pred, c.pred); } else pose.pred = null;
-  pose.labels = new THREE.Group(); [...c.pocket].sort((a, b) => a.d - b.d).slice(0, 6).forEach(r => { const s = label(r.n); s.position.set(r.p[0], r.p[1] + 1.6, r.p[2]); pose.labels.add(s); });
+  pose.labels = new THREE.Group(); [...c.pocket].sort((a, b) => a.d - b.d).slice(0, 4).forEach(r => { const s = label(r.n); s.position.set(r.p[0], r.p[1] + 1.6, r.p[2]); pose.labels.add(s); });
   pose.root.add(pose.labels);
-  camera.position.set(0, 14, 58); orbit.target.set(0, 0, 0); orbit.update();
+  setXray(pose.xray !== false);
+  // look into the pocket from outside the protein: from the protein centroid through the ligand
+  const cen = new THREE.Vector3(); let n = 0; c.chains.flat().forEach(sg => sg.p.forEach(p => { cen.add(new THREE.Vector3(...p)); n++; })); cen.multiplyScalar(1 / n);
+  pose.view = cen.clone().negate().normalize(); if (pose.view.lengthSq() < 0.5) pose.view.set(0, 0.3, 1).normalize();
+  camera.position.copy(pose.view.clone().multiplyScalar(56).add(new THREE.Vector3(0, 8, 0))); orbit.target.set(0, 0, 0); orbit.update();
   poseHud(); poseSide();
 }
 function poseHud() {
@@ -206,13 +212,13 @@ function poseSide() {
   <tr><td>PoseBusters checks</td><td class="n">${c.pb_valid ? 'all pass' : (c.pb_failed || []).join(', ') || '–'}</td></tr>
   <tr><td>Boltz confidence</td><td class="n">${fmt(c.confidence)}</td></tr></table>
   <p class="note" style="word-break:break-all">${c.smiles}</p>
-  <h2>Pick a complex</h2><div class="row">${D.complexes.map((x, i) => `<button class="${i === pose.cur ? 'on' : ''}" data-cx="${i}">${x.id} ${x.success ? '✓' : '✗'}</button>`).join('')}</div>
+  <h2>Pick a complex</h2><div class="row">${D.complexes.map((x, i) => `<button class="${i === pose.cur ? 'on' : ''}" data-cx="${i}">${x.id} · ${x.success ? 'success' : 'miss'}</button>`).join('')}</div>
   <p class="note">Two confident successes and the worst miss in the subset are shown, so the failure mode is visible too.</p>`;
   side.querySelectorAll('[data-cx]').forEach(b => b.onclick = () => { loadComplex(+b.dataset.cx); });
 }
 function poseControls() {
   controlsEl.innerHTML = `<div class="card"><button id="play">▶ morph</button><input id="mslider" type="range" min="0" max="1" step="0.01" value="0"></div>
-  <div class="card"><label><input type="checkbox" id="tsurf" checked> pocket</label><label><input type="checkbox" id="tlab" checked> residues</label><label><input type="checkbox" id="trot" checked> rotate</label></div>
+  <div class="card"><label><input type="checkbox" id="tsurf" checked> pocket</label><label><input type="checkbox" id="tlab" checked> residues</label><label><input type="checkbox" id="trot" checked> rotate</label><label><input type="checkbox" id="txray" checked> ligand on top</label></div>
   <div class="card"><button id="tour">✦ guided tour</button></div>`;
   $('#play').onclick = () => { pose.playing = !pose.playing; pose.dir = pose.morph >= 1 ? -1 : 1; };
   $('#mslider').oninput = e => { pose.playing = false; setMorph(+e.target.value); };
@@ -220,6 +226,11 @@ function poseControls() {
   $('#tlab').onchange = e => pose.labels.visible = e.target.checked;
   $('#trot').onchange = e => orbit.autoRotate = e.target.checked;
   $('#tour').onclick = runTour;
+  $('#txray').checked = pose.xray !== false; $('#txray').onchange = e => setXray(e.target.checked);
+}
+function setXray(on) {
+  pose.xray = on;
+  for (const g of [pose.ghost, pose.pred]) if (g) for (const m of [g.userData.atoms, g.userData.bonds]) { m.material.depthTest = !on; m.renderOrder = on ? 5 : 0; m.material.needsUpdate = true; }
 }
 function setMorph(t) { pose.morph = t; const c = D.complexes[pose.cur]; if (c.pred) placeBallStick(pose.pred, lerpPos(c.pred, pose.xt, t)); const s = $('#mslider'); if (s) s.value = t; poseHud(); }
 
@@ -228,12 +239,14 @@ const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 let tour = null;
 function runTour() {
   orbit.autoRotate = false; const t = $('#trot'); if (t) t.checked = false;
+  const v = pose.view || new THREE.Vector3(0, 0.3, 1), side_ = new THREE.Vector3().crossVectors(v, new THREE.Vector3(0, 1, 0)).normalize();
+  const at = (d, s_, u) => v.clone().multiplyScalar(d).add(side_.clone().multiplyScalar(s_)).add(new THREE.Vector3(0, u, 0)).toArray();
   const steps = [
-    { p: [0, 18, 62], c: 'The whole protein, coloured by secondary structure. The ligand sits in the pocket at the centre.', morph: 0 },
-    { p: [16, 9, 22], c: 'The pocket surface, coloured by residue class. Labels mark the residues within 4 Å of the crystal ligand.', morph: 0 },
-    { p: [-9, 5, 12], c: 'The cyan prediction against the green crystal pose. Boltz-2 never saw this pose; it predicted the protein and the ligand together.', morph: 0 },
-    { p: [6, -4, 11], c: 'Morphing the prediction onto the crystal. The distance travelled is the ligand RMSD; under 2 Å counts as a success.', morph: 1 },
-    { p: [0, 14, 48], c: 'Next: the Affinity tab ranks a congeneric series against experiment and FEP+.', morph: 1 }];
+    { p: at(70, 0, 20), c: 'The whole protein, coloured by secondary structure. The ligand sits in the pocket at the centre.', morph: 0 },
+    { p: at(26, 10, 8), c: 'The pocket surface, coloured by residue class. Labels mark the residues within 4 Å of the crystal ligand.', morph: 0 },
+    { p: at(14, -6, 4), c: 'The cyan prediction against the green crystal pose. Boltz-2 never saw this pose; it predicted the protein and the ligand together.', morph: 0 },
+    { p: at(12, 5, -3), c: 'Morphing the prediction onto the crystal. The distance travelled is the ligand RMSD; under 2 Å counts as a success.', morph: 1 },
+    { p: at(42, 0, 12), c: 'Next: the Affinity tab ranks a congeneric series against experiment and FEP+.', morph: 1 }];
   tour = { steps, i: 0, t0: performance.now(), from: camera.position.clone() };
 }
 function tourStep(now) {
@@ -330,6 +343,40 @@ function benchSide() {
   hud.innerHTML = ''; controlsEl.innerHTML = '';
 }
 
+
+// ---------- BENCHMARK SCENE (3D bars) ----------
+const bench = { scene: new THREE.Scene(), group: new THREE.Group() };
+lights(bench.scene); bench.scene.add(bench.group);
+function buildBench() {
+  bench.group.clear();
+  const B = D.bench, rows = [['Boltz-2', B.boltz2, 0x22b8cf]];
+  for (const [k, v] of Object.entries(B)) if (k.startsWith('vina') || k.startsWith('gold')) rows.push([k.split('_')[0].toUpperCase(), v, k.startsWith('vina') ? 0x9aa3ab : 0xc9a227]);
+  const H = 16, gap = 5.2, x0 = -(rows.length - 1) * gap / 2;
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(rows.length * gap + 8, 12), new THREE.MeshStandardMaterial({ color: new THREE.Color(css('--panel2')), roughness: 0.9 }));
+  floor.rotation.x = -Math.PI / 2; bench.group.add(floor);
+  rows.forEach(([name, v, col], i) => {
+    [[v.rmsd_le_2, 1, 'RMSD ≤ 2 Å'], [v.success_pb_valid, 0.55, '+ PB-valid']].forEach(([val, op, lab], j) => {
+      const h = Math.max(0.05, val * H), geo = new THREE.BoxGeometry(1.8, h, 1.8);
+      const m = new THREE.Mesh(geo, new THREE.MeshPhysicalMaterial({ color: col, roughness: 0.3, clearcoat: 0.6, transparent: op < 1, opacity: op < 1 ? 0.75 : 1 }));
+      m.position.set(x0 + i * gap + (j ? 1.1 : -1.1), h / 2, 0); m.userData.h = h; m.scale.y = 0.001; bench.group.add(m);
+      const t = label(`${Math.round(val * 100)}%`); t.position.set(m.position.x, h + 1.1, 0); t.scale.multiplyScalar(0.8); bench.group.add(t);
+    });
+    const n = label(name); n.position.set(x0 + i * gap, -1.3, 3.2); bench.group.add(n);
+  });
+  for (const ref of D.published.cofolding) {
+    const y = ref.rmsd_le_2 * H, plane = new THREE.Mesh(new THREE.PlaneGeometry(rows.length * gap + 4, 0.06), new THREE.MeshBasicMaterial({ color: 0xe4572e, transparent: true, opacity: 0.8 }));
+    plane.position.set(0, y, -1.2); bench.group.add(plane);
+  }
+  const r = label(`published co-folding ≈ ${Math.round(D.published.cofolding[0].rmsd_le_2 * 100)}–${Math.round(D.published.cofolding.at(-1).rmsd_le_2 * 100)}% (full PoseBusters V1)`);
+  r.position.set(0, D.published.cofolding.at(-1).rmsd_le_2 * H + 1.2, -1.2); r.scale.multiplyScalar(0.75); bench.group.add(r);
+  const lg = label('solid: RMSD ≤ 2 Å   ·   pale: and PB-valid'); lg.position.set(0, -3.2, 3.2); lg.scale.multiplyScalar(0.8); bench.group.add(lg);
+  bench.t0 = performance.now();
+}
+function growBench(now) {
+  const k = Math.min(1, (now - (bench.t0 || now)) / 1400), e = 1 - Math.pow(1 - k, 3);
+  bench.group.children.forEach(o => { if (o.userData.h) { o.scale.y = Math.max(0.001, e); o.position.y = o.userData.h * e / 2; } });
+}
+
 // ---------- tabs and loop ----------
 let tab = 'pose';
 function setTab(t) {
@@ -337,10 +384,10 @@ function setTab(t) {
   orbit.autoRotate = true;
   if (t === 'pose') { loadComplex(pose.cur); poseControls(); }
   if (t === 'aff') { camera.position.set(0, 8, 34); orbit.target.set(0, 0, 0); paintAff(); affSide(); affControls(); affHud(); }
-  if (t === 'bench') { camera.position.set(0, 8, 34); benchSide(); }
+  if (t === 'bench') { camera.position.set(0, 13, 36); orbit.target.set(0, 6, 0); buildBench(); benchSide(); sceneBg(bench.scene); }
 }
 document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => setTab(b.dataset.tab));
-$('#theme').onclick = () => { const r = document.documentElement; const dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; r.dataset.theme = dark ? 'light' : 'dark'; sceneBg(pose.scene); sceneBg(aff.scene); };
+$('#theme').onclick = () => { const r = document.documentElement; const dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; r.dataset.theme = dark ? 'light' : 'dark'; sceneBg(pose.scene); sceneBg(aff.scene); sceneBg(bench.scene); if (tab === 'bench') buildBench(); };
 sceneBg(pose.scene); sceneBg(aff.scene);
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { sceneBg(pose.scene); sceneBg(aff.scene); });
 
@@ -352,7 +399,8 @@ function loop(now) {
   if (tab === 'pose' && pose.playing) { let t = pose.morph + (pose.dir || 1) * dt * 0.45; if (t >= 1 || t <= 0) { t = Math.min(1, Math.max(0, t)); pose.playing = false; } setMorph(t); }
   tourStep(now);
   orbit.update();
-  renderer.render(tab === 'aff' || tab === 'bench' ? aff.scene : pose.scene, camera);
+  if (tab === 'bench') growBench(now);
+  renderer.render(tab === 'aff' ? aff.scene : tab === 'bench' ? bench.scene : pose.scene, camera);
   requestAnimationFrame(loop);
 }
 resize(); setTab(location.hash === '#aff' ? 'aff' : location.hash === '#bench' ? 'bench' : 'pose'); requestAnimationFrame(loop);

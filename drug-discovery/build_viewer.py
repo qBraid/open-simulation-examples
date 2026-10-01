@@ -13,18 +13,23 @@ PB, EV, RES = sys.argv[1:4]
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 def ss_assign(ca):
-    """CA-only secondary structure (P-SEA-like distance rules): H helix, E strand, C coil."""
+    """CA-only secondary structure with P-SEA distance windows (Labesse et al. 1997):
+    helix  d(i,i+2)=5.5+-0.5, d(i,i+3)=5.3+-0.5, d(i,i+4)=6.4+-0.6
+    strand d(i,i+2)=6.7+-0.6, d(i,i+3)=9.9+-0.9, d(i,i+4)=12.4+-1.1
+    a residue run must reach 5 (helix) or 3 (strand) consecutive hits."""
     n = len(ca); s = ["C"] * n
-    d = lambda i, j: np.linalg.norm(ca[i] - ca[j]) if 0 <= i < n and 0 <= j < n else 99
-    for i in range(n - 4):
-        if 4.6 < d(i, i + 2) < 6.0 and 4.5 < d(i, i + 3) < 5.9 and 5.5 < d(i, i + 4) < 7.0:
-            for k in range(i, i + 5): s[k] = "H"
-    for i in range(1, n - 1):
-        if s[i] == "C" and 6.1 < d(i - 1, i + 1) < 7.4:
-            if any(d(i, j) < 5.6 for j in range(n) if abs(j - i) > 3 and ca[j] is not None): s[i] = "E"
-    # remove isolated assignments
-    for i in range(1, n - 1):
-        if s[i] != s[i - 1] and s[i] != s[i + 1]: s[i] = s[i - 1]
+    d = lambda i, j: float(np.linalg.norm(ca[i] - ca[j])) if j < n else 99.0
+    hel = [abs(d(i, i+2) - 5.5) < .5 and abs(d(i, i+3) - 5.3) < .5 and abs(d(i, i+4) - 6.4) < .6 for i in range(n)]
+    strd = [abs(d(i, i+2) - 6.7) < .6 and abs(d(i, i+3) - 9.9) < .9 and abs(d(i, i+4) - 12.4) < 1.1 for i in range(n)]
+    for flags, tag, run in ((hel, "H", 5), (strd, "E", 3)):
+        i = 0
+        while i < n:
+            j = i
+            while j < n and flags[j]: j += 1
+            if j - i >= run:
+                for k in range(i, min(n, j + (4 if tag == "H" else 2))):
+                    if s[k] == "C": s[k] = tag
+            i = max(j, i + 1)
     return s
 
 def segments(ca, ss):
@@ -119,8 +124,11 @@ for l in ligs:
     m = Chem.MolFromSmiles(smiles[(l["t"], l["name"])]); l["smiles"] = smiles[(l["t"], l["name"])]
     fp = AllChem.GetMorganFingerprintAsBitVect(m, 2, 2048); a = np.zeros(2048); DataStructs.ConvertToNumpyArray(fp, a); fps.append(a)
 from sklearn.decomposition import PCA
-xyz = PCA(3, random_state=0).fit_transform(np.array(fps)); xyz = xyz / np.abs(xyz).max() * 10
-for l, p in zip(ligs, xyz): l["xyz"] = np.round(p, 3).tolist()
+fps = np.array(fps)
+for k, t in enumerate(sorted({l["t"] for l in ligs}, reverse=True)):
+    idx = [j for j, l in enumerate(ligs) if l["t"] == t]
+    xyz = PCA(3, random_state=0).fit_transform(fps[idx]); xyz = xyz / np.abs(xyz).max(0) * 5.5
+    for j, p in zip(idx, xyz): ligs[j]["xyz"] = np.round(p + np.array([-9 + 18 * k, 0, 0]), 3).tolist()
 
 data = dict(stamp=json.load(open(f"{RES}/stamp.json")), bench=poses["summary"], published=json.load(open(f"{RES}/published.json")),
             complexes=complexes, affinity=dict(ligands=ligs, metrics={t: {k: v for k, v in d.items() if k != "ligands"} for t, d in aff["targets"].items()}))
