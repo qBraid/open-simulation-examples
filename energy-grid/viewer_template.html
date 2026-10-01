@@ -37,7 +37,7 @@ main{position:relative;height:calc(100% - 52px)}
 .panel{position:absolute;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);backdrop-filter:blur(10px);padding:12px 14px}
 .panel h2{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;font-weight:600}
 .left{left:14px;top:14px;width:290px;max-height:calc(100% - 120px);overflow:auto}
-.right{right:14px;top:14px;width:330px}
+.right{right:14px;top:14px;width:330px;max-height:calc(100% - 120px);overflow:auto}
 .bottom{left:14px;right:14px;bottom:14px;display:flex;align-items:center;gap:12px;padding:9px 14px}
 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin:8px 0 10px}
 .kpi .v{font-size:18px;font-weight:650;font-variant-numeric:tabular-nums}
@@ -143,6 +143,8 @@ th{font-weight:600;color:var(--muted);font-size:11px}
     <h2 style="margin-top:10px">Certified optimality gap (vs SOC relaxation)</h2>
     <div id="gapSvg"></div>
     <p class="note" id="benchNote"></p>
+    <h2 style="margin-top:10px">Formulation race (Ipopt, seconds)</h2>
+    <div id="raceTbl"></div>
   </section>
   <section class="panel bottom" data-for="opf" hidden>
     <span class="stamp" id="stamp"></span>
@@ -601,6 +603,13 @@ function benchCharts() {
   });
   $('#gapSvg').innerHTML = g + '</svg>';
   const pass = cs.filter(c => Math.abs(c.rel_diff_vs_reference) < 1e-3).length;
+  const rows = cs.map(c => {
+    const t = Object.fromEntries(c.race.map(r => [r.formulation, r.status === 'optimal' ? r.seconds : null]));
+    const best = Math.min(...Object.values(t).filter(v => v != null));
+    const cell = k => t[k] == null ? '<td class="fail">–</td>' : `<td${t[k] === best ? ' class="pass"' : ''}>${t[k].toFixed(1)}</td>`;
+    return `<tr><td>${c.case.replace('_', ' ').replace('__', ' · ')}</td>${cell('polar')}${cell('rectangular')}${cell('current-voltage')}</tr>`;
+  }).join('');
+  $('#raceTbl').innerHTML = `<table><tr><th>case</th><th>polar</th><th>rect.</th><th>I-V</th></tr>${rows}</table>`;
   $('#benchNote').innerHTML = `<b class="${pass === cs.length ? 'pass' : 'fail'}">${pass}/${cs.length}</b> cases within 0.1% of the published optimum. Bars: our certified gap (AC objective vs our SOC lower bound); black tick: PGLib's published SOC gap. Matching ticks = same relaxation, same optimum.`;
 }
 
