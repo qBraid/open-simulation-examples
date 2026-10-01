@@ -81,5 +81,29 @@
   "compliance": 233.71457280760134,
   "iterations": 144,
   "seconds": 1.83
+ },
+ "top88_mbb_150x50_ft2": {
+  "nelx": 150,
+  "nely": 50,
+  "volfrac": 0.5,
+  "penal": 3.0,
+  "rmin": 6.0,
+  "ft": 2,
+  "bc": "mbb",
+  "compliance": 235.7336521259628,
+  "iterations": 362,
+  "seconds": 69.46
+ },
+ "top3d_60x20x4_200it": {
+  "nelx": 60,
+  "nely": 20,
+  "nelz": 4,
+  "volfrac": 0.3,
+  "penal": 3.0,
+  "rmin": 1.5,
+  "note": "forced 200 iterations",
+  "compliance": 2416.718906228606,
+  "iterations": 200,
+  "seconds": 232.99
  }
 }

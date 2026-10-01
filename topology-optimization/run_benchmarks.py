@@ -45,6 +45,9 @@ def main(which):
     if which in ("top3d", "all"):
         res = top3d(60, 20, 4, 0.3, 3.0, 1.5, snapshot_every=1)
         save("top3d_60x20x4", res, dict(nelx=60, nely=20, nelz=4, volfrac=0.3, penal=3.0, rmin=1.5))
+    if which in ("top3d200", "all"):  # same run forced to the reference's 200 iterations (tolx = 0)
+        res = top3d(60, 20, 4, 0.3, 3.0, 1.5, snapshot_every=0, tolx=0.0, maxloop=200)
+        save("top3d_60x20x4_200it", res, dict(nelx=60, nely=20, nelz=4, volfrac=0.3, penal=3.0, rmin=1.5, note="forced 200 iterations"))
 
 
 if __name__ == "__main__":

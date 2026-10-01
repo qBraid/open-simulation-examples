@@ -316,7 +316,7 @@ def simp3d(grid, F, fixed, volfrac, penal, rmin, maxloop=200, tolx=0.01, passive
             "seconds": time.time() - t0, "KE": KE}
 
 
-def top3d(nelx, nely, nelz, volfrac, penal, rmin, snapshot_every=0, log=None):
+def top3d(nelx, nely, nelz, volfrac, penal, rmin, snapshot_every=0, log=None, tolx=0.01, maxloop=200):
     """Port of top3d.m with its default cantilever: left face clamped, unit downward
     line load along the lower-right edge (all z)."""
     g = Grid3D(nelx, nely, nelz)
@@ -325,7 +325,7 @@ def top3d(nelx, nely, nelz, volfrac, penal, rmin, snapshot_every=0, log=None):
         F[3 * g.node_id(nelx, nely, k) + 1] = -1.0           # y-dof, bottom row (j = nely)
     fixed_nodes = [g.node_id(0, j, k) for j in range(nely + 1) for k in range(nelz + 1)]
     fixed = np.sort(np.concatenate([3 * np.array(fixed_nodes) + d for d in range(3)]))
-    r = simp3d(g, F, fixed, volfrac, penal, rmin, maxloop=200, tolx=0.01, snapshot_every=snapshot_every, log=log)
+    r = simp3d(g, F, fixed, volfrac, penal, rmin, maxloop=maxloop, tolx=tolx, snapshot_every=snapshot_every, log=log)
     r["grid"] = g
     r["x"] = g.to_array(r["xPhys"])
     return r

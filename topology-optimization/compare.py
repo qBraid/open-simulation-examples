@@ -25,6 +25,7 @@ CASES = [  # (name, log file, order of the run inside that log, reference design
     ("top88_cant_32x20_ft1", "ref_cant.log", 0, "ref_top88_cant_32x20_ft1.txt"),
     ("top88_cant_32x20_ft2", "ref_cant.log", 1, "ref_top88_cant_32x20_ft2.txt"),
     ("top3d_60x20x4", "ref_top3d.log", 0, "ref_top3d_60x20x4.txt"),
+    ("top3d_60x20x4_200it", "ref_top3d.log", 0, "ref_top3d_60x20x4.txt"),
 ]
 IT = re.compile(r"It\.:\s*(\d+)\s+Obj\.:\s*([-\d.eE+]+)\s+Vol\.:\s*([\d.]+)\s+ch\.:\s*([\d.]+)")
 
@@ -70,6 +71,11 @@ def main():
             seconds_python=py_runs[name]["seconds"],
             reference_history=rh[:, 1].round(6).tolist(),
         )
+        ph = np.load(RES / f"py_{name}.npz")["hist"][:, 1]
+        m = min(len(ph), len(rh))
+        rel = np.abs(ph[:m] - rh[:m, 1]) / rh[:m, 1]
+        out[name]["iterwise_rel_diff"] = rel.tolist()
+        out[name]["identical_until_iter"] = int(np.argmax(rel > 1e-6)) if (rel > 1e-6).any() else m
         print(f"{name:24s} c_py={c_py:11.4f} c_ref={c_ref:11.4f} diff={out[name]['rel_diff_pct']:+.2e}% "
               f"it={out[name]['iterations_python']}/{out[name]['iterations_reference']} max|dx|={dx.max():.2e}")
     (RES / "benchmarks.json").write_text(json.dumps(out, indent=1))
