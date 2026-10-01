@@ -4,12 +4,15 @@ Free historical option chains do not exist, so this is a *model* surface with
 public anchors, and it is labelled that way in the viewer:
   * ATM level by tenor: VIX9D (9d), VIX (30d), VIX3M (93d), VIX6M (182d), VIX1Y (365d),
     interpolated in total variance (linear in sigma^2 T) to a 12-tenor grid.
-  * Smile shape: CBOE SKEW gives the 30-day risk-neutral skewness,
-    S = (100 - SKEW) / 10. Skewness is scaled across tenors as S(T) = S(30d) sqrt(30/T)
-    (iid returns), excess kurtosis is set to K = 1.5 S^2, and the smile is the
-    Gram-Charlier approximation of Backus, Foresi & Wu (2004):
-        sigma(z) = sigma_atm (1 - (S/6) z' + (K/24) z'^2),  z' = -z,  z = ln(K/F) / (sigma_atm sqrt T)
-    so downside strikes carry higher vol when S < 0.
+  * Smile shape: CBOE SKEW gives the 30-day risk-neutral skewness S = (100 - SKEW) / 10.
+    A Gram-Charlier smile (Backus, Foresi & Wu 2004) is only valid for small |S|; at
+    SKEW 145 (S = -4.5) it puts 30-day put wings above 150% vol. We therefore use a
+    bounded quadratic smile in standardised moneyness z = ln(K/F) / (sigma_atm sqrt T):
+        sigma(z) = sigma_atm (1 + a z + b z^2),  a = -0.05 |S|,  b = 0.012 |S|,
+    with a tenor decay (T/30d)^-0.15 on a and b (smiles flatten in z with maturity).
+    The coefficients are a heuristic sized so a 30-day 90% strike sits at about
+    1.5x ATM vol at typical SKEW, in line with the usual S&P 500 shape. It is an
+    illustration anchored to public indices, not a calibrated surface.
 Output: results/vol_surfaces.json (month-end frames plus stress days).
 """
 import csv
@@ -24,7 +27,7 @@ OUT = HERE / "results"
 
 TENORS = {"VIX9D": 9, "VIX": 30, "VIX3M": 93, "VIX6M": 182, "VIX1Y": 365}
 GRID_T = [7, 14, 30, 45, 60, 91, 122, 152, 182, 243, 304, 365]          # days
-GRID_Z = [round(-2.5 + 0.2 * i, 2) for i in range(21)]                  # -2.5 .. 1.5 std-moves
+GRID_Z = [round(-2.4 + 0.2 * i, 2) for i in range(21)]                  # -2.4 .. 1.6 std-moves (includes 0)
 EVENTS = {"2011-08-08": "US downgrade", "2015-08-24": "China deval / flash crash",
           "2018-02-05": "Volmageddon", "2020-03-16": "COVID crash", "2022-06-13": "Fed 75bp shock",
           "2024-08-05": "Yen carry unwind", "2025-04-08": "Tariff shock"}
@@ -66,10 +69,10 @@ def surface(levels, skew_index):
     s30 = (100 - skew_index) / 10.0
     atm = atm_curve(levels)
     rows = []
-    for t, a in zip(GRID_T, atm):
-        s = s30 * math.sqrt(30 / t)
-        k = 1.5 * s * s
-        rows.append([round(max(0.03, a * (1 - (s / 6) * (-z) + (k / 24) * z * z)), 5) for z in GRID_Z])
+    for t, v in zip(GRID_T, atm):
+        decay = (t / 30) ** -0.15
+        a, b = -0.05 * abs(s30) * decay, 0.012 * abs(s30) * decay
+        rows.append([round(max(0.03, v * (1 + a * z + b * z * z)), 5) for z in GRID_Z])
     return rows, atm, s30
 
 
