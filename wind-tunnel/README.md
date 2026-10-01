@@ -1,124 +1,196 @@
 # Virtual wind tunnel
 
-Aerodynamics on qBraid with open-source CFD. The workflow takes a car-like body
-to drag, pressure and flow structure. It checks the numbers against published
-experiments and renders the result as an interactive three.js scene in the
-Agent Canvas.
+Aerodynamics on qBraid with open-source CFD. This example takes a reference car
+body to drag, pressure and vortex structure on a three-level mesh ladder, and
+checks the results against wind-tunnel measurements. A laminar cylinder serves
+as the code-validation case. Everything is rendered as an interactive three.js
+scene in the Agent Canvas.
 
 **Stands in for:** Ansys Fluent and Siemens STAR-CCM+ for incompressible external aerodynamics.
-**Stack:** OpenFOAM v2412 (GPL-3.0), gmsh 4.15, pyvista 0.49 (VTK 9.6), MPICH 4.3, all from conda-forge.
+**Stack:** OpenFOAM v2412 (GPL-3.0), gmsh 4.15, pyvista 0.49 (VTK 9.6) and MPICH 4.3, all from conda-forge.
 **Quantum today:** nothing practical for CFD. See `docs/pathway.html` for the honest horizon view.
 
-![viewer](results/viewer.png)
-
-## What is here
-
-| Path | What it does |
+| Guided tour (stagnation) | C-pillar vortices, 25° vs 35° |
 |---|---|
-| `cylinder2d/` | Validation case: laminar flow past a cylinder at Re = 100, gmsh mesh (coarse and fine), transient `pimpleFoam` |
-| `ahmed/` | 3D showcase: Ahmed reference body (35° slant), `snappyHexMesh` + steady `simpleFoam` k-ω SST |
-| `build_viewer.py`, `viewer_template.html` | Inline the results into a single self-contained `viewer.html` |
-| `viewer.html` | The viewer (open it directly, or `qbraid-canvas wind-tunnel/viewer.html`) |
-| `results/*.json` | Verified numbers and the verification stamp |
-| `env/environment.yml` | Pinned conda-forge environment |
+| ![tour](results/viewer_tour.png) | ![compare](results/viewer_compare.png) |
+| **Mesh slice (real cell edges), cut-away body** | **Cylinder Re = 100, vortex street with dye** |
+| ![slice](results/viewer_slice.png) | ![cylinder](results/viewer_cylinder.png) |
 
-## Verified results
+## The bar: what top-10% means here
 
-Verified 2026-09-30 on the qBraid subscription pod (`8vCPU_25GB`, shared with
-other workloads, at most 3 MPI ranks). The cost was $0 in subscription time,
-with no on-demand compute.
+The comparison is against published measurements and the known behaviour of
+the method, not against a vendor's marketing numbers.
 
-### Validation: cylinder, Re = 100 (`results/validation.json`)
+- **Code validation (cylinder, Re = 100).** Strouhal number and mean drag must
+  fall inside the band agreed across the literature for an unconfined
+  cylinder:
+  - St 0.164–0.166, Cd 1.33–1.35.
+  - Sources: Williamson 1996; Park, Kwon & Choi 1998 (St 0.165, Cd 1.33);
+    Qu et al. 2013 (St 0.1648, Cd 1.326).
+  - A good open-source setup lands inside the band. A careless one, with a
+    short domain or a diffusive scheme, lands 2–4% high, which is where v1 was.
+- **3D (Ahmed body, steady RANS k-ω SST).** Drag must be within 5% of the
+  wind-tunnel value, on a mesh where the last refinement moves Cd by 2% or
+  less, at both slants.
+  - Reference drag: Ahmed, Ramm & Faltin 1984 (SAE 840300), Cd 0.285 at 25°
+    and 0.257 at 35°.
+  - 35° (fully separated slant) is the case steady RANS is known to handle.
+  - 25° is the classic failure case. The experiment has a separation bubble
+    on the slant that reattaches, and steady two-equation RANS mispredicts it
+    in either direction depending on model, wall treatment and mesh.
+  - Getting 25° right takes hybrid RANS/LES (DDES or IDDES) on tens of millions
+    of cells. That is where workshop-grade entries sit, and it's out of reach of
+    a $75 budget.
 
-| Mesh and domain | Cells | St | Cd (cycle mean) | Wall time |
+## Results (verified 2026-10-01)
+
+### Cylinder, Re = 100: **reached**
+
+| Run | Cells | St | Cd | Verdict |
 |---|---|---|---|---|
-| coarse, side walls ±10D (5% blockage) | 7.7k | 0.1673 | 1.393 | 6.4 min, serial |
-| fine, side walls ±10D | 27.0k | 0.1696 | 1.391 | 24.0 min, 2 ranks |
-| coarse, side walls ±30D (1.7% blockage) | 10.0k | 0.1665 | 1.380 | 6.0 min, 2 ranks |
-| **fine, side walls ±30D** | 32.7k | **0.1685** | **1.381** | 20.1 min, 3 ranks |
-| Reference (unconfined, Re = 100 literature) | | 0.164–0.166 | 1.33–1.35 | |
+| v1: inlet 10D, side walls ±30D, linearUpwind | 32.7k | 0.1685 | 1.381 | 1.5% / 2.3% above the band |
+| **v2: inlet 20D, side walls ±30D, linearUpwind** | 35.2k | **0.1655** | **1.346** | inside both bands |
+| v2: inlet 20D, ±30D, central differencing, Co 0.5 | 35.2k | 0.1652 | 1.341 | inside both bands |
+| Reference | | 0.164–0.166 | 1.33–1.35 | |
 
-How to read this:
-- Cd is mesh-converged (the coarse and fine meshes agree within 0.2%). St moved
-  by 1.3% between meshes, so the fine mesh is the one to quote.
-- Widening the domain from ±10D to ±30D lowered both St and Cd by about 1%,
-  so blockage explains part of the offset.
-- The best case is still **1.5–2.7% high on St** and **2.3–3.8% high on Cd**.
-  Likely remaining causes are the short 10D inlet distance and the second-order
-  upwind-biased convection scheme. This passes a 5% acceptance band but is not
-  a perfect match. An inlet at 20D is the next check.
+- **What changed:** the inlet distance. At 10D upstream, the inlet boundary
+  condition pins the velocity too close to the body's upstream influence.
+- **Moving it to 20D closed the whole gap.** St dropped 1.8% and Cd 2.5%, both
+  into the band. Switching from linearUpwind to central differencing moved the
+  answer by less than 0.4%, so numerical diffusion was not the cause.
+- **Averaging window:** St and Cd are averaged over 6 shedding cycles,
+  t = 80–120.
 
-### 3D: Ahmed body, 35° slant (`results/ahmed.json`)
+### Ahmed body: **35° reached, 25° not reached** (see `results/ahmed_v2.json`)
 
-| | Cd |
-|---|---|
-| This run: 592k cells, half model, k-ω SST, 800 iterations | **0.2574** (±0.0001 over the last 200 iterations) |
-| Experiment, Ahmed, Ramm & Faltin 1984 (SAE 840300), Re = 4.3e6 | 0.257 |
+AHMED_TABLE
 
-The 0.2% agreement is **partly fortuitous**. Steady RANS with wall functions
-on a 0.6M-cell mesh without prism layers normally lands within 5 to 15% of this
-experiment. The model also omits the stilts and uses a moving ground, where the
-experiment had a stationary floor. Treat it as a sanity anchor, not as evidence
-of accuracy. The honest claim is "right magnitude, right flow topology."
+- **35°: reached.** On the fine mesh Cd is within 0.4% of the experiment,
+  inside the 5% band. The last refinement moved it by LADDER35.
+- **25°: not reached.** Every level sits 5–10% below the experiment, Cd keeps
+  falling as the mesh refines (about 2% per level), and the flow topology is
+  wrong:
+  - A probe 6 mm above the slant centreline finds positive streamwise velocity
+    along the whole slant (0.50 → 0.10 U∞ from top edge to base). The RANS
+    flow stays attached.
+  - The measured flow (Lienhart & Becker 2003) separates at the slant's top
+    edge and reattaches part-way down.
+  - Missing that bubble lowers the slant suction and the drag. That is the
+    textbook way steady RANS fails here.
+  - Lift tells the same story. The attached 25° flow carries Cl = 0.31 (half
+    model), while the fully separated 35° flow carries Cl = 0.10.
+- **What it would take:** DDES or IDDES on 20–40M cells with prism layers
+  (y+ ≈ 1) and averaging over about 20 convective times.
+  - That is about 1–2 days on one `cpu-64v-256g`, roughly **$90–180 per case**
+    at $3.84/h.
+  - It's a natural "next" step if this example is meant to carry a top-10%
+    claim at 25°.
 
-Wall time: snappyHexMesh 2.7 min (serial), potentialFoam + 800 simpleFoam
-iterations 21.7 min (3 ranks), extraction 6 s.
+### Compute used
+
+COMPUTE
+
+## The viewer
+
+`viewer.html` is a single 4.6 MB file with every array inlined (gzip and
+base64). Open it directly, or run `qbraid-canvas wind-tunnel/viewer.html`.
+three.js 0.170 loads from jsDelivr; everything else is in the file.
+
+- **Body:** the real Cp surface (48k triangles) on a physically based clearcoat
+  material, mirrored from the half model.
+- **Vortices:** Q-criterion isosurfaces at Q* = 2 and 8, coloured by streamwise
+  vorticity. A dark-midpoint diverging map makes the counter-rotating C-pillar
+  pair read at a glance.
+- **Particles:** 6,500 particles advected live through the solver's own
+  velocity field. The field is sampled on a 128 × 40 × 42 grid; particles are
+  stepped with a midpoint scheme and drawn as speed-coloured streaks.
+- **Mesh slice:** the symmetry plane rendered from the real cells (cell edges
+  visible) for each mesh level. The near half of the body is cut away so the
+  slice shows through.
+- **25° | 35° comparison:** both bodies side by side, each with its own in-scene
+  drag tag (Cd, experiment, error, verdict).
+- **Guided tour:** five camera stops with captions and pins (stagnation,
+  suction peaks, C-pillar vortices, the slant, the benchmark).
+- **Cylinder tab:** the solver's vorticity as a lit 3D relief, dye advected by
+  the solver's time-interpolated velocity, a lift trace with a playhead, and
+  scrubbing.
+- **URL presets for demos and screenshots:**
+  - `#tour`, `#compare`, `#vortex`, `#slice`, `#front`, `#cyl`
+  - optional parameters `&slant=35&level=medium&q=8&particles=0&theme=dark`
+- **Themes and layout:** light and dark themes (the 3D stage stays dark in
+  both, like a video viewport), and responsive down to phone width with a
+  Controls toggle.
 
 ## Reproduce
 
 ```bash
 export MAMBA_ROOT_PREFIX=/tmp/mamba
-micromamba create -p /tmp/envs/cfd -f wind-tunnel/env/environment.yml      # ~30 s, 3.4 GB on the overlay
+micromamba create -p /tmp/envs/cfd -f wind-tunnel/env/environment.yml        # ~1 min, 4.2 GB, keep it on /tmp
 alias cfd='micromamba run -p /tmp/envs/cfd'
 
-# 1. validation (coarse serial ~6.5 min; fine on 2 ranks ~24 min; blockage checks ~6 and ~20 min)
-cfd wind-tunnel/cylinder2d/run.sh coarse /tmp/runs/cyl_coarse 1
-cfd wind-tunnel/cylinder2d/run.sh fine   /tmp/runs/cyl_fine   2
-cfd wind-tunnel/cylinder2d/run.sh coarse /tmp/runs/cyl_coarse_w30 2 30     # side walls at +/-30 D
-cfd wind-tunnel/cylinder2d/run.sh fine   /tmp/runs/cyl_fine_w30   3 30
-cfd python wind-tunnel/cylinder2d/collect.py /tmp/runs wind-tunnel/results/validation.json
+# 1. cylinder validation (inlet 20D, walls ±30D): ~17 min on 2 ranks
+T1=120 cfd bash wind-tunnel/cylinder2d/run.sh fine /tmp/runs/cyl_x20_lu 2 30 20
+SCHEME=linear MAXCO=0.5 T1=120 cfd bash wind-tunnel/cylinder2d/run.sh fine /tmp/runs/cyl_x20_lin 2 30 20
+T1=100 cfd bash wind-tunnel/cylinder2d/run.sh fine /tmp/runs/cyl_x20_frames 2 30 20   # the run the viewer animates
 
-# 2. Ahmed body (~25 min on 3 ranks)
-cfd wind-tunnel/ahmed/run.sh /tmp/runs/ahmed 3
-cfd python wind-tunnel/ahmed/forces.py /tmp/runs/ahmed 200
+# 2. Ahmed ladder: SLANT 25|35, LEVEL coarse|medium|fine (0.26M / 0.59M / 1.37M cells, half model)
+for s in 25 35; do for l in coarse medium fine; do
+  SLANT=$s LEVEL=$l cfd bash wind-tunnel/ahmed/run.sh /tmp/runs/a${s}_$l 2
+done; done                                              # fine: ~40 min on 2 ranks; RESUME=1 continues a run
 
-# 3. viewer payload and viewer
-(cd /tmp/runs/cyl_fine && cfd postProcess -func vorticity -time '185:')
-cfd python wind-tunnel/cylinder2d/frames.py /tmp/runs/cyl_fine wind-tunnel/results/cylinder_frames.npz
-cfd python wind-tunnel/ahmed/extract.py /tmp/runs/ahmed wind-tunnel/results/ahmed_viewer.npz
-cfd python wind-tunnel/build_viewer.py
+# 3. results and viewer
+cfd python wind-tunnel/collect_v2.py /tmp/runs            # -> results/ahmed_v2.json, results/validation_v2.json
+for s in 25 35; do cfd python wind-tunnel/ahmed/extract_v2.py /tmp/runs/a${s}_fine /tmp/payload/a${s}_surface.npz --surface
+  for l in coarse medium fine; do cfd python wind-tunnel/ahmed/extract_v2.py /tmp/runs/a${s}_$l /tmp/payload/a${s}_${l}_slice.npz --slice-png /tmp/payload/a${s}_$l.png; done; done
+(cd /tmp/runs/cyl_x20_frames && cfd postProcess -func vorticity -time '100:')
+cfd python wind-tunnel/cylinder2d/frames_v2.py /tmp/runs/cyl_x20_frames /tmp/payload/cylinder_frames.npz
+python wind-tunnel/build_viewer.py /tmp/payload
 qbraid-canvas wind-tunnel/viewer.html --title "Virtual wind tunnel"
 ```
 
-### Traps in `conda-forge::openfoam=2412`, all handled in the scripts
+### Traps, all handled in the scripts
 
-- **Parallel runs die** with "The dummy Pstream library cannot be used in
-  parallel mode". The binaries carry an RPATH to `lib/dummy/libPstream.so`, which
-  `LD_LIBRARY_PATH` cannot override. The fix is
-  `mpirun -genv LD_PRELOAD $CONDA_PREFIX/lib/mpich-3.3/libPstream.so`.
-- **No `etc/caseDicts`**, so `#includeEtc "caseDicts/mesh/generation/meshQualityDict"`
-  fails in snappyHexMesh. The quality controls are inlined instead.
-- The **gmsh Python API** is a separate package, `python-gmsh`.
+- **Parallel runs die in `conda-forge::openfoam=2412`** with "The dummy Pstream
+  library cannot be used in parallel mode". The binaries carry an RPATH to the
+  dummy library. Fix:
+  `mpirun -genv LD_PRELOAD $CONDA_PREFIX/lib/mpich-3.3/libPstream.so ...`
+- **No `etc/caseDicts`**, so snappyHexMesh can't include `meshQualityDict`. The
+  quality controls are inlined in the case.
+- **A restarted leg silently starts from t = 0** if the first leg didn't write a
+  time directory at its end. `startFrom latestTime` finds nothing newer than 0,
+  and nothing warns you. `cylinder2d/run.sh` sets `writeInterval` to the leg's
+  end time. This bug cost one pair of v2 runs. The force history of their
+  first leg (t = 0–120) was complete and is what the table quotes.
+- **`nproc` lies on qBraid instances.** The gpu-l4 box reports 48 CPUs, but its
+  cgroup quota is 5.1 (`/sys/fs/cgroup/cpu/cpu.cfs_quota_us`). Size MPI runs from
+  the quota.
+- **Headless screenshots on the pod** need Playwright's Chromium, the conda-forge
+  GUI libraries, and SwiftShader for WebGL:
+  ```
+  LD_LIBRARY_PATH=/tmp/ose-envs/chromelibs/lib chrome --headless=new --no-sandbox --use-angle=swiftshader --enable-unsafe-swiftshader --virtual-time-budget=15000 --screenshot=...
+  ```
+  Headless Chrome enforces a minimum window width of about 500 px, so check
+  phone layouts inside a 390 px iframe.
 
 ## Limits
 
-- Both cases are coarse by industrial standards. The 3D case has no prism
-  layers and uses wall functions (y+ well above 30).
-- Steady RANS cannot resolve the unsteady wake. For the 25° slant (the harder
-  case, where the flow reattaches), RANS is known to mispredict Cd. Use hybrid
-  RANS/LES on a larger machine for that case.
-- The cylinder frames are an animation of the real solution. The in-browser
-  flow demo in `docs/pathway.html` is a separate toy model.
+- **Turbulence model and walls:** steady RANS (k-ω SST) with wall functions
+  and no prism layers. The 25° slant flow stays attached where the experiment
+  separates and reattaches.
+- **Model and conditions:**
+  - The body has no stilts, and the floor is a no-slip stationary wall.
+  - The reference drag was measured at 60 m/s (Re 4.3e6); these runs are at
+    40 m/s (Re 2.8e6), the Lienhart & Becker condition. Ahmed-body drag is
+    only weakly Re-dependent at this scale, but the difference is not zero.
+- **Mesh:** the ladder tops out at 1.37M cells (half model) on the lean budget.
+  Workshop-grade entries use 10–50M cells.
+- **Particles and dye:** they animate the real solver fields, but the in-browser
+  advection is a visual aid, not a solver.
 
-## Next: needs an instance
-
-The account was at its instance limit during this build, so these were not run:
+## Next: needs more compute
 
 | Step | Machine | Estimate |
 |---|---|---|
-| 20-case sweep (speed × slant angle 20–40°), one case per instance, 2–3M cells with prism layers | `cpu-64v-256g` at $3.84/h, 4 at a time | 20 × ~2 h = 40 instance-hours, about **$154** |
-| XLB (GPU lattice Boltzmann) transient run of the same body, to compare the unsteady wake | `gpu-h100-sxm` at $5.37/h | about 1 h, about **$5.40** |
-| PhysicsNeMo surrogate trained on the sweep, exported to ONNX and run in the browser (a Cd and Cp slider explorer) | `gpu-h100-sxm` | about 4 h, about **$21.50** |
-
-Set `--auto-stop` on each instance, copy results back to the subscription pod
-before terminating, and report the measured cost next to the numbers.
+| 25° with IDDES, 20–40M cells, prism layers, ~20 convective times averaged | `cpu-64v-256g`, $3.84/h | 1–2 days, **$90–180** |
+| XLB (GPU lattice Boltzmann) transient run of the same body, to compare the unsteady wake. Not run: the shared pool's single L4 and 50 GB disk were saturated by ten streams | `gpu-l4` or `gpu-h100-sxm` | about 1 h, **$0.50–5.40** |
+| 20-case slant × speed sweep with a PhysicsNeMo surrogate in the browser | `cpu-64v-256g` plus `gpu-h100-sxm` | about **$175** |
