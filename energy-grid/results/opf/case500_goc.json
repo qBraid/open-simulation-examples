@@ -1,0 +1,43 @@
+{
+ "case": "case500_goc",
+ "buses": 500,
+ "branches": 733,
+ "race": [
+  {
+   "formulation": "polar",
+   "objective": 454945.9784715214,
+   "status": "optimal",
+   "seconds": 1.55
+  },
+  {
+   "formulation": "rectangular",
+   "objective": 454945.9784703145,
+   "status": "optimal",
+   "seconds": 1.66
+  },
+  {
+   "formulation": "current-voltage",
+   "objective": 454945.9784703294,
+   "status": "optimal",
+   "seconds": 1.35
+  }
+ ],
+ "best": {
+  "formulation": "rectangular",
+  "objective": 454945.9784703145,
+  "status": "optimal",
+  "seconds": 1.66
+ },
+ "soc": {
+  "objective": 453838.0312010408,
+  "status": "optimal",
+  "seconds": 2.71
+ },
+ "reference": {
+  "ac": 454950.0,
+  "dc": 440550.0,
+  "soc_gap_pct": 0.25
+ },
+ "rel_diff_vs_reference": -8.839498154683085e-06,
+ "certified_gap_pct": 0.2435338087829787
+}

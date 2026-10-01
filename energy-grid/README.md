@@ -24,9 +24,26 @@ in the 0.1–1% range. Our bar:
    we also solve the convex SOC relaxation, which gives a lower bound, and report the certified gap.
    It should reproduce PGLib's published SOC gap.
 
-**Verdict: __OPF_VERDICT__**
+**Verdict: reached.** 16/16 cases are within 0.1% of the published optimum (the differences are at the 5-significant-figure rounding of BASELINE.md), and every certified gap reproduces PGLib's published SOC gap.
 
-__OPF_TABLE__
+| Case | Buses | Ours ($/h) | PGLib ref | Gap to ref | Certified gap (ours / PGLib SOC) | Fastest formulation |
+|---|---|---|---|---|---|---|
+| case14_ieee | 14 | 2,178.08 | 2.1781e+03 | -9.0e-06 ✅ | 0.11% / 0.11% | rectangular 0.1 s |
+| case57_ieee | 57 | 37,589.34 | 3.7589e+04 | +9.0e-06 ✅ | 0.16% / 0.16% | rectangular 0.1 s |
+| case118_ieee | 118 | 97,213.61 | 9.7214e+04 | -4.0e-06 ✅ | 0.90% / 0.91% | rectangular 0.3 s |
+| case300_ieee | 300 | 565,219.98 | 5.6522e+05 | -3.7e-08 ✅ | 2.62% / 2.63% | rectangular 0.5 s |
+| case500_goc | 500 | 454,945.98 | 4.5495e+05 | -8.8e-06 ✅ | 0.24% / 0.25% | current-voltage 1.4 s |
+| case1354_pegase | 1,354 | 1,258,843.99 | 1.2588e+06 | +3.5e-05 ✅ | 1.57% / 1.57% | rectangular 4.1 s |
+| case1888_rte | 1,888 | 1,402,530.87 | 1.4025e+06 | +2.2e-05 ✅ | 2.04% / 2.05% | current-voltage 29.1 s |
+| case2000_goc | 2,000 | 973,432.47 | 9.7343e+05 | +2.5e-06 ✅ | 0.31% / 0.31% | current-voltage 9.0 s |
+| case2869_pegase | 2,869 | 2,462,790.43 | 2.4628e+06 | -3.9e-06 ✅ | 1.01% / 1.01% | current-voltage 17.5 s |
+| case3012wp_k | 3,012 | 2,600,842.72 | 2.6008e+06 | +1.6e-05 ✅ | 1.02% / 1.03% | rectangular 8.9 s |
+| case118_ieee__api | 118 | 249,614.52 | 2.4961e+05 | +1.8e-05 ✅ | 26.16% / 26.17% | polar 0.3 s |
+| case118_ieee__sad | 118 | 105,155.05 | 1.0516e+05 | -4.7e-05 ✅ | 8.20% / 8.17% | rectangular 0.2 s |
+| case1354_pegase__api | 1,354 | 1,608,226.87 | 1.6082e+06 | +1.7e-05 ✅ | 1.85% / 1.85% | rectangular 3.5 s |
+| case1354_pegase__sad | 1,354 | 1,258,848.04 | 1.2588e+06 | +3.8e-05 ✅ | 1.56% / 1.57% | rectangular 3.5 s |
+| case2869_pegase__api | 2,869 | 3,062,988.91 | 3.0630e+06 | -3.6e-06 ✅ | 1.18% / 1.18% | rectangular 11.1 s |
+| case2869_pegase__sad | 2,869 | 2,468,676.30 | 2.4687e+06 | -9.6e-06 ✅ | 1.12% / 1.12% | polar 10.9 s |
 
 **Capacity expansion.** No public leaderboard exists for planning models. The bar we
 can defend is method parity:
@@ -35,9 +52,21 @@ can defend is method parity:
 - Race the LP solvers.
 - Validate the dispatch with a full AC power flow every hour.
 
-__EXP_VERDICT__
+**Verdict: method parity reached.** The documented SciGrid-DE study is reproduced and extended with co-optimised line and battery expansion, the LP solvers are raced, and every scenario's dispatch is re-checked with a full AC power flow (see `converged` in the viewer data). This is not a head-to-head with PLEXOS; no public benchmark exists for that.
 
-__EXP_TABLE__
+| Scenario | System cost (day) | Line upgrades | Lines upgraded | New batteries | Curtailed | CO₂ | LP race (winner, s) |
+|---|---|---|---|---|---|---|---|
+| w1.0_s1.0_c0 | €5.92 M | 544 GW·km | 64 | 0.00 GW | 37.7 GWh | 305 kt | simplex stopped 80, ipm won 78 |
+| w1.0_s1.0_c100 | €17.97 M | 2233 GW·km | 135 | 0.55 GW | 13.7 GWh | 44 kt | simplex stopped 92, ipm won 90 |
+| w1.5_s1.0_c0 | €4.78 M | 530 GW·km | 67 | 0.00 GW | 189.5 GWh | 212 kt | simplex stopped 60, ipm won 58 |
+| w2.0_s1.0_c100 | €6.12 M | 2321 GW·km | 142 | 0.03 GW | 301.2 GWh | 2 kt | simplex stopped 126, ipm won 124 |
+
+Reading the race: the losing solver is stopped as soon as the winner finishes. For scale,
+HiGHS dual simplex **on its own** took 766 s on the base scenario (measured before the race was added), so
+racing it against IPM cut time-to-answer about 10×. The carbon price is what makes the network expand:
+at €100/t the optimiser builds about 4× more line capacity, and CO₂ falls from 305 to 44 kt/day.
+With doubled wind, curtailment rises to 301 GWh/day even after 2,321 GW·km of upgrades. That's the
+classic "wind north, load south" bottleneck, visible as pulsing lines in the viewer.
 
 ## The viewer
 
@@ -106,4 +135,11 @@ python build_viewer.py
 
 ## Verification stamp
 
-__STAMP__
+```
+energy-grid · verified 2026-10-01 (UTC)
+machine: qBraid gpu-l4 pool box (shared; cgroup ~5 CPUs, 62 GB), CPU only, jobs via /tmp/ose/cpu-run (1 thread per solve)
+env: conda-forge python 3.12, ipopt 3.14.20 (MUMPS), pyomo 6.10.1, gridx-egret, pypsa 1.2.4, highspy, pandapower 3.5.5, numpy 2.4.6
+AC-OPF: PGLib-OPF v23.07 (commit dc6be4b), 16 cases (TYP 10, API 3, SAD 3), 3 formulations raced + SOC relaxation each: ~25 min wall in total
+expansion: PyPSA SciGrid-DE (2011-01-01, 24 h), 4 scenarios, HiGHS simplex vs IPM raced: 58-124 s per scenario (IPM won all 4)
+cost: ~0.8 slot-hours on the shared pool box (≈ $0.20 of its $0.49/h); $0 on the subscription pod
+```

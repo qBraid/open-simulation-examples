@@ -1,0 +1,41 @@
+{
+ "scenario": "w2.0_s1.0_c100",
+ "winner": "ipm",
+ "solve_seconds": 124.07,
+ "status": "ok",
+ "condition": "optimal",
+ "objective_eur": 6118673.609349377,
+ "line_expansion_gw_km": 2321.211183901691,
+ "lines_expanded": 142,
+ "battery_gw": 0.029708660395339117,
+ "curtailment_gwh": 301.2024494453633,
+ "co2_kt": 1.7887115731653325,
+ "generation_twh_by_carrier": {
+  "Brown Coal": 0.0,
+  "Gas": 0.004471778932913331,
+  "Geothermal": 0.0001166113027508079,
+  "Hard Coal": 0.0,
+  "Multiple": 0.0015024619434433567,
+  "Nuclear": 0.21207497068982087,
+  "Oil": 0.0,
+  "Other": 0.023737666958951412,
+  "Run of River": 0.0868348914774039,
+  "Solar": 0.04607254334643991,
+  "Storage Hydro": 0.025125423658817134,
+  "Waste": 0.029446241742371662,
+  "Wind Offshore": 0.044269146861300554,
+  "Wind Onshore": 0.7416747114970726
+ },
+ "race": [
+  {
+   "solver": "simplex",
+   "seconds": 126.02,
+   "result": "stopped (lost the race)"
+  },
+  {
+   "solver": "ipm",
+   "seconds": 124.07,
+   "result": "won"
+  }
+ ]
+}

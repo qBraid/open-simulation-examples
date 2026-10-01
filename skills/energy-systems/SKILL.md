@@ -51,26 +51,30 @@ export PATH=$ENV/bin:$PATH            # Pyomo finds the ipopt binary on PATH onl
 python acopf_pglib.py pglib-opf out case118_ieee case1354_pegase ...
 ```
 
-| Case | Ours ($/h) | PGLib ref | Gap to ref | Certified gap (ours / PGLib SOC) | Wall time |
-|---|---|---|---|---|---|
-| case14_ieee | 2,178.08 | 2.1781e+03 | −9e-6 | 0.11% / 0.11% | < 0.1 s |
-| case57_ieee | — | 3.7589e+04 | +9e-6 | 0.16% / 0.16% | < 1 s |
-| case118_ieee | 97,213.61 | 9.7214e+04 | −4e-6 | 0.90% / 0.91% | 0.3–0.4 s per formulation |
-| case300_ieee | 565,219.98 | 5.6522e+05 | −4e-8 | 2.62% / 2.63% | 0.7–0.8 s per formulation |
+| Case | Buses | Gap to PGLib ref | Certified gap (ours / PGLib SOC) | Fastest formulation |
+|---|---|---|---|---|
+| case118_ieee | 118 | −4e-6 | 0.90% / 0.91% | 0.3 s |
+| case300_ieee | 300 | −4e-8 | 2.62% / 2.63% | 0.7 s |
+| case1354_pegase | 1,354 | +3.5e-5 | 1.57% / 1.57% | 4.1 s |
+| case2869_pegase | 2,869 | −3.9e-6 | 1.01% / 1.01% | 17.5 s |
+| case3012wp_k | 3,012 | +1.6e-5 | 1.02% / 1.03% | 8.9 s |
+| case118_ieee__api (stress) | 118 | +1.8e-5 | 26.16% / 26.17% | 0.3 s |
 
+All 16 cases attempted (10 TYP, 3 API, 3 SAD; 14 to 3,012 buses) are within 5e-5 of the reference.
 The full table (up to 3,012 buses, plus the API and SAD stress variants) is in
 `energy-grid/README.md`.
 
 ## Gotchas (all hit for real)
+
+- **PGLib's `BASELINE.md` writes `inf.` in the DC column for the SAD cases.** Parse each field independently or those rows are silently dropped.
 
 - **Pyomo can't find Ipopt** unless the env's `bin` is on `PATH` (`No executable found for solver 'ipopt'`).
 - **Out-of-service branches** come back from Egret with `pf = None`. Skip them when exporting flows (case300).
 - **PyPSA AC power flow after an LOPF diverges** on SciGrid-DE (NaN voltages in most hours) unless all
   generators are set to `control = "PV"`, with the units at one bus set to `PQ`. This is PyPSA's own
   lopf-then-pf recipe. Keep the LOPF dispatch for the generation mix: the PF slack absorbs the losses.
-- **Expansion is about 40× the dispatch cost.** SciGrid-DE dispatch solves in 14–17 s; with extendable lines and a
-  candidate battery at every bus it takes about 13 min with HiGHS dual simplex on one thread. Race simplex against IPM,
-  and limit candidate storage to plausible buses.
+- **Race simplex against IPM for expansion.** SciGrid-DE dispatch solves in 14–17 s. With extendable lines and a
+  candidate battery at every bus, dual simplex alone took 766 s, while HiGHS IPM won the race in 58–124 s on all 4 scenarios (about 10× faster).
 - **One representative day undervalues storage.** With annualised costs scaled to 24 h, batteries at
   €120k/MW/yr are not built in the base case. Use multi-day or clustered periods before drawing storage conclusions.
 - **MUMPS vs HSL:** PGLib's timings use HSL MA27, which is 2–6× faster than MUMPS. HSL has a separate licence, so compare our times with that in mind.

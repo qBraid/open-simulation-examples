@@ -30,11 +30,10 @@ def baseline(pglib_dir):
     for line in (Path(pglib_dir) / "BASELINE.md").read_text().splitlines():
         if line.startswith("| pglib_opf_"):
             cells = [c.strip() for c in line.strip("|").split("|")]
-            try:
-                ref[cells[0].replace("pglib_opf_", "")] = {"ac": float(cells[4]), "dc": float(cells[3]),
-                                                           "soc_gap_pct": float(cells[6])}
-            except ValueError:
-                pass
+            num = lambda x: float(x) if x.replace(".", "").replace("e", "").replace("+", "").replace("-", "").isdigit() else None
+            ac = num(cells[4])           # the DC column is "inf." for the SAD cases: parse fields independently
+            if ac is not None:
+                ref[cells[0].replace("pglib_opf_", "")] = {"ac": ac, "dc": num(cells[3]), "soc_gap_pct": num(cells[6])}
     return ref
 
 
@@ -82,7 +81,21 @@ def extract(md):
     return out
 
 
+def backfill(pglib, out):
+    """Recompute reference fields of stored results with the current baseline parser (no re-solve)."""
+    ref = baseline(pglib)
+    for f in Path(out).glob("case*.json"):
+        if f.name.endswith("_solution.json"):
+            continue
+        rec = json.loads(f.read_text()); rec["reference"] = ref.get(rec["case"])
+        if rec.get("best") and rec["reference"]:
+            rec["rel_diff_vs_reference"] = (rec["best"]["objective"] - rec["reference"]["ac"]) / rec["reference"]["ac"]
+        f.write_text(json.dumps(rec, indent=1))
+
+
 def main():
+    if sys.argv[3:4] == ["--backfill"]:
+        return backfill(sys.argv[1], sys.argv[2])
     pglib, out = Path(sys.argv[1]), Path(sys.argv[2])
     out.mkdir(parents=True, exist_ok=True)
     ref = baseline(pglib)

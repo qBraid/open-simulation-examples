@@ -1,0 +1,43 @@
+{
+ "case": "case3012wp_k",
+ "buses": 3012,
+ "branches": 3572,
+ "race": [
+  {
+   "formulation": "polar",
+   "objective": 2600842.722175026,
+   "status": "optimal",
+   "seconds": 9.11
+  },
+  {
+   "formulation": "rectangular",
+   "objective": 2600842.7221756517,
+   "status": "optimal",
+   "seconds": 8.89
+  },
+  {
+   "formulation": "current-voltage",
+   "objective": 2600842.722175695,
+   "status": "optimal",
+   "seconds": 9.38
+  }
+ ],
+ "best": {
+  "formulation": "polar",
+  "objective": 2600842.722175026,
+  "status": "optimal",
+  "seconds": 9.11
+ },
+ "soc": {
+  "objective": 2574258.0962804626,
+  "status": "optimal",
+  "seconds": 16.23
+ },
+ "reference": {
+  "ac": 2600800.0,
+  "dc": 2509000.0,
+  "soc_gap_pct": 1.03
+ },
+ "rel_diff_vs_reference": 1.6426551455647034e-05,
+ "certified_gap_pct": 1.0221543066753054
+}

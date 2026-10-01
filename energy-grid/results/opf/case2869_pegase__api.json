@@ -1,0 +1,43 @@
+{
+ "case": "case2869_pegase__api",
+ "buses": 2869,
+ "branches": 4582,
+ "race": [
+  {
+   "formulation": "polar",
+   "objective": 3062988.908283209,
+   "status": "optimal",
+   "seconds": 11.65
+  },
+  {
+   "formulation": "rectangular",
+   "objective": 3062988.908275567,
+   "status": "optimal",
+   "seconds": 11.09
+  },
+  {
+   "formulation": "current-voltage",
+   "objective": 3062988.9082750618,
+   "status": "optimal",
+   "seconds": 12.77
+  }
+ ],
+ "best": {
+  "formulation": "current-voltage",
+  "objective": 3062988.9082750618,
+  "status": "optimal",
+  "seconds": 12.77
+ },
+ "soc": {
+  "objective": 3026972.7730902075,
+  "status": "optimal",
+  "seconds": 12.99
+ },
+ "reference": {
+  "ac": 3063000.0,
+  "dc": 2966600.0,
+  "soc_gap_pct": 1.18
+ },
+ "rel_diff_vs_reference": -3.6211965191796776e-06,
+ "certified_gap_pct": 1.1758493505331349
+}
