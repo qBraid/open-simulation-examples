@@ -14,7 +14,7 @@ D = {}
 lb = json.load(open(os.path.join(HERE, "data", "matbench_discovery_leaderboard.json")))
 D["leaderboard"] = [dict(model=r["model"], F1=r["F1"], MAE=r["MAE"], lic=r["lic"]) for r in lb]
 FULL = {r["model"]: r["F1"] for r in lb}
-NAME = {"mp0": "MACE-MP-0", "mpa0": "MACE-MPA-0", "orb3": "ORB v3", "mp0b3": "MACE-MP-0b3"}
+NAME = {"mp0": "MACE-MP-0", "mpa0": "MACE-MPA-0", "orb3": "ORB v3", "mp0b3": "MACE-MP-0b3", "eqv3": "EquiformerV3-OAM"}
 
 # ---------- discovery ----------
 scores, parity = {}, None
@@ -59,7 +59,7 @@ eos_models, stats = {}, {}
 r23 = ref[ref.solid != "Cs"]
 stats["pbe"] = dict(a_exp=float(((r23.a0_pbe - r23.a0_exp_zpae).abs() / r23.a0_exp_zpae).mean() * 100),
                     b_exp=float(((r23.B0_pbe - r23.B0_exp).abs() / r23.B0_exp).mean() * 100))
-for m in ("mp0", "mpa0", "mp0b3"):
+for m in ("mp0", "mpa0", "mp0b3", "orb3"):
     f = os.path.join(RES, f"eos_{m}.csv")
     if not os.path.exists(f): continue
     d = pd.read_csv(f).set_index("solid").loc[ref.solid]

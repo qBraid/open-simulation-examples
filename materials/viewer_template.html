@@ -104,7 +104,7 @@ const D = JSON.parse(document.getElementById('data').textContent);
 const $ = s => document.querySelector(s);
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const isDark = () => { const t = document.documentElement.dataset.theme; return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; };
-const MODEL_NAME = { mp0: 'MACE-MP-0', mpa0: 'MACE-MPA-0', mp0b3: 'MACE-MP-0b3', orb3: 'ORB v3' };
+const MODEL_NAME = { mp0: 'MACE-MP-0', mpa0: 'MACE-MPA-0', mp0b3: 'MACE-MP-0b3', orb3: 'ORB v3', eqv3: 'EquiformerV3-OAM' };
 
 // ---------- colour maps ----------
 const VIRIDIS = [[68,1,84],[72,40,120],[62,74,137],[49,104,142],[38,130,142],[31,158,137],[53,183,121],[109,205,89],[180,222,44],[253,231,37]];
@@ -291,7 +291,7 @@ function dftTable() {
 function makeCrystals() {
   const G = new THREE.Group(); G.visible = false; scene.add(G);
   const E = D.eos || { models: {}, solids: [] };
-  const models = Object.keys(E.models); let cur = models.includes('mp0b3') ? 'mp0b3' : models[0];
+  const models = Object.keys(E.models); let cur = models.includes('orb3') ? 'orb3' : models[0];
   const items = []; const cols = 6, sp = 5.0;
   const ped = new THREE.CylinderGeometry(1.45, 1.6, .22, 48);
   E.solids.forEach((s, k) => {

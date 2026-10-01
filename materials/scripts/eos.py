@@ -12,7 +12,14 @@ from ase.units import GPa
 from mace.calculators import mace_mp
 
 model, out = sys.argv[1], sys.argv[2]
-calc = mace_mp(model={"mp0": "medium", "mpa0": "medium-mpa-0", "mp0b3": "medium-0b3"}[model], device=__import__("os").environ.get("DEVICE", "cuda"), default_dtype="float64")
+import os
+if model == "orb3":  # ORB v3 conservative-inf-mpa (Apache-2.0)
+    from orb_models.forcefield import pretrained
+    from orb_models.forcefield.inference.calculator import ORBCalculator
+    _m, _ad = pretrained.orb_v3_conservative_inf_mpa(device=os.environ.get("DEVICE", "cuda"), precision="float64", compile=False)
+    calc = ORBCalculator(_m, _ad, device=os.environ.get("DEVICE", "cuda"))
+else:
+    calc = mace_mp(model={"mp0": "medium", "mpa0": "medium-mpa-0", "mp0b3": "medium-0b3"}[model], device=os.environ.get("DEVICE", "cuda"), default_dtype="float64")
 ref = pd.read_csv("data/csonka2009_sol24.csv")
 rows = []
 for r in ref.itertuples():
