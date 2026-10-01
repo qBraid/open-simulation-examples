@@ -359,21 +359,21 @@ function makePhonons() {
     const pad = { l: 26, r: 6, t: 8, b: 18 }; const nseg = P.bands_by_model[Object.keys(P.bands_by_model)[0]].length;
     const { X, Y } = axes(x, 340, 210, pad, [0, nseg], [0, 17], '', 'THz', [], [0, 5, 10, 15]);
     ['Γ', 'X', 'W', 'K', 'Γ', 'L'].forEach((q, i) => { x.strokeStyle = css('--line'); x.beginPath(); x.moveTo(X(i), Y(0)); x.lineTo(X(i), Y(17)); x.stroke(); x.fillStyle = css('--muted'); x.fillText(q, X(i) - 3, 210 - 4); });
-    const colors = { mp0: '#e5533d', mpa0: '#f0a326', mp0b3: css('--accent') };
-    Object.entries(P.bands_by_model).forEach(([m, segs]) => { x.strokeStyle = colors[m]; x.lineWidth = m === 'mp0b3' ? 1.8 : 1.1;
+    const colors = { mp0: '#e5533d', mpa0: css('--accent'), mp0b3: '#f0a326', orb3: '#a78bfa' };
+    Object.entries(P.bands_by_model).forEach(([m, segs]) => { x.strokeStyle = colors[m]; x.lineWidth = m === P.modes_model ? 2 : 1.1;
       segs.forEach((seg, si) => { const nb = seg.freqs[0].length; for (let b = 0; b < nb; b++) { x.beginPath(); seg.freqs.forEach((f, qi) => { const xx = X(si + qi / (seg.freqs.length - 1)); qi ? x.lineTo(xx, Y(f[b])) : x.moveTo(xx, Y(f[b])); }); x.stroke(); } }); });
     const nx = { G_LTO: 0, X_TA: 1, X_LA: 1, X_TO: 1, L_TA: 5, L_LA: 5, L_TO: 5 };
     x.fillStyle = css('--ink'); Object.entries(P.neutron || {}).forEach(([k, f]) => { x.beginPath(); x.arc(X(nx[k]), Y(f), 3.2, 0, 7); x.fill(); });
     if (cur && modes[cur]) { const q = cur.split('-')[0]; const xp = { G: 0, X: 1, L: 5 }[q]; x.strokeStyle = css('--ink'); x.lineWidth = 2; x.beginPath(); x.arc(X(xp), Y(modes[cur].freq), 7, 0, 7); x.stroke(); }
-    x.font = '10px ui-sans-serif'; let lx = pad.l + 4; Object.keys(colors).filter(m => P.bands_by_model[m]).forEach(m => { x.fillStyle = colors[m]; x.fillRect(lx, 12, 10, 3); x.fillStyle = css('--muted'); x.fillText(MODEL_NAME[m], lx + 13, 16); lx += 82; });
+    x.font = '9.5px ui-sans-serif'; let lx = pad.l + 4; Object.keys(colors).filter(m => P.bands_by_model[m]).forEach(m => { x.fillStyle = colors[m]; x.fillRect(lx, 12, 10, 3); x.fillStyle = css('--muted'); x.fillText(MODEL_NAME[m], lx + 13, 16); lx += 74; });
     x.fillStyle = css('--ink'); x.beginPath(); x.arc(lx + 4, 13, 3, 0, 7); x.fill(); x.fillStyle = css('--muted'); x.fillText('neutron', lx + 10, 16);
   }
   function panel() {
-    const rows = Object.entries(P.summary || {}).map(([m, s]) => `<tr><td>${MODEL_NAME[m]}</td><td>${s.G_LTO.toFixed(2)}</td><td>${s.mare.toFixed(1)}%</td></tr>`).join('');
+    const rows = Object.entries(P.summary || {}).sort((a, b) => a[1].mare - b[1].mare).map(([m, s]) => `<tr><td>${MODEL_NAME[m]}</td><td>${s.G_LTO.toFixed(2)}</td><td>${s.X_TA.toFixed(2)}</td><td>${s.mare.toFixed(1)}%</td></tr>`).join('');
     $('#panel').innerHTML = `<h2>Atoms in motion: silicon phonons</h2><span class="verdict ${P.verdict_class || ''}">${P.verdict || ''}</span>
       <p>A 216-atom silicon crystal vibrating in one normal mode at a time (amplitude exaggerated). The mode shapes are phonopy's, from force constants computed with the potential.</p>
       <canvas class="chart" id="disp"></canvas>
-      <table><tr><th>model</th><th>Γ optical (THz)</th><th>error vs neutron</th></tr><tr><td>neutron (exp)</td><td>${(P.neutron || {}).G_LTO ?? ''}</td><td></td></tr>${rows}</table>
+      <table><tr><th>model</th><th>Γ-LTO</th><th>X-TA</th><th>mean err</th></tr><tr><td>neutron (exp)</td><td>${(P.neutron || {}).G_LTO ?? ''}</td><td>${(P.neutron || {}).X_TA ?? ''}</td><td></td></tr>${rows}</table><p class="note">THz. Mean absolute relative error over Γ-LTO, X-TA/LA/TO and L-TA/LA/TO.</p>
       <p>${P.note || ''}</p>
       <h3>Mode</h3><div class="row">${labels.map(l => `<button class="btn" data-l="${l}" aria-pressed="${l === cur}">${l.replace('G-', 'Γ-')} · ${modes[l].freq.toFixed(1)} THz</button>`).join('')}</div>
       <p class="note">Neutron data: Nilsson &amp; Nelin, PRB 6, 3777 (1972). Mode shapes from ${MODEL_NAME[P.modes_model] || ''}.</p>`;

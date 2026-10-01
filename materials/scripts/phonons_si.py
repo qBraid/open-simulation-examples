@@ -15,7 +15,16 @@ from phonopy.structure.atoms import PhonopyAtoms
 from mace.calculators import mace_mp
 
 model, out = sys.argv[1], sys.argv[2]
-calc = mace_mp(model={"mp0": "medium", "mpa0": "medium-mpa-0", "mp0b3": "medium-0b3"}[model], device=os.environ.get("DEVICE", "cuda"), default_dtype="float64")
+if os.path.exists(out) and not os.environ.get("FORCE"):
+    sys.exit(f"{out} exists; set FORCE=1 to recompute")
+if model == "orb3":  # ORB v3 conservative-inf-mpa (Apache-2.0)
+    from orb_models.forcefield import pretrained
+    from orb_models.forcefield.inference.calculator import ORBCalculator
+    _dev = os.environ.get("DEVICE", "cuda")
+    _m, _ad = pretrained.orb_v3_conservative_inf_mpa(device=_dev, precision="float64", compile=False)
+    calc = ORBCalculator(_m, _ad, device=_dev)
+else:
+    calc = mace_mp(model={"mp0": "medium", "mpa0": "medium-mpa-0", "mp0b3": "medium-0b3"}[model], device=os.environ.get("DEVICE", "cuda"), default_dtype="float64")
 si = bulk("Si", "diamond", a=5.43); si.calc = calc
 BFGS(FrechetCellFilter(si), logfile=None).run(fmax=1e-4)
 a = float(np.linalg.norm(si.cell[0]) * np.sqrt(2))

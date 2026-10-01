@@ -78,22 +78,24 @@ if eos_models:
 D["eos"] = eos
 
 # ---------- phonons ----------
-ph = {m: J(f"phon_{m}.json") for m in ("mp0", "mpa0", "mp0b3")}
+ph = {m: J(f"phon_{m}.json") for m in ("mp0", "mpa0", "mp0b3", "orb3")}
 ph = {m: v for m, v in ph.items() if v}
 if ph:
-    best = "mp0b3" if "mp0b3" in ph else min(ph, key=lambda m: ph[m]["mare_pct"])
+    best = min(ph, key=lambda m: ph[m]["mare_pct"])
     P = dict(modes=ph[best]["modes"], modes_model=best, neutron=ph[best]["neutron"],
              bands_by_model={m: v["bands"] for m, v in ph.items()},
-             summary={m: dict(G_LTO=v["high_symmetry_model"]["G_LTO"], mare=v["mare_pct"]) for m, v in ph.items()})
+             summary={m: dict(G_LTO=v["high_symmetry_model"]["G_LTO"], X_TA=v["high_symmetry_model"]["X_TA"], mare=v["mare_pct"]) for m, v in ph.items()})
     b = ph[best]["mare_pct"]
-    P["verdict"] = f"{NAME[best]}: {b:.1f}% mean error on 7 high-symmetry frequencies " + ("(reached: PBE-level)" if b < 5 else "(close)" if b < 10 else "(not reached)")
-    P["verdict_class"] = "v-reached" if b < 5 else "v-close" if b < 10 else "v-not"
-    if "mp0" in ph:
-        P["note"] = (f"MACE-MP-0 puts the Γ optical mode at {ph['mp0']['high_symmetry_model']['G_LTO']:.1f} THz against 15.5 THz measured: the known 'softening' of universal potentials.")
-        if "mp0b3" in ph:
-            P["note"] += (f" The MIT-licensed b3 update, retrained partly for this, reaches {ph['mp0b3']['high_symmetry_model']['G_LTO']:.1f} THz. "
-                          "PBE itself gives about 15.1 THz, so the remaining gap is mostly the functional.")
+    P["verdict"] = (f"Best: {NAME[best]} at {b:.1f}% mean error on 7 neutron frequencies; bar is PBE-level (about 3–5%): "
+                    + ("reached" if b < 5 else "close" if b < 8 else "not reached"))
+    P["verdict_class"] = "v-reached" if b < 5 else "v-close" if b < 8 else "v-not"
+    parts = [f"{NAME[m]} {v['mare_pct']:.0f}%" for m, v in sorted(ph.items(), key=lambda kv: kv[1]['mare_pct'])]
+    P["note"] = ("Mean errors: " + ", ".join(parts) + ". Every universal potential tested softens or distorts silicon's phonons: "
+                 "MACE-MP-0 puts the Γ optical mode at " + f"{ph['mp0']['high_symmetry_model']['G_LTO']:.1f}" + " THz against 15.5 measured. "
+                 "The b3 update fixes Γ but overshoots the zone-boundary acoustic modes by about 30%. "
+                 "For quantitative phonons, use DFT (PBE gets about 15.1 THz) or fine-tune the potential on a few hundred DFT force calculations for the material of interest." if "mp0" in ph else "")
     D["phonons"] = P
+NAME["orb3"] = "ORB v3"
 
 # ---------- MD ----------
 runs, A = {}, {"T": [], "D": [], "sps": []}
