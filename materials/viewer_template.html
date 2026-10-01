@@ -100,6 +100,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
+addEventListener('error', e => { const p = document.getElementById('panel'); if (p && !p.innerHTML.trim()) p.innerHTML = '<h2>Viewer error</h2><p class="note">' + String(e.message).replace(/</g, '&lt;') + '</p>'; });
 const D = JSON.parse(document.getElementById('data').textContent);
 const $ = s => document.querySelector(s);
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -147,7 +148,7 @@ function applyTheme() {
   renderer.toneMappingExposure = isDark() ? 1.0 : 1.08;
   worlds.forEach(w => w.theme && w.theme());
 }
-matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme); } catch (e) {}
 function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h); composer.setSize(w, h); labelRenderer.setSize(w, h); bloom.setSize(w, h);
   camera.aspect = w / h; const pw = (w > 760 && !$('#panel').classList.contains('hidden')) ? ($('#panel').offsetWidth + 24) / 2 : 0;
   if (pw) camera.setViewOffset(w, h, pw, 0, w, h); else camera.clearViewOffset(); camera.updateProjectionMatrix(); }
@@ -307,7 +308,7 @@ function makeCrystals() {
     items.push({ s, g, pm, xtal, e, sc });
   });
   function recolor() { const r = E.models[cur]; items.forEach((it, k) => { const err = (r[k].a0 - it.s.a0_exp) / it.s.a0_exp * 100;
-    if (it.s.solid === 'Cs') { it.pm.material.color.set(0x55606b); it.e.element.textContent = `${err >= 0 ? '+' : ''}${err.toFixed(1)}% · cutoff artefact, not scored`; return; }
+    if (it.s.solid === 'Cs') { it.pm.material.color.set(0x55606b); it.e.element.textContent = `${err >= 0 ? '+' : ''}${err.toFixed(1)}% · not scored`; return; }
     it.pm.material.color = ramp(BALANCE, (err + 3) / 6).multiplyScalar(.75); it.e.element.textContent = `${err >= 0 ? '+' : ''}${err.toFixed(2)}%`; }); }
   let focus = -1;
   const ray = new THREE.Raycaster(), ptr = new THREE.Vector2();
@@ -333,9 +334,9 @@ function makeCrystals() {
         it.xtal.scale.setScalar(it.sc / 2); } else it.xtal.scale.setScalar(it.sc); };
   }
   if (items.length) recolor();
-  return { name: 'Crystals', G, bloom: [0.12, 0.03], enter() { focus = -1; flyTo([0, 25, 25], [0, -1, 1.5]); panel(); controlsHTML('<span class="note">Click a pedestal to fly in</span>'); },
+  return { name: 'Crystals', G, bloom: [0.12, 0.03], enter() { focus = -1; flyTo([0, 27, 31], [0, -1, 1.5]); panel(); controlsHTML('<span class="note">Click a pedestal to fly in</span>'); },
     update(t) { items.forEach((it, k) => { it.xtal.rotation.y = 0; it.g.rotation.y = Math.sin(t * .25 + k) * .25 + t * .15; }); },
-    tour: [{ pos: [0, 25, 25], tgt: [0, -1, 1.5], text: 'Twenty-four reference crystals. One universal potential reproduces their DFT lattice constants to about half a percent.' }] };
+    tour: [{ pos: [0, 27, 31], tgt: [0, -1, 1.5], text: 'Twenty-four reference crystals. One universal potential reproduces their DFT lattice constants to about half a percent.' }] };
 }
 
 // ============================================================
@@ -468,14 +469,16 @@ function makeMD() {
 }
 
 // ---------- assemble ----------
-worlds.push(makeDiscovery(), makeCrystals(), makePhonons(), makeMD());
+for (const mk of [makeDiscovery, makeCrystals, makePhonons, makeMD]) {  // one failing scene must not stop the others
+  try { worlds.push(mk()); } catch (e) { console.error('scene failed', mk.name, e); } }
 let active = -1;
 function controlsHTML(h) { $('#controls').innerHTML = h + ` <span style="flex:1"></span><button class="btn primary" id="tourb">Guided tour</button><button class="btn" id="themeb" title="Toggle light/dark">Theme</button><button class="btn" id="toggle-panel">Info</button>`;
   $('#tourb').onclick = startTour; $('#themeb').onclick = () => { document.documentElement.dataset.theme = isDark() ? 'light' : 'dark'; applyTheme(); worlds[active] && worlds[active].enter && worlds[active].theme && worlds[active].theme(); };
   $('#toggle-panel').onclick = () => { $('#panel').classList.toggle('hidden'); resize(); }; }
 function show(i, fly = true) { if (active >= 0) worlds[active].G.visible = false; active = i; worlds[i].G.visible = true; worlds[i].enter(); applyTheme();
   document.querySelectorAll('#worlds button').forEach((b, k) => b.setAttribute('aria-pressed', k === i));
-  try { localStorage.setItem('mat-world', i); } catch (e) {} if (location.hash !== '#' + i) history.replaceState(null, '', '#' + i); }
+  try { localStorage.setItem('mat-world', i); } catch (e) {}
+  try { if (location.hash !== '#' + i) history.replaceState(null, '', '#' + i); } catch (e) {} }  // sandboxed frames (origin null) throw here
 worlds.forEach((w, i) => { const b = document.createElement('button'); b.textContent = w.name; b.onclick = () => { stopTour(); show(i); }; $('#worlds').appendChild(b); });
 
 // guided tour
