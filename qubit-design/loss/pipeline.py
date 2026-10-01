@@ -26,6 +26,7 @@ def point(rundir, kw, table, fieldmap=False, np_=2, edge=1.0):
     import geom3d
     import layouts
     import run_post
+    rundir = os.path.abspath(rundir)  # Palace resolves config paths from the run dir
     os.makedirs(rundir, exist_ok=True)
     L = layouts.grounded_transmon(**kw)
     win = window_for(L["params"])

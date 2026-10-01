@@ -1,0 +1,4 @@
+E_J/h = 12.385 GHz,  E_J/E_C = 45.5
+qubit f01 = 4.6302 GHz, alpha = -272.5 MHz (first order -238.0 MHz)
+resonator = 6.8389 GHz, dispersive shift = -907.9 kHz (first order -1139.8 kHz)
+kappa/2pi = 773 kHz, chi/kappa = 1.17, T1 bound = 0.34 us (Purcell only 306 us)

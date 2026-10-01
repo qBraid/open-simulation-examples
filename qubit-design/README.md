@@ -19,7 +19,7 @@ chip geometry ──► AWS Palace eigenmode (3D FEM) ──► validate vs. Pal
 ```
 
 Open `viewer.html` in a browser, or in the qBraid Agent Canvas with
-`qbraid-canvas viewer.html`. It is a single 2.3 MB file, and three.js loads
+`qbraid-canvas viewer.html`. It is a single 2.7 MB file, and three.js loads
 from jsDelivr.
 
 
@@ -27,35 +27,72 @@ from jsDelivr.
 
 **Bar (top-10% for this field).** A transmon whose Hamiltonian is a modern
 fixed-frequency device (f01 4.5–5 GHz, alpha about -300 MHz, E_J/E_C 40–55,
-chi/kappa about 0.5) and whose **predicted geometry-limited T1** sits within the
-range of IBM's production medians (Eagle/Heron, 145–287 µs). Beating that
-range would need to approach the tantalum records (median 0.45 ms, best
-1.68 ms; Bland et al., Nature 647, 343 (2025)).
+chi/kappa 0.5–1), **verified by a full-chip 3D eigenmode solve**, and whose
+**predicted geometry-limited T1** sits inside IBM's production medians
+(Eagle/Heron, 145–287 µs). Beating that range would mean approaching the
+tantalum records (median 0.45 ms, best 1.68 ms; Bland et al., Nature 647, 343 (2025)).
 
 **Verdict.**
-- **Hamiltonian targets: reached.** f01 4.800 GHz, alpha -290 MHz,
-  E_J/E_C 50.4, g 93 MHz, chi 0.64 MHz,
-  chi/kappa 0.50.
-- **Predicted T1 in line with IBM medians: reached.** 146–245 µs
+- **Hamiltonian: reached, verified in 3D.** f01 4.809 GHz, alpha -270 MHz
+  (EPR numerical), E_J/E_C 49.2, resonator 6.839 GHz,
+  dispersive pull 2chi 1.06 MHz, chi/kappa 0.69.
+- **Predicted T1 inside IBM's median band: reached.** 142–250 µs
   for Ta on annealed sapphire, against IBM medians of 145–287 µs.
 - **Tantalum-record class (above 0.5 ms): not reached.** The surface-loss limit
-  alone is 178–352 µs, and planar
-  edge participation is the floor. Getting past it needs substrate trenching
-  or a 3D or flip-chip geometry, which is out of scope here.
+  alone is 163–322 µs, and planar
+  edge participation is the floor. Getting past it needs substrate trenching,
+  or a 3D or flip-chip geometry.
 
 **This T1 is a prediction under stated assumptions, not a measurement.**
+
+### Capacitance model vs full-chip 3D eigenmode (closed loop)
+
+The design was first sized with a lumped-capacitance model (Palace
+electrostatics on a half model of the island and claw). It was then solved as
+a complete chip: DeviceLayout.jl's SingleTransmon geometry with the λ/4 meander,
+hanger coupler, feedline and 50 Ω ports, on anisotropic sapphire
+(ε = 9.3, 9.3, 11.5). Palace computed the eigenmodes (order 2, 10 MPI ranks),
+and energy-participation quantization gave the Hamiltonian
+(`eigen/`, `results/v2/eigen/`).
+
+| | capacitance model (L 190 µm) | 3D eigenmode, same geometry | **3D final** (iteration 3) |
+|---|---|---|---|
+| f01 | 4.800 GHz | 4.413 GHz (-8%) | **4.809 GHz** |
+| alpha | -290 MHz | -236 MHz | **-270 MHz** |
+| resonator | 7.000 GHz | 6.215 GHz | **6.839 GHz** |
+| pull 2chi | 1.29 MHz | 0.90 MHz | **1.06 MHz** |
+| E_J/E_C | 50.4 | 54.0 | **49.2** |
+| kappa | 1.29 MHz (designed) | 0.57 MHz | **0.77 MHz** |
+
+**What the 3D solve corrected.**
+- The full chip has about 7% more island capacitance than the capacitance
+  model. The likely causes are the claw and meander loading, and the
+  anisotropic substrate.
+- The capacitance model also missed the claw's loading of the resonator.
+- **Iteration 2:** shortened the island from 190 to 146 µm (raising E_C) and
+  the resonator from 4000 to 3550 µm.
+- **Iteration 3:** set L_J from 13.20 to 12.28 nH to bring f01 to 4.81 GHz.
+
+**Remaining gap.** EPR's numerical alpha (-270 MHz) is weaker
+than the charge-basis estimate at this E_J/E_C (about -300 MHz). The first-order
+EPR value is -238 MHz. This is the known size of
+higher-order corrections at E_J/E_C ≈ 50, so we report the numerical EPR value.
+
+**Lesson for the skill:** a capacitance-only design was 8% off in frequency and
+about 20% off in alpha. Always close the loop with a full-chip eigenmode run.
 
 ### What changed from v1
 
 | | v1 (Palace example) | v2 final |
 |---|---|---|
-| Island | 24 × 620 µm, 30 µm trench | **240 × 190 µm, 150 µm trench** |
-| Surface participation p_MS+p_SA+p_MA | 8.49e-04 | **4.71e-04** |
-| Predicted T1, Ta/sapphire (same targets) | 94–168 µs | **146–245 µs** |
-| E_C / alpha | 236 MHz / -268 MHz | 252 MHz / -290 MHz |
-| Junction | | L_J 12.85 nH, R_n target 11.0 kOhm (Ambegaokar–Baratoff, Al) |
-| Readout | | 7.0 GHz lambda/4, kappa = 2chi = 1.29 MHz, Q_ext 5429, C_kappa 7.7 fF |
-| Purcell | | 69 µs unfiltered, then **1.9 ms** with a Q=30 bandpass Purcell filter |
+| Island | 24 × 620 µm, 30 µm trench | **240 × 146 µm, 150 µm trench** |
+| Surface participation p_MS+p_SA+p_MA | 8.49e-04 | **5.22e-04** |
+| Predicted T1, Ta/sapphire | 94–168 µs | **142–250 µs** |
+| Junction | L_J 14.86 nH | **L_J 12.28 nH**, R_n target 10.6 kOhm (Ambegaokar–Baratoff, Al) |
+| Readout | 5.60 GHz, chi/kappa 1.46 | 6.84 GHz λ/4 (3550 µm), kappa 0.77 MHz, chi/kappa 0.69 |
+| Purcell (port Q from the eigenmode) | 623 µs | 222 µs unfiltered, then **5.6 ms** with a Q=30 bandpass filter |
+
+The v1 T1 range uses the same Ta/sapphire assumptions and targets.
 
 ### Method
 
@@ -66,35 +103,42 @@ with open tools (`loss/`):
    edge, giving the energy in 3-nm MS, MA and SA layers per K² as a function of
    the local gap. It converges to 0.03% under 4× mesh refinement.
 2. **`geom3d.py` + Palace `Electrostatic`**: a 3D half model of the island,
-   trench and readout claw, with metal as zero-thickness sheets and one terminal
-   per conductor. Fields are normalised by Palace's terminal excitation voltage
+   trench and claw, with metal as zero-thickness sheets and one terminal per
+   conductor. Fields are normalised by Palace's terminal excitation voltage
    (`terminal-V.csv`).
-3. **`post3d.py`**: the coarse 3D field on pad interiors and bare substrate,
-   with edge strength K from the surface charge 1–4 µm from each edge, times
-   the 2D integrals. Per-edge densities drive the viewer's "loss beads".
-4. **`design_v2.py`**: lumped-oscillator Hamiltonian (E_C from C_sigma, E_J
-   solved for the target f01), exact transmon–resonator diagonalisation for chi,
-   the readout design and the T1 budget.
+3. **`post3d.py`**: the coarse 3D field on interiors and bare substrate, with
+   edge strength K from the surface charge 1–4 µm from each edge, times the 2D
+   integrals. Per-edge densities drive the viewer's "loss beads".
+4. **`design_v2.py`**: the capacitance-model Hamiltonian, readout design and
+   T1 budget, used for the sweep.
+5. **`eigen/`**: the full-chip 3D eigenmode, EPR Hamiltonian and closed-loop
+   correction. The final T1 budget combines the surface participation of the
+   final island with the eigenmode's f01, substrate energy fraction and port Q.
 
 **Sweep** (`results/v2/sweep.json`): 11 island widths and trench gaps, each
-rescaled to the same C_sigma. Participation falls monotonically with a wider
-island and a wider trench: 9.2e-4 at W24/G30, 3.5e-4 at W240/G150. Two final
-candidates were then solved at the target capacitance. The one chosen best
-matches alpha ≈ -300 MHz at chi/kappa = 0.5.
+rescaled to the same capacitance. Participation falls monotonically with a
+wider island and a wider trench: 9.2e-4 at W24/G30, 3.5e-4 at W240/G150.
+Shortening the island to 146 µm, to reach alpha ≈ -270–300 MHz, costs some of
+that gain (5.22e-04 vs 4.71e-4 at L 190). This is the explicit trade-off
+between anharmonicity and loss.
 
 ### Assumptions behind the T1 number
 
 - **Interface layers:** t = 3 nm, eps = 10 for MS, MA and SA (the Wang and Ganjam convention).
 - **Ta on annealed sapphire:** surface loss tangent 3.4e-4 on p_MS+p_SA+p_MA,
-  bulk 2.6e-8 (Ganjam et al., Nat. Commun. 15, 3687 (2024)). The Al/lift-off
-  alternative uses Wang 2015 (tan_MS-weighted 2.6e-3) and gives
-  48–92 µs for the same geometry.
+  bulk 2.6e-8 on the substrate energy fraction (0.907 from the
+  eigenmode) (Ganjam et al., Nat. Commun. 15, 3687 (2024)). The Al/lift-off
+  alternative uses Wang 2015 and gives 44–87 µs.
 - **Raw vs calibrated:** for the same pads our pipeline gives about
-  2.0× Wang's participation, so we quote both raw (conservative)
+  2.0× Wang's participation, so we quote raw (conservative)
   and calibrated (k = 0.51).
 - **Junction leads:** Wang's measured lead participation is added. Junction
   TLS, quasiparticles, radiation, package modes and flux noise are **not modelled**.
-- **Purcell:** assumes a Q=30 bandpass filter. Without one the readout limits T1 to 69 µs.
+- **Purcell:** from the eigenmode's port Q, assuming a Q=30 bandpass filter.
+  Without the filter, T1 would be capped at 222 µs.
+- **Readout kappa:** set by DeviceLayout's standard 400 µm hanger coupler.
+  chi/kappa 0.69 is inside the 0.5–1 target, so no
+  separate coupler tuning was done.
 
 ### Validation against a published device (`results/v2/validation_wang2015.json`)
 
@@ -113,54 +157,57 @@ matches alpha ≈ -300 MHz at chi/kappa = 0.5.
 The 2D edge model, the 3D field's 1/sqrt(u) edge law and the 3D mesh
 convergence check out. The open item is the **2× offset from Wang's published
 participation** for their Design A. Their pad gap and film thickness are not
-fully specified, and the edge-band choice (x0 = 4 vs 8 µm) moves our number by
-19%. This offset is why every T1 is quoted as a raw-to-calibrated range. As a
-consequence, our raw prediction for Design A (48 µs) is conservative against
-its measured 66–95 µs.
+fully specified, and the edge-band choice moves our number by 19%. That offset
+is why every T1 is a raw-to-calibrated range. Our raw prediction for Design A
+(48 µs) is conservative against its measured 66–95 µs.
 
 ### Fab-ready output
 
-`results/v2/mask/final_qubit.gds` (and `v1_qubit.gds`) is the exact analysed
-geometry as a GDS mask: metal on layer 1, a junction placeholder on layer 2,
-parameters on a text label. The Josephson junction itself is a separate
-e-beam / Dolan-bridge step. Target R_n = 11.0 kOhm at room
-temperature, to be checked by probe-station resistance before cooldown.
+- `results/v2/mask/final_full_chip.gds`: the complete chip from DeviceLayout.jl
+  (island, claw, meander resonator, feedline, air-bridge sites). This is the
+  exact geometry of the 3D eigenmode solve.
+- `results/v2/mask/final_qubit.gds`: the qubit region exactly as analysed for
+  surface loss. Metal is on layer 1 and the junction placeholder on layer 2.
+- **Junction:** a separate e-beam / Dolan-bridge step. Target L_J 12.28 nH,
+  room-temperature R_n ≈ 10.6 kOhm, to be checked at a probe station
+  before cooldown. A real fab run would place a few junction sizes around this
+  target, because the first run typically lands 2–5% off.
 
 ### Viewer
 
-`viewer.html` (2.3 MB, three.js from jsDelivr):
-- **Chip & modes:** the v1 chip from the full 3D eigenmode run, in PBR metal on
-  sapphire, with a glowing |E| for each mode and a morph between qubit and
-  resonator modes.
-- **Loss map & evolution:** extruded metal for every design point, a
-  slider/autoplay morph through the sweep to the final design, "loss beads"
-  sized and coloured by participation per µm of edge, and the final design's
-  qubit-mode field as a glow.
-- **Panels:** the energy-level diagram with dispersive pull, the sweep chart, T1
-  against IBM devices, the T1 budget and the validation table.
+`viewer.html` (2.7 MB, three.js from jsDelivr):
+- **Chip & modes:** the final design's full chip (and v1) from the 3D eigenmode
+  solves, in PBR metal on sapphire, with a glowing |E| for each mode and a
+  morph between qubit and resonator modes.
+- **Loss map & evolution:** extruded metal for every sweep point, a
+  slider/autoplay morph to the final design, "loss beads" sized and coloured by
+  participation per µm of edge, and the final design's qubit-mode field as a glow.
+- **Panels:** the energy-level diagram with dispersive pull, the sweep chart,
+  capacitance model vs 3D eigenmode, T1 vs IBM devices, the T1 budget and the
+  validation table.
 - **Guided tour** (6 steps) and light/dark themes. Screenshots are in `results/viewer_*.png`.
 
 ### Reproduce (on a CPU instance, not a shared pod)
 
 ```bash
+# surface participation (electrostatics)
 python loss/pipeline.py table 0.2 10.34 4.0 runs/table.json
-python loss/pipeline.py point runs/final '{"W":240,"G":150,"L":190}' runs/table.json --fieldmap
-python loss/pipeline.py point runs/v1    '{"W":24,"G":30,"L":620}'   runs/table.json
-# sweep: W in 24..320, G in 30..150 at L=400 -> runs/sw_W<W>_G<G>
-QD_RUNS=runs python loss/make_results.py <final_run_dir> && python loss/make_validation.py
-python build_viewer_v2.py
+python loss/pipeline.py point runs/final '{"W":240,"G":150,"L":146}' runs/table.json --fieldmap --np 8
+# full-chip eigenmode (DeviceLayout.jl 1.8.0 + Palace)
+cd eigen && julia --project=. -e 'using Pkg; Pkg.instantiate()'
+julia --project=. gen.jl final '{"cap_width":240,"cap_length":146,"cap_gap":150,"total_length":3550}'
+python make_config.py final/eig_base.json final/eig.json 12.28 2.0 4.85
+palace -np 10 final/eig.json && python ../derive_hamiltonian.py final/postpro final/eig.json final/ham.json
+cd .. && python eigen/summarize.py iter3 && python build_viewer_v2.py
 ```
 
-> **Verified 2026-10-01.** Palace v0.18.1 electrostatics: 14 design points plus
-> 2 final candidates, each about 2–3 min on 2 MPI ranks on the shared qBraid
-> gpu-l4 pool box (cgroup about 5 CPUs). Total about 37 CPU-minutes, about $0.30
-> of pool time.
-
-**Not done in v2.** A 3D eigenmode run of the final design: the pod run was
-lost to a pod restart, and the pool's 60-min job cap with 2 threads is too
-tight. The LOM E_C was 6% higher than the eigenmode/EPR value on v1, so expect
-a few-percent frequency correction. That run costs about 1 h on `cpu-32v-128g`
-($1.92).
+> **Verified 2026-10-01.** Palace v0.18.1.
+> - **3D eigenmode:** 3 iterations, 5.5–16.5 min each, 10 MPI ranks on a
+>   10-core share of a qBraid `cpu-32v-128g`. DeviceLayout.jl 1.8.0 / Julia 1.12.
+> - **Electrostatics:** 14 sweep points plus finals, about 2–3 min each on 2–8 ranks.
+> - **2D edge model:** scikit-fem 11.
+> - **Compute:** about 1.2 core-hours in total, roughly $1 of instance time at
+>   the shared rates.
 
 ---
 

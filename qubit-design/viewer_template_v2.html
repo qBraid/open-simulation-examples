@@ -108,6 +108,7 @@ footer{padding:0 20px 20px;color:var(--muted);font-size:12px}
     <div class="card"><h3>T1 vs IBM devices</h3><svg id="cmp" viewBox="0 0 360 250" style="width:100%;height:auto"></svg>
       <div class="note" id="cmpNote"></div></div>
     <div class="card"><h3>T1 budget (predicted)</h3><div id="budget"></div></div>
+    <div class="card"><h3>Capacitance model vs 3D eigenmode</h3><div id="eig"></div></div>
     <div class="card"><h3>Validation</h3><div id="val"></div></div>
   </div>
 </div>
@@ -130,11 +131,20 @@ function kpis(){
   const h = FINAL.ham, b = FINAL.ham.T1_budget;
   const items = [
     [fmt(h.f01_GHz,3)+" GHz","f01"],[fmt(h.alpha_MHz,0)+" MHz","anharmonicity α"],[fmt(h.EJ_over_EC,1),"E_J / E_C"],
-    [fmt(h.g_MHz,0)+" MHz","g (qubit–readout)"],[fmt(h.chi_MHz,2)+" MHz","χ (half pull)"],[fmt(h.chi_over_kappa,2),"χ / κ"],
+    [fmt(h.g_MHz,0)+" MHz","g (capacitance model)"],[fmt(h.chi_MHz,2)+" MHz","χ (half pull)"],[fmt(h.chi_over_kappa,2),"χ / κ"],
     [fmt(b.ganjam2024_raw.T1_total_us,0)+"–"+fmt(b.ganjam2024_calibrated.T1_total_us,0)+" µs","T1 predicted, Ta"],
     [fmt(h.T1_purcell_filtered_us/1000,1)+" ms","Purcell limit (filter)"],[fmt(h.Rn_kOhm_AB,1)+" kΩ","junction R_n target"]];
   $("kpis").innerHTML = items.map(([v,l]) => `<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
-  $("kNote").innerHTML = `Island ${fmt(FINAL.kw.W)} × ${fmt(FINAL.kw.L)} µm in a ${fmt(FINAL.kw.G)} µm trench, Ta on sapphire. T1 is a <b>prediction</b> of the geometry-limited lifetime under published loss tangents (range: our participation as computed, and rescaled to Wang 2015's pipeline). It is not a measurement.`;
+  $("kNote").innerHTML = `Island ${fmt(FINAL.kw.W)} × ${fmt(FINAL.kw.L)} µm in a ${fmt(FINAL.kw.G)} µm trench, Ta on sapphire. Hamiltonian from the full-chip 3D eigenmode solve (EPR). T1 is a <b>prediction</b> of the geometry-limited lifetime under published loss tangents (range: our participation as computed, and rescaled to Wang 2015's pipeline). It is not a measurement.`;
+}
+function eigenCard(){
+  const e=FINAL.eigen; if(!e){ $("eig").closest(".card").style.display="none"; return; }
+  const L=e.lom_vs_eigen.lom_W240_L190, A=e.lom_vs_eigen.eigen_iter1_same_geometry, it=e.iterations;
+  const rows=[["f01 (GHz)","f01_GHz",3],["α (MHz)","alpha_MHz",0],["resonator (GHz)","fr_GHz",3],["2χ pull (MHz)","pull_2chi_MHz",2],["E_J/E_C","EJ_over_EC",1]];
+  const fin=it[Object.keys(it).sort().pop()];
+  $("eig").innerHTML=`<table><tr><th></th><th>capacitance (L 190)</th><th>3D, same geometry</th><th>3D final (L 146)</th></tr>
+   ${rows.map(([lab,k,d])=>`<tr><td>${lab}</td><td class="n">${fmt(L[k],d)}</td><td class="n">${fmt(A[k],d)}</td><td class="n"><b>${fmt(fin[k],d)}</b></td></tr>`).join("")}</table>
+   <div class="note">The full-chip eigenmode (Palace, DeviceLayout geometry with meander, feedline and anisotropic sapphire) found 7% more island capacitance than the capacitance model: f01 8% low, α 19% weaker. Closed loop: island shortened 190 → 146 µm, resonator 4000 → 3550 µm, L<sub>J</sub> 12.85 → 12.28 nH. EPR's numerical α (−270 MHz) runs below the charge-basis estimate (−300 MHz) at this E<sub>J</sub>/E<sub>C</sub>.</div>`;
 }
 function budget(){
   const rows = [["ganjam2024_raw","Ta/sapphire (Ganjam 2024)","raw"],["ganjam2024_calibrated","Ta/sapphire (Ganjam 2024)","calibrated"],
@@ -220,7 +230,7 @@ function levels(){
   g.fillStyle=mut; g.fillText(`resonator ${fr.toFixed(2)} GHz; pull 2χ = ${h.pull_2chi_MHz.toFixed(2)} MHz (×${amp} for display)`,xr0-60,H-8);
   $("lvNote").innerHTML=`Transmon levels from exact diagonalisation (E<sub>J</sub>=${h.EJ_GHz.toFixed(2)} GHz, E<sub>C</sub>=${(h.EC_GHz*1000).toFixed(0)} MHz). The resonator frequency depends on the qubit state (dispersive readout); κ = 2χ = ${h.kappa_MHz.toFixed(2)} MHz maximises readout SNR.`;
 }
-function drawPanels(){ kpis(); budget(); validation(); compareChart(); sweepChart(); levels(); }
+function drawPanels(){ kpis(); eigenCard(); budget(); validation(); compareChart(); sweepChart(); levels(); }
 drawPanels();
 (function anim(){ if(!document.hidden){ lvT+=0.016; levels(); } setTimeout(()=>requestAnimationFrame(anim), 60); })();
 $("foot").innerHTML = "Palace (AWS) 3D FEM, DeviceLayout.jl geometry, two-step surface-participation method after Wang et al., APL 107, 162601 (2015). Loss tangents: Wang 2015; Ganjam et al., Nat. Commun. 15, 3687 (2024). IBM data: qiskit-ibm-runtime fake-backend snapshots. All numbers are reproducible from qubit-design/ in this repository.";
@@ -366,7 +376,7 @@ new ResizeObserver(resize).observe($("stage"));
 // tour: [scene, camera pos, target, mode mix or design t, caption]
 const fin = D.designs.length-1;
 const TOUR=[
- ["chip",[0.4,-3.6,3.2],[0,0,0],0,"<b>The starting chip.</b> Palace's reference transmon (v1): readout resonator meander, feedline and the transmon island. Colour shows each eigenmode's electric field on the metal, from a full 3D Palace eigenmode solve."],
+ ["chip",[0.4,-3.6,3.2],[0,0,0],0,"<b>The chip.</b> Transmon island, readout-resonator meander and feedline, in the full 3D Palace eigenmode solve. Colour shows each mode's electric field on the metal. Switch between the v1 example and the final design with the selector."],
  ["chip","Q1","Q0",0,"<b>Qubit mode.</b> The field concentrates in the trench around the island. That is where the stored energy, and the surface loss, lives."],
  ["chip",[-0.6,-1.8,1.8],[-0.4,0.2,0],1,"<b>Resonator mode.</b> Morphing to the readout mode: its energy sits along the meander, and only a little leaks onto the qubit through the claw."],
  ["loss",[250,-650,900],[0,350,0],0,"<b>Where the loss is.</b> Each bead is a piece of metal edge; brightness is how much of the qubit's energy sits in the 3-nm lossy layers there. The v1 island is thin with a tight trench, so its edges are hot."],

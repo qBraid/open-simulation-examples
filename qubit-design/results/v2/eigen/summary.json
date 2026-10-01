@@ -1,0 +1,223 @@
+{
+ "final_iteration": "iter3",
+ "iterations": {
+  "iter1": {
+   "geometry": {
+    "W": 240,
+    "L": 190,
+    "G": 150,
+    "resonator_um": 4000
+   },
+   "L_J_nH": 12.848500000000001,
+   "E_J_GHz": 12.722225375238388,
+   "f_linear_GHz": [
+    4.632483219279,
+    6.215409580744
+   ],
+   "junction_participation": [
+    0.9937806657532,
+    0.002076728000544
+   ],
+   "f01_GHz": 4.412860590323652,
+   "alpha_MHz": -235.54168482699555,
+   "alpha_first_order_MHz": -208.23595746451173,
+   "fr_GHz": 6.214868950163124,
+   "pull_2chi_MHz": 0.8960008497993499,
+   "chi_MHz": 0.44800042489967495,
+   "kappa_MHz": 0.5678536709613982,
+   "chi_over_kappa": 0.788936389442007,
+   "EJ_over_EC": 54.012627890400005,
+   "Delta_GHz": 1.8025489904203473,
+   "T1_purcell_unfiltered_us": 305.1970236748121,
+   "p_sub_qubit_mode": 0.9112570928602
+  },
+  "iter2": {
+   "geometry": {
+    "W": 240,
+    "L": 146,
+    "G": 150,
+    "resonator_um": 3550
+   },
+   "L_J_nH": 13.198000000000002,
+   "E_J_GHz": 12.385324498693016,
+   "f_linear_GHz": [
+    4.882197663774,
+    6.839481438766
+   ],
+   "junction_participation": [
+    0.9945608957098,
+    0.001700357765661
+   ],
+   "f01_GHz": 4.630150518972825,
+   "alpha_MHz": -272.4984994806521,
+   "alpha_first_order_MHz": -237.95569299878704,
+   "fr_GHz": 6.838946412034178,
+   "pull_2chi_MHz": 0.907922391061966,
+   "chi_MHz": 0.453961195530983,
+   "kappa_MHz": 0.7733352736642153,
+   "chi_over_kappa": 0.5870173144696028,
+   "EJ_over_EC": 45.450982380812704,
+   "Delta_GHz": 2.2093309197931745,
+   "T1_purcell_unfiltered_us": 306.31166437746896,
+   "p_sub_qubit_mode": 0.9071947166973
+  },
+  "iter3": {
+   "geometry": {
+    "W": 240,
+    "L": 146,
+    "G": 150,
+    "resonator_um": 3550
+   },
+   "L_J_nH": 12.28,
+   "E_J_GHz": 13.31119810535427,
+   "f_linear_GHz": [
+    5.060341020926,
+    6.839952367355
+   ],
+   "junction_participation": [
+    0.9938370431362,
+    0.00214448261
+   ],
+   "f01_GHz": 4.809179241841282,
+   "alpha_MHz": -270.47562907270526,
+   "alpha_first_order_MHz": -237.51049071013657,
+   "fr_GHz": 6.839310492136637,
+   "pull_2chi_MHz": 1.063515603527243,
+   "chi_MHz": 0.5317578017636215,
+   "kappa_MHz": 0.7731529605050065,
+   "chi_over_kappa": 0.6877782650101851,
+   "EJ_over_EC": 49.21403880634343,
+   "Delta_GHz": 2.0307731255137176,
+   "T1_purcell_unfiltered_us": 221.5767879440474,
+   "p_sub_qubit_mode": 0.9072039975158,
+   "T1_budget": {
+    "wang2015_raw": {
+     "label": "Al on sapphire, lift-off (Wang 2015)",
+     "p_used": 0.00028464092810059633,
+     "T1_surface_us": 44.717598573225345,
+     "T1_bulk_us": null,
+     "T1_purcell_filtered_us": 5613.916598651997,
+     "T1_total_us": 44.36421583943126
+    },
+    "wang2015_calibrated": {
+     "label": "Al on sapphire, lift-off (Wang 2015)",
+     "p_used": 0.0001438339301194689,
+     "T1_surface_us": 88.4941317374869,
+     "T1_bulk_us": null,
+     "T1_purcell_filtered_us": 5613.916598651997,
+     "T1_total_us": 87.12081583264732
+    },
+    "ganjam2024_raw": {
+     "label": "Ta on annealed sapphire (Ganjam 2024)",
+     "p_used": 0.0005989771283736841,
+     "T1_surface_us": 162.50248675982058,
+     "T1_bulk_us": 1403.0426227361374,
+     "T1_purcell_filtered_us": 5613.916598651997,
+     "T1_total_us": 141.95234945384775
+    },
+    "ganjam2024_calibrated": {
+     "label": "Ta on annealed sapphire (Ganjam 2024)",
+     "p_used": 0.0003026733892436326,
+     "T1_surface_us": 321.58516847555217,
+     "T1_bulk_us": 1403.0426227361374,
+     "T1_purcell_filtered_us": 5613.916598651997,
+     "T1_total_us": 249.97115169341106
+    }
+   }
+  }
+ },
+ "lom_vs_eigen": {
+  "lom_W240_L190": {
+   "f01_GHz": 4.800000000000001,
+   "alpha_MHz": -289.6520420881803,
+   "fr_GHz": 7.0,
+   "pull_2chi_MHz": 1.2894542854287039,
+   "chi_MHz": 0.6447271427143519,
+   "EJ_over_EC": 50.436388972051965,
+   "LJ_nH": 12.84852078889643,
+   "kappa_MHz": 1.2894542854287039,
+   "chi_over_kappa": 0.5
+  },
+  "eigen_iter1_same_geometry": {
+   "f01_GHz": 4.412860590323652,
+   "alpha_MHz": -235.54168482699555,
+   "fr_GHz": 6.214868950163124,
+   "pull_2chi_MHz": 0.8960008497993499,
+   "chi_MHz": 0.44800042489967495,
+   "EJ_over_EC": 54.012627890400005,
+   "L_J_nH": 12.848500000000001,
+   "kappa_MHz": 0.5678536709613982,
+   "chi_over_kappa": 0.788936389442007
+  }
+ },
+ "final": {
+  "geometry": {
+   "W": 240,
+   "L": 146,
+   "G": 150,
+   "resonator_um": 3550
+  },
+  "L_J_nH": 12.28,
+  "E_J_GHz": 13.31119810535427,
+  "f_linear_GHz": [
+   5.060341020926,
+   6.839952367355
+  ],
+  "junction_participation": [
+   0.9938370431362,
+   0.00214448261
+  ],
+  "f01_GHz": 4.809179241841282,
+  "alpha_MHz": -270.47562907270526,
+  "alpha_first_order_MHz": -237.51049071013657,
+  "fr_GHz": 6.839310492136637,
+  "pull_2chi_MHz": 1.063515603527243,
+  "chi_MHz": 0.5317578017636215,
+  "kappa_MHz": 0.7731529605050065,
+  "chi_over_kappa": 0.6877782650101851,
+  "EJ_over_EC": 49.21403880634343,
+  "Delta_GHz": 2.0307731255137176,
+  "T1_purcell_unfiltered_us": 221.5767879440474,
+  "p_sub_qubit_mode": 0.9072039975158,
+  "T1_budget": {
+   "wang2015_raw": {
+    "label": "Al on sapphire, lift-off (Wang 2015)",
+    "p_used": 0.00028464092810059633,
+    "T1_surface_us": 44.717598573225345,
+    "T1_bulk_us": null,
+    "T1_purcell_filtered_us": 5613.916598651997,
+    "T1_total_us": 44.36421583943126
+   },
+   "wang2015_calibrated": {
+    "label": "Al on sapphire, lift-off (Wang 2015)",
+    "p_used": 0.0001438339301194689,
+    "T1_surface_us": 88.4941317374869,
+    "T1_bulk_us": null,
+    "T1_purcell_filtered_us": 5613.916598651997,
+    "T1_total_us": 87.12081583264732
+   },
+   "ganjam2024_raw": {
+    "label": "Ta on annealed sapphire (Ganjam 2024)",
+    "p_used": 0.0005989771283736841,
+    "T1_surface_us": 162.50248675982058,
+    "T1_bulk_us": 1403.0426227361374,
+    "T1_purcell_filtered_us": 5613.916598651997,
+    "T1_total_us": 141.95234945384775
+   },
+   "ganjam2024_calibrated": {
+    "label": "Ta on annealed sapphire (Ganjam 2024)",
+    "p_used": 0.0003026733892436326,
+    "T1_surface_us": 321.58516847555217,
+    "T1_bulk_us": 1403.0426227361374,
+    "T1_purcell_filtered_us": 5613.916598651997,
+    "T1_total_us": 249.97115169341106
+   }
+  }
+ },
+ "notes": [
+  "Eigenmode: Palace v0.18.1, DeviceLayout.jl SingleTransmon full chip (island, claw, lambda/4 meander, feedline, 50-ohm lumped ports), anisotropic sapphire eps=(9.3, 9.3, 11.5), order 2, junction as lumped L_J || C_J=2 fF.",
+  "Hamiltonian by energy-participation quantization (numerical diagonalization, 12x14 levels).",
+  "chi here is half the dispersive pull (chi = |2chi|/2), the same convention as the LOM design.",
+  "T1 budget: surface participation from the electrostatic two-step model of the final island; substrate fraction and Purcell (port Q_ext) from the eigenmode; Q=30 Purcell filter assumed."
+ ]
+}
