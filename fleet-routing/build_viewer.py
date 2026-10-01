@@ -77,6 +77,7 @@ def main():
 
     # X benchmark --------------------------------------------------------------
     cu = {os.path.basename(p)[:-5]: json.load(open(p)) for p in glob.glob(os.path.join(R, "xbench_cuopt", "*.json"))}
+    f30 = {os.path.basename(p)[:-5]: json.load(open(p)) for p in glob.glob(os.path.join(R, "xbench_full30", "*.json"))}
     xs = []
     for p in sorted(glob.glob(os.path.join(R, "xbench", "*.json"))):
         b = json.load(open(p))
@@ -93,7 +94,18 @@ def main():
         c = cu.get(b["instance"])
         if c and c.get("cost"):
             sol["cuopt"] = {"cost": c["cost"], "gap": c["gap_pct"], "trace": [], "mode": c.get("mode", "default")}
-        winner, best, gap = b["winner"], b["best"], b["gap_pct"]
+        fb = f30.get(b["instance"])
+        if fb:
+            v = fb["solvers"]["pyvrp"]
+            sol["pyvrp_full"] = {"cost": v["cost"], "gap": v["gap_pct"],
+                                 "trace": [[round(t / fb["time_limit_s"], 4), round(100 * (c - b["bks"]) / b["bks"], 3)] for t, c in v["trace"]]}
+            winner, best, gap = "pyvrp_full", v["cost"], v["gap_pct"]
+            if fb.get("best_routes"):
+                b = {**b, "best_routes": fb["best_routes"]}
+        else:
+            winner, best, gap = b["winner"], b["best"], b["gap_pct"]
+        if not fb and b["gap_pct"] is not None and b["gap_pct"] < gap:
+            winner, best, gap = b["winner"], b["best"], b["gap_pct"]
         if "cuopt" in sol and sol["cuopt"]["gap"] is not None and sol["cuopt"]["gap"] < gap:
             winner, best, gap = "cuopt", sol["cuopt"]["cost"], sol["cuopt"]["gap"]
         xs.append({"name": b["instance"], "n": b["n"], "bks": b["bks"], "tl": b["time_limit_s"],

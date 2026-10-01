@@ -31,6 +31,7 @@ def main():
     xb = [json.load(open(p)) for p in sorted(glob.glob(os.path.join(R, "xbench", "*.json")))]
     cu = {os.path.basename(p)[:-5]: json.load(open(p)) for p in glob.glob(os.path.join(R, "xbench_cuopt", "*.json"))}
     full = [json.load(open(p)) for p in sorted(glob.glob(os.path.join(R, "xbench_full", "*.json")))]
+    f30 = {json.load(open(p))["instance"]: json.load(open(p)) for p in glob.glob(os.path.join(R, "xbench_full30", "*.json"))}
     n = len(xb)
     race_cpu = mean([b["gap_pct"] for b in xb])
     def best_gap(b):  # the full race: CPU racers plus the GPU racer
@@ -62,11 +63,34 @@ def main():
     small = {f["instance"] for f in full}
     small10 = mean([b["gap_pct"] for b in xb if b["instance"] in small])
 
-    # REACHED needs stratified evidence at the published budget; the full-budget check here covers
-    # only the 6 smallest (easiest) instances, so it can support CLOSE but not REACHED.
-    if race is not None and race <= 0.22:
+    # Full published budget (2.4 n s) on the same 30 instances, PyVRP, one pinned core each.
+    F = None
+    if f30:
+        rows = [f30[b["instance"]] for b in xb if b["instance"] in f30]
+        def fgap(r):
+            return r["solvers"]["pyvrp"]["gap_pct"]
+        def frace(r):  # race with the cuOpt runs (they had only 10% of the time: a conservative race)
+            g = [fgap(r)]
+            c = cu.get(r["instance"])
+            if c and c.get("gap_pct") is not None:
+                g.append(c["gap_pct"])
+            return min(g)
+        fg = {}
+        for lab, lo, hi in (("100-299", 0, 300), ("300-599", 300, 600), ("600-1000", 600, 10**6)):
+            sel = [r for r in rows if lo <= r["n"] < hi]
+            fg[lab] = {"instances": len(sel), "pyvrp": mean([fgap(r) for r in sel]), "race": mean([frace(r) for r in sel])}
+        F = {"instances": len(rows), "pyvrp_mean_gap_pct": mean([fgap(r) for r in rows]),
+             "race_mean_gap_pct": mean([frace(r) for r in rows]),
+             "cuopt_wins": sum(1 for r in rows if frace(r) < fgap(r)),
+             "at_bks": sum(1 for r in rows if frace(r) <= 1e-9),
+             "within_0_5pct": sum(1 for r in rows if frace(r) <= 0.5), "by_size": fg,
+             "host": rows[0]["stamp"]["host"].split(" (core")[0] if rows else None}
+    # Verdict: on the full-budget stratified 30 if available, else on the 10% run.
+    head = F["pyvrp_mean_gap_pct"] if F and F["instances"] >= 30 else race
+    head_race = F["race_mean_gap_pct"] if F and F["instances"] >= 30 else race
+    if head_race is not None and head_race <= 0.22:
         verdict = "reached"
-    elif race is not None and race <= 1.0:
+    elif head_race is not None and head_race <= 0.44:
         verdict = "close"
     else:
         verdict = "not reached"
@@ -91,6 +115,18 @@ def main():
     )
     short = (f"{n} CVRPLIB X instances at 10% of the published time: the open-source race (CPU + GPU) averages {fmt(race)} "
              f"from best-known (published state of the art at full time: 0.11–0.22%).")
+    if F and F["instances"] >= 30:
+        note = (f"<b>Full published budget</b> (2.4·n s per instance, the protocol behind the published numbers) on "
+                f"{F['instances']} stratified X instances (n 100–1000), PyVRP single-thread, <b>one seed</b>, one pinned core "
+                f"each: mean gap to best-known <b>{fmt(F['pyvrp_mean_gap_pct'])}</b>. Racing in the earlier cuOpt (L4) runs, "
+                f"which had only 10% of that time, gives <b>{fmt(F['race_mean_gap_pct'])}</b> (cuOpt still wins "
+                f"{F['cuopt_wins']} instances). {F['at_bks']} instances hit best-known exactly; {F['within_0_5pct']} of "
+                f"{F['instances']} are within 0.5%. Published: PyVRP 0.22%, HGS-CVRP 0.11% (all 100 instances, mean of 10 seeds). "
+                f"A 30-instance stratified subset and one seed is a fair but not identical comparison: the published mean is over "
+                f"all 100 and averages out seed luck. At 10% of the budget the same race averaged {fmt(race)}. "
+                f"Verdict rule: reached = race mean ≤ 0.22%; close = ≤ 0.44%; otherwise not reached.")
+        short = (f"{F['instances']} CVRPLIB X instances at the full published time: PyVRP {fmt(F['pyvrp_mean_gap_pct'])}, "
+                 f"race with cuOpt {fmt(F['race_mean_gap_pct'])} from best-known (published 0.11–0.22%).")
     out = {
         "instances": n, "race_mean_gap_pct": race, "race_cpu_only_mean_gap_pct": race_cpu, "cuopt_wins": cu_wins,
         "by_size": groups, "pyvrp_mean_gap_pct": pyvrp, "ortools_mean_gap_pct": ortools,
@@ -98,6 +134,7 @@ def main():
         "cuopt_mode": cu_mode, "at_bks": at_bks, "within_0_5pct": within_half,
         "full_budget": {"instances": len(full), "pyvrp_mean_gap_pct": full_mean, "same_at_10pct": small10},
         "published": {"PyVRP": 0.22, "HGS-CVRP": 0.11, "protocol": "Tmax = 2.4 n s, 10 seeds, all 100 X instances"},
+        "full30": F,
         "verdict": verdict.upper(), "note": note, "short": short,
         "stamp": f"{date.today().isoformat()} · CPU solvers 1 thread each (21 instances on the qBraid subscription pod, "
                  f"9 largest on the shared qBraid L4 pool box after a pod restart) · cuOpt on the pool L4 · "

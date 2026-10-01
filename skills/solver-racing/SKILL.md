@@ -49,6 +49,7 @@ On 30 CVRPLIB X instances at 10% of the published budget, PyVRP alone averages
 0.60% from best-known. Adding cuOpt on one L4 as a GPU racer brings the race to
 **0.49%**: cuOpt wins 10 of 30 instances, mostly under n = 500. OR-Tools never won.
 GPU and CPU racers don't compete for cores, so this costs nothing extra in wall time.
+At the full budget the race still helps a little (PyVRP 0.34% → race 0.31%; cuOpt wins 5 of 30 with 10x less time).
 
 ## Long runs on shared machines
 

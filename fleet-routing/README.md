@@ -26,7 +26,7 @@ open stack means: **within the published PyVRP gap at the published budget**.
 
 | Verdict | Measured |
 |---|---|
-| **CLOSE** | At **10% of the published time budget**, on 30 stratified instances, the open-source race averages **0.49%** from best-known: about 2x the published PyVRP number (0.22%) and 4.5x HGS-CVRP (0.11%), both of which had 10x the time and 10 seeds. At the **full budget** on the 6 smallest instances PyVRP averages **0.05%** (the same 6 at 10%: 0.31%), so the gap is time, not code. Closing the claim to REACHED needs all 100 instances at full budget: ~$4 on a `cpu-32v-128g` (below). |
+| **CLOSE** | At the **full published budget** (2.4·n s, one pinned core per instance) on 30 stratified X instances, one seed: PyVRP averages **0.34%**, and the race with the GPU solver **0.31%**, against the 0.22% bar. That is about 1.4x the published PyVRP gap and 2.8x HGS-CVRP. Instances under 300 customers beat the bar (0.14%); 600–1000 customers do not (0.69%). |
 
 ## Results
 
@@ -35,9 +35,42 @@ Verification stamp, **2026-10-01**:
 - The full-budget check and the 900 s Chicago bound ran on the pool box.
 - cuOpt ran on the shared qBraid L4 pool box.
 - Envs: `requirements.txt` and `requirements-gpu.txt`.
-- Total compute charged to this example: **~0 credits** (the pool box is shared by ten projects).
+- The full-budget run used a dedicated 32-vCPU box shared by three streams (cores 20–29 here).
+- Total compute charged to this example: ~0 credits directly (the boxes are owned by the coordinator).
 
-### 1. CVRPLIB X benchmark (30 of 100 instances, stratified by size)
+### 1. CVRPLIB X benchmark at the full published budget (verified 2026-10-01)
+
+**Setup:**
+- 30 of the 100 X instances, stratified by size (`data/X/xsub.txt`).
+- PyVRP 0.14, single-thread, **Tmax = 2.4·n s**, one seed.
+- One pinned core per instance, 10 in parallel on a dedicated 32-vCPU qBraid CPU box (cores 20–29).
+- Wall time 54 min; 8.3 CPU-hours.
+- The cuOpt column is the earlier L4 run, which had only **10%** of this time. Racing it in is conservative.
+
+| Size group | Instances | **Race (PyVRP full + cuOpt)** | PyVRP, full time | PyVRP, 10% time |
+|---|---|---|---|---|
+| n 100–299 | 13 | **0.14%** | 0.15% | 0.47% |
+| n 300–599 | 10 | **0.27%** | 0.30% | 0.54% |
+| n 600–1000 | 7 | **0.69%** | 0.74% | 0.92% |
+| **all** | 30 | **0.31%** | 0.34% | 0.60% |
+
+- 4 instances hit best-known exactly, and 25 of 30 are within 0.5%.
+- cuOpt still beats full-time PyVRP on 5 instances despite 10x less time.
+
+**Verdict: CLOSE, not reached.** The mean is 0.31% against the published 0.22% (PyVRP) and 0.11% (HGS-CVRP).
+
+**How fair the comparison is:**
+- **Same budget and metric.** The time budget and the metric (mean gap to best-known) match the published protocol.
+- **Fewer instances and seeds.** It uses a 30-instance stratified subset instead of all 100, and one seed instead of the mean of 10.
+- **Expected value, noisier.** One seed has the same expected value but more noise, mostly on the large instances.
+- **Untested CPU speed.** The published budget is defined on a reference CPU (PassMark single-thread 2183). This box's speed relative to it wasn't measured, so the effective budget may differ in either direction.
+- **Where the gap is.** The shortfall sits in the 600–1000-customer instances. That is where the published HGS-CVRP still leads PyVRP, and where 10 seeds would help most.
+
+**What would close it** (all on the same box, about 4 h wall at 10 cores each):
+- all 100 instances at 3 seeds;
+- a matching full-budget cuOpt run on the L4, about $2.
+
+### 1b. CVRPLIB X benchmark at 10% of the published budget (earlier run, 30 of 100 instances, stratified by size)
 
 The subset is every ~3rd instance by size (`data/X/xsub.txt`). Each solver gets
 **10% of the published budget** (0.24·n s), because the shared box allows about
@@ -205,7 +238,7 @@ python summarize.py && python build_viewer.py
 
 | Step | Where | Estimate |
 |---|---|---|
-| All 100 X instances at the full published budget, 3 seeds, PyVRP + OR-Tools | `cpu-32v-128g`, 16 racers in parallel | ~25 CPU-h → ~2 h wall, **~$4** |
+| All 100 X instances at the full published budget, 3 seeds, PyVRP | `cpu-32v-128g`, 30 cores | ~75 CPU-h → ~2.5 h wall, **~$5** |
 | cuOpt at the full budget on all 100 | `gpu-l4` | ~30 h GPU → **~$15**; or `gpu-h100-sxm` for larger instances |
 | QAOA on IQM Garnet, p = 1–3, 1000 shots each | QPU | **525 credits ($5.25)**. Ask first; expect mostly noise |
 
