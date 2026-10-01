@@ -6,242 +6,610 @@
 <title>Virtual Wind Tunnel</title>
 <style>
 :root{
-  --ground:#f3f4f1;--surface:#fff;--surface-2:#e9ece7;--ink:#191d1f;--muted:#5a6469;--line:#d3d9d4;
-  --accent:#0f6e66;--good:#1d7f56;--warn:#b26a06;--stage:#0c1114;--stage-ink:#b9c7c3;
+  --bg:#f4f5f2;--surface:#ffffff;--surface-2:#eceee9;--ink:#171b1d;--muted:#5b656a;--line:#d5dad5;
+  --accent:#0f6e66;--accent-soft:#d8eeea;--good:#1d7f56;--good-soft:#dff3ea;--mid:#a86106;--mid-soft:#fbeed6;
+  --bad:#b3372b;--bad-soft:#f8e1de;--stage:#0b0f11;--stage-ink:#1b2124;--hud:rgba(255,255,255,.86);--hud-line:rgba(20,30,28,.12);
+  --shadow:0 1px 2px rgba(20,30,28,.06),0 10px 30px -18px rgba(20,30,28,.35);
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --ground:#0e1213;--surface:#161b1d;--surface-2:#1e2528;--ink:#e5eae8;--muted:#97a3a0;--line:#29342f;
-  --accent:#45c2b3;--good:#4cc38a;--warn:#e7a640;--stage:#070a0c;
+  --bg:#0c1012;--surface:#141a1c;--surface-2:#1c2427;--ink:#e6ebe9;--muted:#98a4a1;--line:#27322e;
+  --accent:#45c2b3;--accent-soft:#143633;--good:#4cc38a;--good-soft:#16362a;--mid:#e7a640;--mid-soft:#3a2c12;
+  --bad:#f07a6c;--bad-soft:#3b1d1a;--stage:#070a0b;--stage-ink:#dfe7e4;--hud:rgba(14,19,21,.78);--hud-line:rgba(255,255,255,.08);
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -18px rgba(0,0,0,.7);
 }}
 :root[data-theme="dark"]{
-  --ground:#0e1213;--surface:#161b1d;--surface-2:#1e2528;--ink:#e5eae8;--muted:#97a3a0;--line:#29342f;
-  --accent:#45c2b3;--good:#4cc38a;--warn:#e7a640;--stage:#070a0c;
+  --bg:#0c1012;--surface:#141a1c;--surface-2:#1c2427;--ink:#e6ebe9;--muted:#98a4a1;--line:#27322e;
+  --accent:#45c2b3;--accent-soft:#143633;--good:#4cc38a;--good-soft:#16362a;--mid:#e7a640;--mid-soft:#3a2c12;
+  --bad:#f07a6c;--bad-soft:#3b1d1a;--stage:#070a0b;--stage-ink:#dfe7e4;--hud:rgba(14,19,21,.78);--hud-line:rgba(255,255,255,.08);
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--ground);color:var(--ink);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
-.wrap{max-width:1180px;margin:0 auto;padding:22px 16px 48px}
-h1{margin:0 0 4px;font-size:24px;letter-spacing:-.01em}
-.sub{color:var(--muted);margin:0 0 14px;max-width:80ch}
-.tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
-.tabs button,.ctl button{font:500 13px system-ui,sans-serif;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:5px 12px;border-radius:999px;cursor:pointer}
-.tabs button[aria-selected="true"],.ctl button[aria-pressed="true"]{background:var(--ink);color:var(--ground);border-color:var(--ink)}
-.grid{display:grid;grid-template-columns:1fr 300px;gap:14px}
-@media (max-width:900px){.grid{grid-template-columns:1fr}}
-.stage{position:relative;background:var(--stage);border-radius:12px;overflow:hidden;border:1px solid var(--line);min-height:300px}
-.stage canvas{display:block;width:100%;height:560px}
-@media (max-width:640px){.stage canvas{height:360px}}
-.hud{position:absolute;left:12px;top:10px;color:var(--stage-ink);font:12px ui-monospace,Menlo,monospace;pointer-events:none}
-.legend{position:absolute;right:12px;bottom:12px;color:var(--stage-ink);font:11px ui-monospace,Menlo,monospace;text-align:right}
-.legend canvas{width:180px;height:10px;display:block;border-radius:2px;margin:3px 0}
-.ctl{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-top:10px;font-size:13px;color:var(--muted)}
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px}
-.panel h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;font-weight:600}
-table{border-collapse:collapse;width:100%;font-size:12.5px;margin-bottom:12px}
-td,th{padding:4px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
-th{color:var(--muted);font-weight:500}
-td.n{font-family:ui-monospace,Menlo,monospace;white-space:nowrap}
-.ok{color:var(--good)}.hi{color:var(--warn)}
-.stamp{font:11.5px/1.5 ui-monospace,Menlo,monospace;color:var(--muted);background:var(--surface-2);border-radius:8px;padding:8px 10px;white-space:pre-wrap}
-.note{font-size:12px;color:var(--muted);margin:8px 0 0}
-[hidden]{display:none!important}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:14.5px/1.5 "Inter","Helvetica Neue",Arial,sans-serif}
+.mono{font-family:"JetBrains Mono","SFMono-Regular",Menlo,monospace}
+header{max-width:1500px;margin:0 auto;padding:22px 20px 10px;display:flex;flex-wrap:wrap;gap:10px 24px;align-items:flex-end;justify-content:space-between}
+h1{margin:0;font-size:26px;letter-spacing:-.01em}
+.sub{margin:4px 0 0;color:var(--muted);max-width:76ch}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button,.seg button,.btn{font:500 12.5px/1 "Inter",sans-serif;border:1px solid var(--hud-line);background:var(--surface-2);color:var(--ink);padding:7px 11px;border-radius:999px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.layout{max-width:1500px;margin:0 auto;padding:0 20px 40px;display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px}
+.stage{position:relative;height:min(76vh,780px);min-height:460px;border-radius:14px;overflow:hidden;background:var(--stage);box-shadow:var(--shadow);border:1px solid var(--line)}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block}
+#labels{position:absolute;inset:0;pointer-events:none}
+.hud{position:absolute;background:var(--hud);border:1px solid var(--hud-line);color:var(--stage-ink);border-radius:10px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.hud.info{top:10px;left:10px;padding:6px 10px;font-size:11.5px}
+.hud.ctl{bottom:10px;left:10px;padding:10px;display:grid;gap:7px;width:232px;font-size:12px}
+.hud.ctl .row{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.hud.ctl .lab{width:100%;font:600 10.5px/1 "Inter",sans-serif;letter-spacing:.06em;text-transform:uppercase;opacity:.7;margin-top:2px}
+.seg button{padding:5px 9px;border-radius:7px}
+.seg button[aria-pressed="true"],.btn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.seg button:disabled{opacity:.35;cursor:not-allowed}
+.hud.cap{left:50%;transform:translateX(-50%);top:46px;max-width:min(600px,70%);padding:10px 14px;font-size:13.5px;display:none}
+.hud.cap b{display:block;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);margin-bottom:2px}
+.hud.cbar{right:10px;bottom:10px;padding:8px 10px;font-size:11px;width:220px}
+.hud.cbar canvas{width:100%;height:10px;border-radius:3px;display:block;margin:4px 0 2px}
+.hud.cbar .ticks{display:flex;justify-content:space-between}
+.hud.chart{right:10px;top:10px;padding:8px 10px;width:270px;font-size:11px;display:none}
+.hud.load{inset:0;display:flex;align-items:center;justify-content:center;border:0;border-radius:0;font-size:14px}
+.tag3d{font:600 12px/1.35 "Inter",sans-serif;color:var(--stage-ink);background:var(--hud);border:1px solid var(--hud-line);padding:7px 10px;border-radius:9px;white-space:nowrap;backdrop-filter:blur(6px);box-shadow:var(--shadow)}
+.tag3d .big{font:700 19px/1.1 "JetBrains Mono",Menlo,monospace}
+.tag3d .ok{color:var(--good)}.tag3d .warn{color:var(--mid)}.tag3d .bad{color:var(--bad)}
+.pin{font:600 11px/1 "Inter",sans-serif;color:#fff;background:var(--accent);padding:4px 7px;border-radius:999px;opacity:0;transition:opacity .4s;white-space:nowrap}
+.pin.show{opacity:1}
+aside{display:grid;gap:12px;align-content:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow)}
+.card h3{margin:0 0 8px;font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.card p{margin:0 0 8px;font-size:13px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+td,th{padding:5px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:11px}
+tr:last-child td{border-bottom:0}
+td.n{font-family:"JetBrains Mono",Menlo,monospace;white-space:nowrap}
+.chip{display:inline-block;font:600 10.5px/1 "Inter",sans-serif;padding:3px 7px;border-radius:999px;white-space:nowrap}
+.chip.ok{background:var(--good-soft);color:var(--good)}.chip.close{background:var(--mid-soft);color:var(--mid)}.chip.no{background:var(--bad-soft);color:var(--bad)}
+.stamp{font:11px/1.5 "JetBrains Mono",Menlo,monospace;background:var(--surface-2);border-radius:8px;padding:8px;white-space:pre-wrap;color:var(--muted)}
+svg text{fill:var(--muted);font:10.5px "Inter",sans-serif}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+ul.lim{margin:0;padding-left:18px;font-size:12.5px;color:var(--muted)}
+#ctlbtn{display:none;position:absolute;left:10px;bottom:10px}
+@media (max-width:980px){.layout{grid-template-columns:minmax(0,1fr)}.stage{height:68vh}}
+@media (max-width:560px){header{padding:14px 16px 8px}.layout{padding:0 16px 30px}.hud.ctl{width:auto;right:10px;bottom:52px;max-height:58%;overflow:auto}.hud.ctl:not(.open){display:none!important}#ctlbtn{display:block}.hud.info{right:10px;font-size:10.5px}.hud.cap{max-width:92%}.tag3d{font-size:10.5px;padding:5px 7px}.tag3d .big{font-size:15px}.hud.cbar{display:none}h1{font-size:21px}}
 </style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
 </head>
 <body>
-<div class="wrap">
-  <h1>Virtual Wind Tunnel</h1>
-  <p class="sub">OpenFOAM v2412 on qBraid. There are two cases. A 3D Ahmed reference car body is solved with steady RANS (k-ω SST) and compared against wind-tunnel data. A 2D cylinder at Re = 100 serves as the validation case, and its vortex street is animated from the solver output. Drag the 3D view to orbit and scroll to zoom.</p>
+<header>
+  <div>
+    <h1>Virtual Wind Tunnel</h1>
+    <p class="sub">OpenFOAM v2412 on qBraid. The Ahmed reference car body is solved at 25° and 35° rear slant on a three-level mesh ladder and checked against wind-tunnel drag. The Re = 100 cylinder is the code validation case. Every field you see is the real solver output.</p>
+  </div>
   <div class="tabs" role="tablist">
-    <button role="tab" data-tab="car" aria-selected="true">Ahmed body · 3D RANS</button>
-    <button role="tab" data-tab="cyl" aria-selected="false">Cylinder Re = 100 · validation</button>
+    <button role="tab" id="tab-ahmed" aria-selected="true">Ahmed body · 3D RANS</button>
+    <button role="tab" id="tab-cyl" aria-selected="false">Cylinder Re = 100 · validation</button>
   </div>
-  <div class="grid">
-    <div>
-      <div id="tab-car">
-        <div class="stage"><canvas id="c3d"></canvas>
-          <div class="hud" id="hud3d">loading three.js…</div>
-          <div class="legend"><span id="legTitle">Cp</span><canvas id="legBar" width="180" height="10"></canvas><span id="legRange"></span></div>
-        </div>
-        <div class="ctl">
-          <span>Colour</span>
-          <button data-color="cp" aria-pressed="true">pressure Cp</button>
-          <button data-color="speed" aria-pressed="false">speed |U|/U∞</button>
-          <span style="margin-left:6px">Show</span>
-          <button data-show="lines" aria-pressed="true">streamlines</button>
-          <button data-show="slice" aria-pressed="true">symmetry slice</button>
-          <button data-show="anim" aria-pressed="true">animate</button>
-        </div>
+</header>
+<main class="layout">
+  <section class="stage" id="stage">
+    <canvas id="gl"></canvas>
+    <div id="labels"></div>
+    <div class="hud info mono" id="info"></div>
+    <div class="hud ctl" id="ctl-ahmed">
+      <div class="lab">Rear slant</div>
+      <div class="row seg" id="seg-slant"></div>
+      <div class="lab">Mesh level</div>
+      <div class="row seg" id="seg-level"></div>
+      <div class="lab">Layers</div>
+      <div class="row seg" id="seg-layers">
+        <button data-l="body" aria-pressed="true">Cp surface</button>
+        <button data-l="iso" aria-pressed="true">Vortices</button>
+        <button data-l="particles" aria-pressed="true">Particles</button>
+        <button data-l="slice" aria-pressed="false">Mesh slice</button>
       </div>
-      <div id="tab-cyl" hidden>
-        <div class="stage"><canvas id="c2d"></canvas>
-          <div class="hud" id="hud2d"></div>
-          <div class="legend">vorticity ω<sub>z</sub> D/U<canvas id="legBar2" width="180" height="10"></canvas>−4 · 0 · +4</div>
-        </div>
-        <p class="note">Snapshots come from the fine-mesh pimpleFoam solution, sampled every 0.25 D/U over two shedding periods and looped.</p>
-      </div>
+      <div class="lab">Vortex threshold</div>
+      <div class="row seg" id="seg-q"><button data-q="2" aria-pressed="true">Q* = 2</button><button data-q="8" aria-pressed="false">Q* = 8</button></div>
+      <div class="row"><button class="btn" id="cmp">Compare 25° | 35°</button></div>
+      <div class="row"><button class="btn" id="tourbtn">Guided tour</button><button class="btn" id="reset">Reset view</button></div>
     </div>
-    <aside class="panel">
-      <h2>Validation</h2>
-      <table id="valTable"></table>
-      <h2>Ahmed body</h2>
-      <table id="carTable"></table>
-      <h2>Verification stamp</h2>
-      <div class="stamp" id="stamp"></div>
-      <p class="note" id="limits"></p>
-    </aside>
-  </div>
-</div>
-
-<script>const DATA = /*__DATA__*/null;</script>
-<script>
-// ---------- shared helpers (no three.js needed)
-function b64(s, T){const bin=atob(s),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new T(u.buffer)}
-// coolwarm diverging, t in [0,1]
-function coolwarm(t){t=Math.min(1,Math.max(0,t));const c=[[0.23,0.30,0.75],[0.55,0.69,0.99],[0.87,0.87,0.87],[0.96,0.62,0.49],[0.71,0.02,0.15]];const x=t*4,i=Math.min(3,Math.floor(x)),f=x-i;return c[i].map((v,k)=>v+(c[i+1][k]-v)*f)}
-// perceptual sequential (viridis-like), t in [0,1]
-function viridis(t){t=Math.min(1,Math.max(0,t));const c=[[0.27,0.00,0.33],[0.23,0.32,0.55],[0.13,0.57,0.55],[0.37,0.79,0.38],[0.99,0.91,0.14]];const x=t*4,i=Math.min(3,Math.floor(x)),f=x-i;return c[i].map((v,k)=>v+(c[i+1][k]-v)*f)}
-function legend(cv,fn){const g=cv.getContext('2d');for(let x=0;x<cv.width;x++){const c=fn(x/(cv.width-1));g.fillStyle=`rgb(${c.map(v=>v*255|0)})`;g.fillRect(x,0,1,cv.height)}}
-const CP_MIN=-1.2, CP_MAX=1.0, U_MAX=1.4;
-
-// tabs (viewer.html#cyl opens the validation tab directly)
-document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{
-  document.querySelectorAll('[data-tab]').forEach(x=>x.setAttribute('aria-selected',x===b));
-  document.getElementById('tab-car').hidden=b.dataset.tab!=='car';
-  document.getElementById('tab-cyl').hidden=b.dataset.tab!=='cyl';
-  window.dispatchEvent(new Event('resize'));
-});
-
-if(location.hash==='#cyl')setTimeout(()=>document.querySelector('[data-tab="cyl"]').click(),0);
-
-// side panel
-(function(){
-  const v=DATA.validation, a=DATA.ahmed_forces, r=v.reference;
-  const cls=(x,lo,hi)=>x>=lo&&x<=hi?'ok':'hi';
-  document.getElementById('valTable').innerHTML=
-   `<tr><th>2D cylinder</th><th>St</th><th>C<sub>d</sub></th></tr>`+
-   v.meshes.map(m=>`<tr><td>${m.level} (${(m.cells/1000).toFixed(1)}k cells)</td><td class="n ${cls(m.St,r.St[0],r.St[1])}">${m.St.toFixed(4)}</td><td class="n ${cls(m.Cd_mean,r.Cd[0],r.Cd[1])}">${m.Cd_mean.toFixed(3)}</td></tr>`).join('')+
-   `<tr><td>reference</td><td class="n">${r.St[0]}–${r.St[1]}</td><td class="n">${r.Cd[0]}–${r.Cd[1]}</td></tr>`;
-  document.getElementById('carTable').innerHTML=
-   `<tr><th></th><th>C<sub>d</sub></th></tr>`+
-   `<tr><td>this run (${(a.cells/1e3).toFixed(0)}k cells, 35° slant)</td><td class="n">${a.Cd_mean.toFixed(3)}</td></tr>`+
-   `<tr><td>Ahmed et al. 1984, experiment</td><td class="n">${a.Cd_reference}</td></tr>`;
-  document.getElementById('stamp').textContent=DATA.stamp;
-  document.getElementById('limits').textContent=DATA.limits;
-})();
-
-// ---------- 2D cylinder animation
-(function(){
-  const C=DATA.cyl, fr=b64(C.frames,Uint8Array), NX=C.nx, NY=C.ny, NF=C.nf;
-  const cv=document.getElementById('c2d'), g=cv.getContext('2d');
-  const off=document.createElement('canvas');off.width=NX;off.height=NY;const og=off.getContext('2d');const img=og.createImageData(NX,NY);
-  const lut=[];for(let i=0;i<256;i++){const c=coolwarm((i-1)/254);lut.push(c.map(v=>v*255|0))}
-  legend(document.getElementById('legBar2'),coolwarm);
-  let k=0,last=0;
-  function draw(t){
-    requestAnimationFrame(draw);
-    if(document.getElementById('tab-cyl').hidden)return;
-    if(t-last<70)return; last=t;
-    const base=k*NX*NY;
-    for(let j=0;j<NY;j++)for(let i=0;i<NX;i++){const q=fr[base+(NY-1-j)*NX+i],o=(j*NX+i)*4;
-      if(q===0){img.data[o]=90;img.data[o+1]=96;img.data[o+2]=100;img.data[o+3]=255;continue}
-      const c=lut[q];img.data[o]=c[0];img.data[o+1]=c[1];img.data[o+2]=c[2];img.data[o+3]=255}
-    og.putImageData(img,0,0);
-    const W=cv.clientWidth,H=cv.clientHeight;if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H}
-    const s=Math.min(W/NX,H/NY),dw=NX*s,dh=NY*s,ox=(W-dw)/2,oy=(H-dh)/2;
-    g.fillStyle='#070a0c';g.fillRect(0,0,W,H);g.imageSmoothingEnabled=true;g.drawImage(off,ox,oy,dw,dh);
-    // cylinder outline (D = 1)
-    const [x0,x1]=C.x,[y0,y1]=C.y,px=ox+(0-x0)/(x1-x0)*dw,py=oy+(1-(0-y0)/(y1-y0))*dh,pr=0.5/(x1-x0)*dw;
-    g.fillStyle='#8a939a';g.beginPath();g.arc(px,py,pr,0,7);g.fill();
-    document.getElementById('hud2d').textContent=`pimpleFoam · Re = 100 · t = ${C.t[k].toFixed(2)} D/U · frame ${k+1}/${NF}`;
-    k=(k+1)%NF;
-  }
-  requestAnimationFrame(draw);
-})();
-</script>
-
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+    <div class="hud ctl" id="ctl-cyl" style="display:none">
+      <div class="lab">Field</div>
+      <div class="row seg" id="seg-cyl"><button data-c="relief" aria-pressed="true">3D relief</button><button data-c="flat" aria-pressed="false">Flat</button></div>
+      <div class="lab">Dye</div>
+      <div class="row seg" id="seg-dye"><button data-d="on" aria-pressed="true">Dye on</button><button data-d="off" aria-pressed="false">Off</button></div>
+      <div class="lab">Playback</div>
+      <div class="row"><button class="btn" id="play">Pause</button><input id="scrub" type="range" min="0" max="1000" value="0" style="flex:1"></div>
+    </div>
+    <button class="btn" id="ctlbtn">Controls</button>
+    <div class="hud chart" id="clchart"><div class="mono">lift coefficient C<sub>l</sub>(t), recorded leg</div><canvas id="clc" width="500" height="120" style="width:100%;height:60px"></canvas></div>
+    <div class="hud cap" id="cap"></div>
+    <div class="hud cbar" id="cbar"><div id="cbar-t"></div><canvas id="cbar-c" width="256" height="10"></canvas><div class="ticks mono" id="cbar-k"></div></div>
+    <div class="hud load" id="load">Decoding solver data…</div>
+  </section>
+  <aside id="panel"></aside>
+</main>
+<script>window.DATA = /*__DATA__*/null;</script>
 <script type="module">
-const hud=document.getElementById('hud3d');
-let THREE, OrbitControls;
-try{ THREE=await import('three'); ({OrbitControls}=await import('three/addons/controls/OrbitControls.js')); }
-catch(e){ hud.textContent='three.js could not load from the CDN; the 3D view needs network access. The validation tab still works.'; throw e; }
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
-const A=DATA.ahmed;
-const verts=b64(A.verts,Float32Array), norms=b64(A.norms,Float32Array), tris=b64(A.tris,Uint32Array), cp=b64(A.cp,Float32Array);
-const lp=b64(A.line_pts,Float32Array), ls=b64(A.line_spd,Float32Array), lo=b64(A.line_offs,Uint32Array);
+const D = window.DATA;
+const $ = s => document.querySelector(s);
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const isDark = () => matchMedia('(prefers-color-scheme: dark)').matches && document.documentElement.dataset.theme !== 'light' || document.documentElement.dataset.theme === 'dark';
 
-const cv=document.getElementById('c3d');
-const ren=new THREE.WebGLRenderer({canvas:cv,antialias:true});ren.setPixelRatio(Math.min(devicePixelRatio,2));
-const scene=new THREE.Scene();scene.background=new THREE.Color(0x070a0c);
-const cam=new THREE.PerspectiveCamera(35,1,0.01,100);cam.up.set(0,0,1);cam.position.set(-1.5,-2.2,1.2);
-const ctl=new OrbitControls(cam,cv);ctl.target.set(0.9,0,0.2);ctl.enableDamping=true;
-scene.add(new THREE.HemisphereLight(0xdde8ff,0x202020,1.6));
-const sun=new THREE.DirectionalLight(0xffffff,1.6);sun.position.set(-2,-3,4);scene.add(sun);
-
-// body
-const bg=new THREE.BufferGeometry();
-bg.setAttribute('position',new THREE.BufferAttribute(verts,3));
-bg.setAttribute('normal',new THREE.BufferAttribute(norms,3));
-bg.setIndex(new THREE.BufferAttribute(tris,1));
-const bcol=new Float32Array(verts.length);bg.setAttribute('color',new THREE.BufferAttribute(bcol,3));
-const body=new THREE.Mesh(bg,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.55,metalness:.05}));
-scene.add(body);
-
-// ground
-const grid=new THREE.GridHelper(8,80,0x2c3a3a,0x1a2324);grid.rotation.x=Math.PI/2;grid.position.set(1.2,0,0);scene.add(grid);
-
-// symmetry-plane slice (y = 0)
-const [sx0,sx1,sz0,sz1]=A.slice_extent, SNX=A.slice_nx, SNZ=A.slice_nz;
-const su=b64(A.slice_u,Uint8Array), sc=b64(A.slice_cp,Uint8Array);
-const stex=new Uint8Array(SNX*SNZ*4);
-const tex=new THREE.DataTexture(stex,SNX,SNZ,THREE.RGBAFormat);tex.magFilter=THREE.LinearFilter;tex.minFilter=THREE.LinearFilter;tex.colorSpace=THREE.SRGBColorSpace;
-const slice=new THREE.Mesh(new THREE.PlaneGeometry(sx1-sx0,sz1-sz0),new THREE.MeshBasicMaterial({map:tex,transparent:true,opacity:.92,side:THREE.DoubleSide,depthWrite:false}));
-slice.rotation.x=Math.PI/2;slice.position.set((sx0+sx1)/2,0,(sz0+sz1)/2);scene.add(slice);
-
-// animated streamlines: dashes travel along each line at a speed proportional to the local |U|
-const segs=[];let nseg=0;for(let l=0;l+1<lo.length;l++)nseg+=lo[l+1]-lo[l]-1;
-const P=new Float32Array(nseg*6), S=new Float32Array(nseg*2), T=new Float32Array(nseg*2);
-let w=0;
-for(let l=0;l+1<lo.length;l++){let tau=Math.random()*3;
-  for(let i=lo[l];i<lo[l+1]-1;i++){
-    const ax=lp[3*i],ay=lp[3*i+1],az=lp[3*i+2],bx=lp[3*i+3],by=lp[3*i+4],bz=lp[3*i+5];
-    const d=Math.hypot(bx-ax,by-ay,bz-az), v=Math.max(.05,(ls[i]+ls[i+1])/2);
-    P.set([ax,ay,az,bx,by,bz],w*6);S[w*2]=ls[i];S[w*2+1]=ls[i+1];T[w*2]=tau;tau+=d/v;T[w*2+1]=tau;w++}}
-const lg=new THREE.BufferGeometry();
-lg.setAttribute('position',new THREE.BufferAttribute(P,3));lg.setAttribute('spd',new THREE.BufferAttribute(S,1));lg.setAttribute('tau',new THREE.BufferAttribute(T,1));
-const lmat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
-  uniforms:{uT:{value:0},uAnim:{value:1}},
-  vertexShader:`attribute float spd;attribute float tau;varying float vS;varying float vT;void main(){vS=spd;vT=tau;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
-  fragmentShader:`uniform float uT;uniform float uAnim;varying float vS;varying float vT;
-    vec3 vir(float t){t=clamp(t,0.,1.);vec3 a=vec3(.27,.0,.33),b=vec3(.23,.32,.55),c=vec3(.13,.57,.55),d=vec3(.37,.79,.38),e=vec3(.99,.91,.14);
-      float x=t*4.;if(x<1.)return mix(a,b,x);if(x<2.)return mix(b,c,x-1.);if(x<3.)return mix(c,d,x-2.);return mix(d,e,x-3.);}
-    void main(){float ph=fract(vT*0.9-uT*0.9);float a=mix(.35,.12+.88*pow(1.-ph,6.),uAnim);gl_FragColor=vec4(vir(vS/1.4)*a*1.3,a);}`});
-const lines=new THREE.LineSegments(lg,lmat);scene.add(lines);
-
-// colour modes
-const legBar=document.getElementById('legBar');
-function setColor(mode){
-  for(let i=0;i<cp.length;i++){const c=mode==='cp'?coolwarm((cp[i]-CP_MIN)/(CP_MAX-CP_MIN)):[.62,.66,.68];bcol.set(c,3*i)}
-  bg.attributes.color.needsUpdate=true;
-  const src=mode==='cp'?sc:su, fn=mode==='cp'?coolwarm:viridis;
-  for(let j=0;j<SNZ;j++)for(let i=0;i<SNX;i++){const q=src[j*SNX+i],o=(j*SNX+i)*4;
-    if(q===0){stex[o+3]=0;continue}const t=(q-1)/254,c=fn(t);stex[o]=c[0]*255;stex[o+1]=c[1]*255;stex[o+2]=c[2]*255;
-    // Cp mode: fade the near-freestream band (Cp ~ 0) so the slice shows only where pressure departs from ambient
-    stex[o+3]=mode==='cp'?Math.min(230,Math.abs(t*(CP_MAX-CP_MIN)+CP_MIN)/0.35*230):220}
-  tex.needsUpdate=true;
-  legend(legBar,fn);
-  document.getElementById('legTitle').textContent=mode==='cp'?'pressure coefficient Cp':'speed |U| / U∞ (slice and streamlines)';
-  document.getElementById('legRange').textContent=mode==='cp'?`${CP_MIN} … ${CP_MAX}`:`0 … ${U_MAX}`;
+// ---------- data decoding (gzip + base64 typed arrays) ----------
+const TA = { f4: Float32Array, u2: Uint16Array, u4: Uint32Array, i1: Int8Array, u1: Uint8Array, i2: Int16Array };
+async function dec(spec) {
+  const bin = Uint8Array.from(atob(spec.b), c => c.charCodeAt(0));
+  const ab = await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+  const a = new TA[spec.d](ab);
+  if (!spec.q) return a;
+  const q = spec.q, k = q.length / 2, m = spec.d === 'u2' ? 65535 : spec.d === 'i1' ? 127 : 255;
+  const f = new Float32Array(a.length);
+  if (spec.d === 'i1') { for (let i = 0; i < a.length; i++) f[i] = a[i] / 127 * q[1]; return f; }
+  for (let i = 0; i < a.length; i++) { const c = i % k, lo = q[2 * c], hi = q[2 * c + 1]; f[i] = lo + (hi - lo) * a[i] / m; }
+  return f;
 }
-document.querySelectorAll('[data-color]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-color]').forEach(x=>x.setAttribute('aria-pressed',x===b));setColor(b.dataset.color)});
-document.querySelectorAll('[data-show]').forEach(b=>b.onclick=()=>{const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);
-  if(b.dataset.show==='lines')lines.visible=on;else if(b.dataset.show==='slice')slice.visible=on;else lmat.uniforms.uAnim.value=on?1:0});
-setColor('cp');
 
-function size(){const W=cv.clientWidth,H=cv.clientHeight;if(!W)return;ren.setSize(W,H,false);cam.aspect=W/H;cam.updateProjectionMatrix()}
-new ResizeObserver(size).observe(cv);size();
-hud.textContent=`simpleFoam k-ω SST · U∞ = 40 m/s · Re_L = 2.8e6 · ${(A.cells/1e3).toFixed(0)}k cells (half model, mirrored) · ${lo.length-1} streamlines`;
-const clock=new THREE.Clock();
-(function loop(){requestAnimationFrame(loop);lmat.uniforms.uT.value=clock.getElapsedTime();ctl.update();ren.render(scene,cam)})();
+// ---------- colour maps ----------
+const VIR = [[68,1,84],[72,35,116],[64,67,135],[52,94,141],[41,120,142],[32,144,140],[34,167,132],[68,190,112],[121,209,81],[189,222,38],[253,231,37]];
+// diverging with a dark midpoint, for vortex sign on the dark stage
+const DV = [[96,165,250],[59,110,200],[34,44,60],[200,80,60],[251,146,60]];
+const CW = [[59,76,192],[98,130,234],[141,176,254],[184,208,249],[221,221,221],[245,196,173],[244,154,123],[222,96,77],[180,4,38]];
+function lut(stops, t, out, o) {
+  t = Math.min(1, Math.max(0, t)); const x = t * (stops.length - 1), i = Math.min(stops.length - 2, Math.floor(x)), f = x - i;
+  const a = stops[i], b = stops[i + 1];
+  out[o] = ((a[0] + (b[0] - a[0]) * f) / 255) ** 2.2; out[o + 1] = ((a[1] + (b[1] - a[1]) * f) / 255) ** 2.2; out[o + 2] = ((a[2] + (b[2] - a[2]) * f) / 255) ** 2.2;
+}
+const cpT = cp => cp < 0 ? 0.5 * (1 + cp / 1.2) : 0.5 + 0.5 * cp;       // diverging around Cp = 0, range -1.2 .. 1
+function colorbar(title, stops, ticks) {
+  $('#cbar-t').textContent = title;
+  const c = $('#cbar-c'), g = c.getContext('2d'), tmp = new Float32Array(3);
+  for (let x = 0; x < 256; x++) { lut(stops, x / 255, tmp, 0); g.fillStyle = `rgb(${tmp.map(v => Math.round(255 * v ** (1 / 2.2))).join(',')})`; g.fillRect(x, 0, 1, 10); }
+  $('#cbar-k').innerHTML = ticks.map(t => `<span>${t}</span>`).join('');
+}
+
+// ---------- renderer, scenes ----------
+const stage = $('#stage'), canvas = $('#gl');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.92;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.localClippingEnabled = true;
+const labels = new CSS2DRenderer({ element: $('#labels') });
+const pmrem = new THREE.PMREMGenerator(renderer);
+const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+const camA = new THREE.PerspectiveCamera(34, 1, 0.01, 60); camA.up.set(0, 0, 1);
+const camC = new THREE.PerspectiveCamera(36, 1, 0.1, 200); camC.up.set(0, 0, 1);
+const ctlA = new OrbitControls(camA, canvas), ctlC = new OrbitControls(camC, canvas);
+for (const c of [ctlA, ctlC]) { c.enableDamping = true; c.dampingFactor = 0.08; }
+ctlC.enabled = false;
+const sceneA = new THREE.Scene(), sceneC = new THREE.Scene();
+sceneA.environment = envTex; sceneC.environment = envTex;
+let active = 'ahmed';
+
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false); labels.setSize(w, h);
+  for (const c of [camA, camC]) { c.aspect = w / h; c.updateProjectionMatrix(); }
+}
+new ResizeObserver(resize).observe(stage);
+
+function themeScene() {
+  const bg = new THREE.Color(css('--stage'));
+  sceneA.background = bg; sceneC.background = bg;
+  sceneA.fog = new THREE.Fog(bg, 6, 16);
+  if (ground) ground.material.color.set(0x161b1d);
+  if (gridL) gridL.material.color.set(0x2c3538);
+}
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeScene);
+
+// ---------- Ahmed scene ----------
+let ground, gridL, ptsMat, strkMat, dyeMat;
+const sun = new THREE.DirectionalLight(0xffffff, 2.2); sun.position.set(-1.5, -2.2, 4); sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -2, right: 3, top: 2, bottom: -2, near: 0.5, far: 9 });
+sun.shadow.bias = -0.0004; sun.target.position.set(0.6, 0, 0);
+sceneA.add(sun, sun.target, new THREE.HemisphereLight(0xdfe9ff, 0x2b2620, 0.6));
+ground = new THREE.Mesh(new THREE.PlaneGeometry(16, 9), new THREE.MeshStandardMaterial({ color: 0x161b1d, roughness: 0.85, metalness: 0.1 }));
+ground.position.set(1.4, 0, 0); ground.receiveShadow = true; sceneA.add(ground);
+gridL = new THREE.GridHelper(16, 64, 0xb9bfb8, 0xb9bfb8); gridL.rotation.x = Math.PI / 2; gridL.position.set(1.4, 0, 0.0005);
+gridL.material.transparent = true; gridL.material.opacity = 0.35; sceneA.add(gridL);
+
+const slants = {}; let curSlant = null, curLevel = null, qLev = 2;
+const layers = { body: true, iso: true, particles: true, slice: false };
+const clipNear = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+
+function meshFrom(v, n, t, colors, mat) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(v, 3));
+  const nn = new Float32Array(n.length); for (let i = 0; i < n.length; i++) nn[i] = n[i];
+  g.setAttribute('normal', new THREE.BufferAttribute(nn, 3));
+  g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  g.setIndex(new THREE.BufferAttribute(t, 1));
+  return new THREE.Mesh(g, mat);
+}
+
+async function buildSlant(key) {
+  const S = D.ahmed.slants[key], o = { key, S, group: new THREE.Group() };
+  const [v, n, t, cp] = await Promise.all([dec(S.surf.verts), dec(S.surf.norms), dec(S.surf.tris), dec(S.surf.cp)]);
+  const col = new Float32Array(v.length); for (let i = 0; i < cp.length; i++) lut(CW, cpT(cp[i]), col, 3 * i);
+  o.body = meshFrom(v, n, t, col, new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.0, clearcoat: 0.35, clearcoatRoughness: 0.35, envMapIntensity: 0.32 }));
+  o.body.castShadow = true; o.body.receiveShadow = true; o.group.add(o.body);
+  o.iso = {};
+  for (const lev of ['2', '8']) {
+    const I = S['iso' + lev]; if (!I) continue;
+    const [iv, inn, it, wx] = await Promise.all([dec(I.verts), dec(I.norms), dec(I.tris), dec(I.wx)]);
+    const ic = new Float32Array(iv.length); for (let i = 0; i < wx.length; i++) lut(DV, 0.5 + 0.5 * Math.sign(wx[i]) * Math.min(1, Math.abs(wx[i]) / 25) ** 0.6, ic, 3 * i);
+    const m = meshFrom(iv, inn, it, ic, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.38, metalness: 0.1, transparent: true, opacity: 0.88, side: THREE.DoubleSide, depthWrite: false, envMapIntensity: 0.5 }));
+    m.renderOrder = 2; m.castShadow = false; o.iso[lev] = m; o.group.add(m);
+  }
+  const g = S.grid; o.grid = { u: await dec(g.u), dims: g.dims, box: g.box };
+  o.slices = {};
+  for (const [lv, sl] of Object.entries(S.slices || {})) {
+    const tex = await new THREE.TextureLoader().loadAsync('data:image/png;base64,' + sl.png); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+    const [x0, x1, z0, z1] = sl.extent;
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide, toneMapped: false }));
+    p.rotation.x = Math.PI / 2; p.position.set((x0 + x1) / 2, 0.0015, (z0 + z1) / 2); p.visible = false; p.renderOrder = 1;
+    o.slices[lv] = p; o.group.add(p);
+  }
+  o.tagEl = document.createElement('div'); o.tagEl.className = 'tag3d';
+  o.tag = new CSS2DObject(o.tagEl); o.tag.position.set(0.35, 0, 0.6); o.group.add(o.tag);
+  o.group.visible = false; sceneA.add(o.group);
+  return o;
+}
+
+let compare = false;
+function verdict(err) { const a = Math.abs(err); return a <= 5 ? ['ok', 'within 5%'] : a <= 10 ? ['warn', 'within 10%'] : ['bad', 'outside 10%']; }
+function updateTag() {
+  for (const [k, o] of Object.entries(slants)) {
+    const S = D.ahmed.slants[k], lv = S.levels[curLevel] ? curLevel : S.best, L = S.levels[lv];
+    const err = 100 * (L.Cd - S.exp) / S.exp, [cls, txt] = verdict(err);
+    o.tagEl.innerHTML = `<div style="opacity:.7;font-size:11px">${k}° slant · ${lv} mesh · ${(L.cells / 1e6).toFixed(2)}M cells</div>
+      <div class="big">C<sub>d</sub> ${L.Cd.toFixed(3)}</div>
+      <div>experiment ${S.exp.toFixed(3)} · <span class="${cls}">${err >= 0 ? '+' : ''}${err.toFixed(1)}% (${txt})</span></div>`;
+    o.tagEl.style.display = active === 'ahmed' && (compare || k === curSlant) && (!tour || tour.i === tour.steps.length - 1) ? '' : 'none';
+  }
+}
+
+// ---------- particles (advected through the solver's velocity grid) ----------
+const NP = 6500, UVIS = 0.55, TAIL = 0.085;
+const P = new Float32Array(3 * NP), PV = new Float32Array(3 * NP), age = new Float32Array(NP), still = new Float32Array(NP);
+const ptGeo = new THREE.BufferGeometry(), ptCol = new Float32Array(3 * NP), ptA = new Float32Array(NP);
+ptGeo.setAttribute('position', new THREE.BufferAttribute(P, 3)); ptGeo.setAttribute('color', new THREE.BufferAttribute(ptCol, 3)); ptGeo.setAttribute('alpha', new THREE.BufferAttribute(ptA, 1));
+ptsMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { px: { value: Math.min(devicePixelRatio, 2) } },
+  vertexShader: `attribute vec3 color; attribute float alpha; varying vec3 vC; varying float vA; uniform float px;
+    void main(){ vC=color; vA=alpha; vec4 mv=modelViewMatrix*vec4(position,1.); gl_PointSize=px*2.6/(-mv.z); gl_Position=projectionMatrix*mv; }`,
+  fragmentShader: `varying vec3 vC; varying float vA; void main(){ vec2 d=gl_PointCoord-.5; float r=dot(d,d); if(r>.25) discard; gl_FragColor=vec4(vC, vA*(1.-r*4.)); }`
+});
+const pts = new THREE.Points(ptGeo, ptsMat); pts.frustumCulled = false; pts.renderOrder = 3; sceneA.add(pts);
+const sk = new Float32Array(6 * NP), skC = new Float32Array(6 * NP), skA = new Float32Array(2 * NP), skGeo = new THREE.BufferGeometry();
+skGeo.setAttribute('position', new THREE.BufferAttribute(sk, 3)); skGeo.setAttribute('color', new THREE.BufferAttribute(skC, 3)); skGeo.setAttribute('alpha', new THREE.BufferAttribute(skA, 1));
+strkMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  vertexShader: `attribute vec3 color; attribute float alpha; varying vec3 vC; varying float vA; void main(){ vC=color; vA=alpha; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
+  fragmentShader: `varying vec3 vC; varying float vA; void main(){ gl_FragColor=vec4(vC,vA); }`
+});
+const streaks = new THREE.LineSegments(skGeo, strkMat); streaks.frustumCulled = false; streaks.renderOrder = 3; sceneA.add(streaks);
+const tmpU = new Float32Array(3);
+function sampleU(G, x, y, z, out) {
+  const s = y < 0 ? -1 : 1; y = Math.abs(y);
+  const [nx, ny, nz] = G.dims, [x0, x1, y0, y1, z0, z1] = G.box;
+  const fx = (x - x0) / (x1 - x0) * (nx - 1), fy = (y - y0) / (y1 - y0) * (ny - 1), fz = (z - z0) / (z1 - z0) * (nz - 1);
+  if (fx < 0 || fy < 0 || fz < 0 || fx >= nx - 1 || fy >= ny - 1 || fz >= nz - 1) { out[0] = 1; out[1] = 0; out[2] = 0; return; }
+  const i = fx | 0, j = fy | 0, k = fz | 0, a = fx - i, b = fy - j, c = fz - k, u = G.u;
+  for (let d = 0; d < 3; d++) {
+    const id = (ii, jj, kk) => 3 * (ii + nx * (jj + ny * kk)) + d;
+    const v00 = u[id(i, j, k)] * (1 - a) + u[id(i + 1, j, k)] * a, v10 = u[id(i, j + 1, k)] * (1 - a) + u[id(i + 1, j + 1, k)] * a;
+    const v01 = u[id(i, j, k + 1)] * (1 - a) + u[id(i + 1, j, k + 1)] * a, v11 = u[id(i, j + 1, k + 1)] * (1 - a) + u[id(i + 1, j + 1, k + 1)] * a;
+    out[d] = ((v00 * (1 - b) + v10 * b) * (1 - c) + (v01 * (1 - b) + v11 * b) * c);
+  }
+  out[1] *= s;
+}
+function seed(i, G, warm) {
+  const [x0, x1] = G.box, near = Math.random() < 0.75;
+  P[3 * i] = warm ? x0 + Math.random() * (x1 - x0) * 0.9 : x0 + Math.random() * 0.05;
+  P[3 * i + 1] = (Math.random() * 2 - 1) * (near ? 0.3 : 0.58);
+  P[3 * i + 2] = near ? 0.015 + Math.random() * 0.42 : 0.015 + Math.random() * 0.62;
+  age[i] = 0; still[i] = 0;
+  sampleU(G, P[3 * i], P[3 * i + 1], P[3 * i + 2], tmpU);
+  if (Math.hypot(tmpU[0], tmpU[1], tmpU[2]) < 0.08 && (seed.depth = (seed.depth || 0) + 1) < 12) return seed(i, G, warm);
+  seed.depth = 0;
+}
+let particlesFor = null;
+function stepParticles(dt) {
+  const O = slants[curSlant]; if (!O) return; const G = O.grid;
+  if (particlesFor !== curSlant) { for (let i = 0; i < NP; i++) seed(i, G, true); particlesFor = curSlant; }
+  const camSide = camA.position.y < 0 ? -1 : 1, cut = layers.slice;
+  for (let i = 0; i < NP; i++) {
+    let x = P[3 * i], y = P[3 * i + 1], z = P[3 * i + 2];
+    sampleU(G, x, y, z, tmpU);
+    // midpoint step
+    sampleU(G, x + tmpU[0] * UVIS * dt * 0.5, y + tmpU[1] * UVIS * dt * 0.5, z + tmpU[2] * UVIS * dt * 0.5, tmpU);
+    x += tmpU[0] * UVIS * dt; y += tmpU[1] * UVIS * dt; z += tmpU[2] * UVIS * dt;
+    const sp = Math.hypot(tmpU[0], tmpU[1], tmpU[2]);
+    still[i] = sp < 0.03 ? still[i] + dt : 0; age[i] += dt;
+    if (x > G.box[1] - 0.02 || z < 0.002 || z > G.box[5] || Math.abs(y) > G.box[3] || still[i] > 0.6 || age[i] > 14) { seed(i, G, false); x = P[3 * i]; y = P[3 * i + 1]; z = P[3 * i + 2]; }
+    P[3 * i] = x; P[3 * i + 1] = y; P[3 * i + 2] = z; PV[3 * i] = tmpU[0]; PV[3 * i + 1] = tmpU[1]; PV[3 * i + 2] = tmpU[2];
+    lut(VIR, sp / 1.3, ptCol, 3 * i);
+    const fade = Math.min(1, age[i] * 2) * (cut && y * camSide > 0.005 ? 0 : 1);
+    ptA[i] = 0.85 * fade;
+    const o = 6 * i; sk[o] = x - tmpU[0] * TAIL; sk[o + 1] = y - tmpU[1] * TAIL; sk[o + 2] = z - tmpU[2] * TAIL; sk[o + 3] = x; sk[o + 4] = y; sk[o + 5] = z;
+    skC[o] = ptCol[3 * i]; skC[o + 1] = ptCol[3 * i + 1]; skC[o + 2] = ptCol[3 * i + 2]; skC[o + 3] = skC[o]; skC[o + 4] = skC[o + 1]; skC[o + 5] = skC[o + 2];
+    skA[2 * i] = 0; skA[2 * i + 1] = 0.55 * fade;
+  }
+  ptGeo.attributes.position.needsUpdate = ptGeo.attributes.color.needsUpdate = ptGeo.attributes.alpha.needsUpdate = true;
+  skGeo.attributes.position.needsUpdate = skGeo.attributes.color.needsUpdate = skGeo.attributes.alpha.needsUpdate = true;
+}
+
+function applyAhmed() {
+  const keys = Object.keys(slants);
+  keys.forEach((k, j) => {
+    const o = slants[k]; o.group.visible = compare || k === curSlant;
+    o.group.position.y = compare ? (j - (keys.length - 1) / 2) * 0.62 : 0;
+    o.body.visible = layers.body;
+    for (const [lv, m] of Object.entries(o.iso)) m.visible = layers.iso && lv === String(qLev);
+    for (const [lv, p] of Object.entries(o.slices)) p.visible = !compare && layers.slice && lv === curLevel;
+  });
+  const O = slants[curSlant]; if (!O) return;
+  pts.visible = streaks.visible = layers.particles && !compare;
+  $('#cmp').classList.toggle('on', compare);
+  const side = camA.position.y < 0 ? 1 : -1; clipNear.normal.set(0, side, 0);
+  const planes = layers.slice && !compare ? [clipNear] : [];
+  for (const o of Object.values(slants)) { o.body.material.clippingPlanes = planes; for (const m of Object.values(o.iso)) m.material.clippingPlanes = planes; }
+  updateTag();
+  const S = D.ahmed.slants[curSlant], L = S.levels[curLevel];
+  if (active !== 'ahmed') return;
+  $('#info').textContent = `simpleFoam k-ω SST · U∞ 40 m/s · Re_L 2.8e6 · ${curSlant}° slant · surface & vortices from ${S.best} mesh${L ? '' : ''}`;
+  colorbar(layers.slice ? 'speed |U| / U∞ (slice)' : 'pressure coefficient Cp (surface)', layers.slice ? VIR : CW, layers.slice ? ['0', '0.65', '1.3'] : ['-1.2', '-0.6', '0', '0.5', '1']);
+  for (const b of document.querySelectorAll('#seg-slant button')) b.setAttribute('aria-pressed', b.dataset.s === curSlant);
+  for (const b of document.querySelectorAll('#seg-level button')) { b.setAttribute('aria-pressed', b.dataset.v === curLevel); b.disabled = !S.levels[b.dataset.v]; }
+  for (const b of document.querySelectorAll('#seg-layers button')) b.setAttribute('aria-pressed', layers[b.dataset.l]);
+  for (const b of document.querySelectorAll('#seg-q button')) b.setAttribute('aria-pressed', b.dataset.q === String(qLev));
+}
+
+// ---------- guided tour ----------
+const pinDefs = [['Stagnation · Cp ≈ 1', [-0.02, 0, 0.2]], ['Front-edge suction', [0.06, 0, 0.345]], ['C-pillar vortices', [1.2, 0.21, 0.3]], ['Rear slant', [0.95, 0, 0.31]], ['Wake', [1.6, 0, 0.18]]];
+const pins = pinDefs.map(([t, p]) => { const e = document.createElement('div'); e.className = 'pin'; e.textContent = t; const o = new CSS2DObject(e); o.position.set(...p); sceneA.add(o); return e; });
+const tourSteps = () => {
+  const S = D.ahmed.slants[curSlant], L = S.levels[S.best];
+  return [
+    { pos: [-1.05, -0.95, 0.42], tgt: [0.05, 0, 0.18], pin: 0, lay: { body: 1, iso: 0, particles: 1, slice: 0 }, t: 'Stagnation', c: 'Air meets the nose and stops: Cp rises to about 1 (red). The rounded front edges then accelerate the flow, and pressure drops below free-stream (blue).' },
+    { pos: [0.15, -1.15, 0.95], tgt: [0.45, 0, 0.3], pin: 1, lay: { body: 1, iso: 0, particles: 1, slice: 0 }, t: 'Suction peaks', c: 'The strongest suction (Cp near -1.2 and below) sits just behind the front radius on the roof and sides, where streamlines curve hardest.' },
+    { pos: [2.1, -0.95, 0.85], tgt: [1.15, 0, 0.28], pin: 2, lay: { body: 1, iso: 1, particles: 1, slice: 0 }, t: 'C-pillar vortices', c: 'Isosurfaces of the Q-criterion show two counter-rotating longitudinal vortices shed from the slant side edges, coloured by streamwise vorticity (red and blue spin opposite ways).' },
+    { pos: [0.95, -1.35, 0.33], tgt: [0.95, 0, 0.28], pin: 3, lay: { body: 1, iso: 0, particles: 0, slice: 1 }, t: `Rear slant · ${curSlant}°`, c: curSlant === '25' ? 'At 25° the real flow separates and reattaches on the slant (the hardest Ahmed case). Steady RANS tends to keep the slant fully separated, which shows up as extra drag.' : 'At 35° the slant flow separates fully: the wake behaves like a square-back body, and steady RANS captures it well.' },
+    { pos: [3.1, -1.75, 1.05], tgt: [1.2, 0, 0.18], pin: 4, lay: { body: 1, iso: 1, particles: 1, slice: 0 }, t: 'Benchmark', c: `Drag on the ${S.best} mesh: Cd ${L.Cd.toFixed(3)} against ${S.exp.toFixed(3)} measured (Ahmed et al. 1984). Switch the mesh level to see how the answer converges.` },
+  ];
+};
+let tour = null;
+const ease = t => t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+function startTour() { compare = false; tour = { i: -1, t0: 0, from: null, steps: tourSteps() }; nextStep(); $('#tourbtn').textContent = 'Stop tour'; $('#tourbtn').classList.add('on'); }
+function stopTour() { tour = null; updateTag(); $('#cap').style.display = 'none'; pins.forEach(p => p.classList.remove('show')); $('#tourbtn').textContent = 'Guided tour'; $('#tourbtn').classList.remove('on'); ctlA.enabled = true; }
+function nextStep() {
+  tour.i++; if (tour.i >= tour.steps.length) { stopTour(); return; }
+  const s = tour.steps[tour.i];
+  tour.from = { p: camA.position.clone(), t: ctlA.target.clone() }; tour.t0 = performance.now(); ctlA.enabled = false;
+  for (const k in s.lay) layers[k] = !!s.lay[k]; applyAhmed();
+  pins.forEach((p, j) => p.classList.toggle('show', j === s.pin));
+  $('#cap').innerHTML = `<b>${tour.i + 1} / ${tour.steps.length} · ${s.t}</b>${s.c}`; $('#cap').style.display = 'block';
+}
+function tourTick(now) {
+  if (!tour) return; const s = tour.steps[tour.i], e = (now - tour.t0) / 2400, k = ease(Math.min(1, e));
+  camA.position.lerpVectors(tour.from.p, new THREE.Vector3(...s.pos), k); ctlA.target.lerpVectors(tour.from.t, new THREE.Vector3(...s.tgt), k);
+  if (e > 1 + 5.2 / 2.4) nextStep();
+}
+
+// ---------- cylinder scene ----------
+const CY = {};
+async function buildCyl() {
+  const C = D.cyl; CY.nf = C.nf; CY.nx = C.nx; CY.ny = C.ny; CY.t = C.t;
+  CY.w = await dec(C.w); CY.u = await dec(C.u); CY.unx = C.unx; CY.uny = C.uny;
+  const [x0, x1] = C.x, [y0, y1] = C.y; CY.box = [x0, x1, y0, y1];
+  const g = new THREE.PlaneGeometry(x1 - x0, y1 - y0, CY.nx - 1, CY.ny - 1); g.translate((x0 + x1) / 2, (y0 + y1) / 2, 0);
+  CY.col = new Float32Array(3 * CY.nx * CY.ny); g.setAttribute('color', new THREE.BufferAttribute(CY.col, 3));
+  CY.geo = g; CY.mesh = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.42, metalness: 0.05, side: THREE.DoubleSide, envMapIntensity: 0.6 }));
+  CY.mesh.receiveShadow = true; sceneC.add(CY.mesh);
+  const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1.6, 96), new THREE.MeshPhysicalMaterial({ color: 0xc9ced3, metalness: 0.85, roughness: 0.22, clearcoat: 1 }));
+  cyl.rotation.x = Math.PI / 2; cyl.castShadow = true; sceneC.add(cyl);
+  const l = new THREE.DirectionalLight(0xffffff, 1.8); l.position.set(-3, -5, 8); l.castShadow = true; sceneC.add(l, new THREE.HemisphereLight(0xffffff, 0x404040, 0.7));
+  // dye
+  CY.ND = 3200; CY.dp = new Float32Array(3 * CY.ND); CY.da = new Float32Array(CY.ND);
+  const dg = new THREE.BufferGeometry(); dg.setAttribute('position', new THREE.BufferAttribute(CY.dp, 3)); dg.setAttribute('alpha', new THREE.BufferAttribute(new Float32Array(CY.ND), 1));
+  CY.dg = dg;
+  dyeMat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { ink: { value: new THREE.Color(0xf3f7f6) } },
+    vertexShader: `attribute float alpha; varying float vA; void main(){ vA=alpha; vec4 mv=modelViewMatrix*vec4(position,1.); gl_PointSize=30.0/(-mv.z); gl_Position=projectionMatrix*mv; }`,
+    fragmentShader: `uniform vec3 ink; varying float vA; void main(){ vec2 d=gl_PointCoord-.5; float r=dot(d,d); if(r>.25) discard; gl_FragColor=vec4(ink, vA*(1.-r*4.)); }` });
+  CY.dye = new THREE.Points(dg, dyeMat); CY.dye.frustumCulled = false; sceneC.add(CY.dye);
+  for (let i = 0; i < CY.ND; i++) dyeSeed(i, true);
+  const tagC = document.createElement('div'); tagC.className = 'tag3d';
+  const B = D.cyl.best, R = D.cyl.ref;
+  const inb = (v, [a, b]) => v >= a && v <= b, pc = (v, [a, b]) => v < a ? 100 * (v - a) / a : v > b ? 100 * (v - b) / b : 0;
+  tagC.innerHTML = `<div style="opacity:.7;font-size:11px">${B.label}</div>
+    <div class="big">St ${B.St.toFixed(4)} · C<sub>d</sub> ${B.Cd.toFixed(3)}</div>
+    <div>reference St ${R.St[0]}–${R.St[1]} <span class="${inb(B.St, R.St) ? 'ok' : 'warn'}">${inb(B.St, R.St) ? 'in band' : (pc(B.St, R.St) > 0 ? '+' : '') + pc(B.St, R.St).toFixed(1) + '%'}</span> · C<sub>d</sub> ${R.Cd[0]}–${R.Cd[1]} <span class="${inb(B.Cd, R.Cd) ? 'ok' : 'warn'}">${inb(B.Cd, R.Cd) ? 'in band' : (pc(B.Cd, R.Cd) > 0 ? '+' : '') + pc(B.Cd, R.Cd).toFixed(1) + '%'}</span></div>`;
+  const to = new CSS2DObject(tagC); to.position.set(7.5, 2.9, 1.1); sceneC.add(to); CY.tag = to; CY.tagEl = tagC;
+  camC.position.set(-2.2, -9.6, 6.6); ctlC.target.set(5.2, 0.4, 0);
+  drawCl();
+}
+let cylRelief = true, cylDye = true, cylPlay = true, cylT = 0;
+function dyeSeed(i, warm) {
+  const [x0, x1, y0, y1] = CY.box;
+  if (Math.random() < 0.55) { CY.dp[3 * i] = warm ? x0 + Math.random() * (x1 - x0) : -1.9; CY.dp[3 * i + 1] = (Math.random() * 2 - 1) * 1.6; }
+  else { const a = Math.PI * (0.25 + Math.random() * 1.5); CY.dp[3 * i] = 0.53 * Math.cos(a); CY.dp[3 * i + 1] = 0.53 * Math.sin(a); }
+  CY.dp[3 * i + 2] = 0.05; CY.da[i] = 0;
+}
+function cylFrame(dt) {
+  const nf = CY.nf, period = CY.t[nf - 1] - CY.t[0] + (CY.t[1] - CY.t[0]);
+  if (cylPlay) cylT = (cylT + dt * 2.2) % period;
+  $('#scrub').value = Math.round(1000 * cylT / period);
+  const f = cylT / (CY.t[1] - CY.t[0]), i0 = Math.floor(f) % nf, i1 = (i0 + 1) % nf, a = f - Math.floor(f);
+  const N = CY.nx * CY.ny, pos = CY.geo.attributes.position.array;
+  // PlaneGeometry rows go top to bottom; the solver grid goes bottom to top
+  for (let r = 0; r < CY.ny; r++) for (let c = 0; c < CY.nx; c++) {
+    const src = (CY.ny - 1 - r) * CY.nx + c, v = r * CY.nx + c;
+    const w0 = CY.w[i0 * N + src], w1 = CY.w[i1 * N + src];
+    const masked = w0 === 0 && w1 === 0; const wr = masked ? 0 : ((w0 * (1 - a) + w1 * a) - 128) / 127;   // -1..1 maps -4..4
+    const w = 0.5 + 0.5 * Math.sign(wr) * Math.abs(wr) ** 0.55;
+    lut(DV, w, CY.col, 3 * v);
+    if (masked) { CY.col[3 * v] = CY.col[3 * v + 1] = CY.col[3 * v + 2] = 0.02; }
+    pos[3 * v + 2] = cylRelief ? wr * 0.9 : 0;
+  }
+  CY.geo.attributes.position.needsUpdate = CY.geo.attributes.color.needsUpdate = true; if (cylRelief) CY.geo.computeVertexNormals();
+  // dye advection with the time-interpolated 2D velocity
+  const ux = CY.unx, uy = CY.uny, [x0, x1, y0, y1] = CY.box, UN = ux * uy * 2, al = CY.dg.attributes.alpha.array;
+  const h = cylPlay ? dt * 2.2 : 0;
+  for (let i = 0; i < CY.ND; i++) {
+    if (!cylDye) { al[i] = 0; continue; }
+    let x = CY.dp[3 * i], y = CY.dp[3 * i + 1];
+    const fx = (x - x0) / (x1 - x0) * (ux - 1), fy = (y - y0) / (y1 - y0) * (uy - 1);
+    if (fx < 0 || fy < 0 || fx >= ux - 1 || fy >= uy - 1) { dyeSeed(i, false); continue; }
+    const ii = fx | 0, jj = fy | 0, p = fx - ii, q = fy - jj; let vx = 0, vy = 0;
+    for (const [fi, wt] of [[i0, 1 - a], [i1, a]]) for (const [di, dj, w2] of [[0, 0, (1 - p) * (1 - q)], [1, 0, p * (1 - q)], [0, 1, (1 - p) * q], [1, 1, p * q]]) {
+      const id = fi * UN + 2 * ((jj + dj) * ux + ii + di); vx += CY.u[id] * wt * w2; vy += CY.u[id + 1] * wt * w2;
+    }
+    x += vx * h; y += vy * h; CY.da[i] += h;
+    if (Math.hypot(x, y) < 0.5 || x > x1 - 0.05 || CY.da[i] > 30) { dyeSeed(i, false); continue; }
+    CY.dp[3 * i] = x; CY.dp[3 * i + 1] = y; CY.dp[3 * i + 2] = cylRelief ? 0.95 : 0.06;
+    al[i] = Math.min(1, CY.da[i] * 0.8) * 0.6;
+  }
+  CY.dg.attributes.position.needsUpdate = CY.dg.attributes.alpha.needsUpdate = true;
+  drawCl(cylT / period);
+}
+function drawCl(ph) {
+  const F = D.cyl.force, c = $('#clc'), g = c.getContext('2d'), W = c.width, H = c.height;
+  g.clearRect(0, 0, W, H); const t0 = F.t[0], t1 = F.t[F.t.length - 1], m = Math.max(...F.cl.map(Math.abs)) * 1.15;
+  g.strokeStyle = css('--muted'); g.globalAlpha = 0.35; g.beginPath(); g.moveTo(0, H / 2); g.lineTo(W, H / 2); g.stroke(); g.globalAlpha = 1;
+  g.strokeStyle = css('--accent'); g.lineWidth = 2.5; g.beginPath();
+  F.t.forEach((t, i) => { const x = (t - t0) / (t1 - t0) * W, y = H / 2 - F.cl[i] / m * H / 2; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke();
+  if (ph != null) { g.fillStyle = css('--ink'); g.fillRect(ph * W - 1.5, 0, 3, H); }
+}
+
+// ---------- side panel ----------
+function panel() {
+  const A = D.ahmed, el = $('#panel');
+  const rows = [];
+  for (const [k, S] of Object.entries(A.slants)) for (const lv of ['coarse', 'medium', 'fine']) {
+    const L = S.levels[lv]; if (!L) continue;
+    const e = 100 * (L.Cd - S.exp) / S.exp, ch = Math.abs(e) <= 5 ? 'ok' : Math.abs(e) <= 10 ? 'close' : 'no';
+    rows.push(`<tr><td>${k}°</td><td>${lv}</td><td class="n">${(L.cells / 1e6).toFixed(2)}M</td><td class="n">${L.Cd.toFixed(3)}</td><td class="n">${S.exp.toFixed(3)}</td><td><span class="chip ${ch}">${e >= 0 ? '+' : ''}${e.toFixed(1)}%</span></td></tr>`);
+  }
+  const C = D.cyl;
+  el.innerHTML = `
+  <div class="card"><h3>The bar for this field</h3><p>${D.bench.definition}</p><div class="legend"><span><span class="chip ok">≤ 5%</span> reached</span><span><span class="chip close">5–10%</span> close</span><span><span class="chip no">&gt; 10%</span> not reached</span></div></div>
+  <div class="card"><h3>Ahmed body · drag against experiment</h3>
+    <table><tr><th>slant</th><th>mesh</th><th>cells</th><th>C<sub>d</sub></th><th>exp.</th><th>error</th></tr>${rows.join('')}</table>
+    ${ladderSVG()}
+    <p style="margin-top:6px;font-size:12px;color:var(--muted)">${A.note}</p></div>
+  <div class="card"><h3>Cylinder Re = 100 · validation</h3>
+    <table><tr><th>run</th><th>St</th><th>C<sub>d</sub></th></tr>${C.runs.map(r => `<tr><td>${r.label}</td><td class="n">${r.St.toFixed(4)}</td><td class="n">${r.Cd.toFixed(3)}</td></tr>`).join('')}
+    <tr><td>reference</td><td class="n">${C.ref.St[0]}–${C.ref.St[1]}</td><td class="n">${C.ref.Cd[0]}–${C.ref.Cd[1]}</td></tr></table>
+    ${bandSVG()}</div>
+  <div class="card"><h3>Verification stamp</h3><div class="stamp">${D.stamp}</div></div>
+  <div class="card"><h3>Honest limits</h3><ul class="lim">${D.limits.map(l => `<li>${l}</li>`).join('')}</ul></div>`;
+}
+function ladderSVG() {
+  const W = 330, H = 170, pad = 34, A = D.ahmed, pts = [];
+  for (const [k, S] of Object.entries(A.slants)) for (const [lv, L] of Object.entries(S.levels)) pts.push([k, L.cells, L.Cd, S.exp]);
+  if (!pts.length) return '';
+  const xs = pts.map(p => Math.log10(p[1])), xmin = Math.min(...xs) - 0.12, xmax = Math.max(...xs) + 0.12;
+  const ys = pts.flatMap(p => [p[2], p[3] * 1.05, p[3] * 0.95]), ymin = Math.min(...ys) - 0.01, ymax = Math.max(...ys) + 0.01;
+  const X = v => pad + (Math.log10(v) - xmin) / (xmax - xmin) * (W - pad - 8), Y = v => H - 22 - (v - ymin) / (ymax - ymin) * (H - 32);
+  const colr = { '25': 'var(--accent)', '35': 'var(--mid)' };
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Cd against mesh size">`;
+  for (const [k, S] of Object.entries(A.slants)) {
+    s += `<rect x="${pad}" y="${Y(S.exp * 1.05)}" width="${W - pad - 8}" height="${Y(S.exp * 0.95) - Y(S.exp * 1.05)}" fill="${colr[k]}" opacity=".10"/>`;
+    s += `<line x1="${pad}" x2="${W - 8}" y1="${Y(S.exp)}" y2="${Y(S.exp)}" stroke="${colr[k]}" stroke-dasharray="4 3" opacity=".8"/>`;
+    const L = ['coarse', 'medium', 'fine'].map(l => S.levels[l]).filter(Boolean);
+    s += `<polyline fill="none" stroke="${colr[k]}" stroke-width="2" points="${L.map(l => `${X(l.cells)},${Y(l.Cd)}`).join(' ')}"/>`;
+    s += L.map(l => `<circle cx="${X(l.cells)}" cy="${Y(l.Cd)}" r="4" fill="${colr[k]}"/>`).join('');
+    s += `<text x="${W - 10}" y="${Y(S.exp) - 4}" text-anchor="end">${k}° exp. ±5%</text>`;
+  }
+  for (let v = Math.ceil(ymin * 100) / 100; v <= ymax; v += 0.02) s += `<text x="${pad - 4}" y="${Y(v) + 3}" text-anchor="end">${v.toFixed(2)}</text>`;
+  s += `<text x="${(W + pad) / 2}" y="${H - 4}" text-anchor="middle">cells (half model, log scale)</text></svg>`;
+  return s;
+}
+function bandSVG() {
+  const C = D.cyl, W = 330, H = 96, row = (y, lab, vals, ref, lo, hi) => {
+    const X = v => 70 + (v - lo) / (hi - lo) * (W - 80);
+    let s = `<text x="0" y="${y + 4}">${lab}</text><line x1="70" x2="${W - 10}" y1="${y}" y2="${y}" stroke="var(--line)"/>`;
+    s += `<rect x="${X(ref[0])}" y="${y - 7}" width="${X(ref[1]) - X(ref[0])}" height="14" rx="3" fill="var(--good)" opacity=".22"/>`;
+    vals.forEach((v, i) => { s += `<circle cx="${X(v)}" cy="${y}" r="${i === vals.length - 1 ? 5 : 3.2}" fill="${i === vals.length - 1 ? 'var(--accent)' : 'var(--muted)'}" opacity="${i === vals.length - 1 ? 1 : .6}"/>`; });
+    s += `<text x="70" y="${y + 20}">${lo}</text><text x="${W - 10}" y="${y + 20}" text-anchor="end">${hi}</text>`;
+    return s;
+  };
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Strouhal and drag against reference band">${row(22, 'St', C.runs.map(r => r.St), C.ref.St, 0.160, 0.172)}${row(68, 'Cd', C.runs.map(r => r.Cd), C.ref.Cd, 1.30, 1.40)}</svg>`;
+}
+
+// ---------- wiring ----------
+function setTab(t) {
+  active = t; $('#tab-ahmed').setAttribute('aria-selected', t === 'ahmed'); $('#tab-cyl').setAttribute('aria-selected', t === 'cyl');
+  $('#ctl-ahmed').style.display = t === 'ahmed' ? '' : 'none'; $('#ctl-cyl').style.display = t === 'cyl' ? '' : 'none';
+  $('#clchart').style.display = t === 'cyl' ? 'block' : 'none';
+  ctlA.enabled = t === 'ahmed' && !tour; ctlC.enabled = t === 'cyl';
+  updateTag();
+  if (t === 'cyl') { stopTour(); $('#info').textContent = `pimpleFoam laminar · Re = 100 · ${D.cyl.best.label} · vorticity ω_z (colour and height) with dye advected by the solver velocity`; colorbar('vorticity ω_z D / U∞', DV, ['-4', '0', '4']); CY.tag && (CY.tag.visible = true); }
+  else { CY.tag && (CY.tag.visible = false); applyAhmed(); }
+  for (const o of [...document.querySelectorAll('.pin')]) o.style.display = t === 'ahmed' ? '' : 'none';
+  if (CY.tagEl) CY.tagEl.style.display = t === 'cyl' ? '' : 'none';
+  if (location.hash !== '#' + t) history.replaceState(null, '', t === 'cyl' ? '#cyl' : '#ahmed');
+}
+$('#ctlbtn').onclick = () => { for (const id of ['#ctl-ahmed', '#ctl-cyl']) $(id).classList.toggle('open'); };
+$('#tab-ahmed').onclick = () => setTab('ahmed'); $('#tab-cyl').onclick = () => setTab('cyl');
+$('#seg-layers').onclick = e => { const b = e.target.closest('button'); if (!b) return; layers[b.dataset.l] = !layers[b.dataset.l]; applyAhmed(); };
+$('#seg-q').onclick = e => { const b = e.target.closest('button'); if (!b) return; qLev = +b.dataset.q; layers.iso = true; applyAhmed(); };
+$('#tourbtn').onclick = () => tour ? stopTour() : startTour();
+$('#cmp').onclick = () => { compare = !compare; stopTour(); if (compare) { layers.iso = true; camA.position.set(2.45, -1.15, 1.05); ctlA.target.set(0.85, 0, 0.2); } applyAhmed(); };
+$('#reset').onclick = () => { stopTour(); camA.position.set(-1.25, -1.55, 0.95); ctlA.target.set(0.75, 0, 0.17); };
+$('#seg-cyl').onclick = e => { const b = e.target.closest('button'); if (!b) return; cylRelief = b.dataset.c === 'relief'; for (const x of document.querySelectorAll('#seg-cyl button')) x.setAttribute('aria-pressed', x === b); if (!cylRelief) { CY.geo.computeVertexNormals(); } };
+$('#seg-dye').onclick = e => { const b = e.target.closest('button'); if (!b) return; cylDye = b.dataset.d === 'on'; for (const x of document.querySelectorAll('#seg-dye button')) x.setAttribute('aria-pressed', x === b); };
+$('#play').onclick = () => { cylPlay = !cylPlay; $('#play').textContent = cylPlay ? 'Pause' : 'Play'; };
+$('#scrub').oninput = e => { cylPlay = false; $('#play').textContent = 'Play'; const nf = CY.nf, period = CY.t[nf - 1] - CY.t[0] + (CY.t[1] - CY.t[0]); cylT = +e.target.value / 1000 * period; };
+
+async function init() {
+  if (!D) { $('#load').textContent = 'No data inlined: run build_viewer.py'; return; }
+  panel();
+  const keys = Object.keys(D.ahmed.slants);
+  for (const k of keys) slants[k] = await buildSlant(k);
+  curSlant = keys.includes('25') ? '25' : keys[0]; curLevel = D.ahmed.slants[curSlant].best;
+  $('#seg-slant').innerHTML = keys.map(k => `<button data-s="${k}">${k}°</button>`).join('');
+  $('#seg-level').innerHTML = ['coarse', 'medium', 'fine'].map(l => `<button data-v="${l}">${l}</button>`).join('');
+  $('#seg-slant').onclick = e => { const b = e.target.closest('button'); if (!b) return; curSlant = b.dataset.s; const S = D.ahmed.slants[curSlant]; if (!S.levels[curLevel]) curLevel = S.best; applyAhmed(); };
+  $('#seg-level').onclick = e => { const b = e.target.closest('button'); if (!b || b.disabled) return; curLevel = b.dataset.v; layers.slice = true; applyAhmed(); };
+  await buildCyl();
+  camA.position.set(-1.25, -1.55, 0.95); ctlA.target.set(0.75, 0, 0.17);
+  themeScene(); resize(); applyAhmed();
+  // URL presets, e.g. #cyl, #slice, #vortex, #tour, plus &slant=35&level=fine&q=8&particles=0&iso=0&slice=1
+  const H = location.hash.slice(1).split('&'), P0 = H[0], KV = Object.fromEntries(H.slice(1).map(x => x.split('=')));
+  if (KV.theme) { document.documentElement.dataset.theme = KV.theme; themeScene(); panel(); }
+  setTab(P0 === 'cyl' ? 'cyl' : 'ahmed');
+  if (KV.slant && D.ahmed.slants[KV.slant]) curSlant = KV.slant;
+  if (KV.level && D.ahmed.slants[curSlant].levels[KV.level]) curLevel = KV.level;
+  if (KV.q) qLev = +KV.q;
+  if (P0 === 'slice') { layers.slice = true; layers.particles = false; camA.position.set(0.95, -1.5, 0.36); ctlA.target.set(0.95, 0, 0.28); }
+  if (P0 === 'vortex') { layers.iso = true; layers.particles = false; camA.position.set(2.05, -0.85, 0.75); ctlA.target.set(1.1, 0, 0.26); }
+  if (P0 === 'compare') { compare = true; layers.iso = true; camA.position.set(2.45, -1.15, 1.05); ctlA.target.set(0.85, 0, 0.2); }
+  if (P0 === 'front') { camA.position.set(-0.9, -0.75, 0.42); ctlA.target.set(0.15, 0, 0.18); }
+  for (const k of ['body', 'iso', 'particles', 'slice']) if (KV[k] != null) layers[k] = KV[k] === '1';
+  applyAhmed();
+  if (P0 === 'tour') startTour();
+  $('#load').style.display = 'none';
+  let last = performance.now();
+  // warm up the particle field so the first frame already shows a developed flow
+  for (let i = 0; i < 40; i++) stepParticles(0.05);
+  renderer.setAnimationLoop(now => {
+    if (document.hidden) { last = now; return; }
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (active === 'ahmed') {
+      tourTick(now); if (layers.particles) stepParticles(dt);
+      if (layers.slice) { const side = camA.position.y < 0 ? 1 : -1; clipNear.normal.set(0, side, 0); }
+      ctlA.update(); renderer.render(sceneA, camA); labels.render(sceneA, camA);
+    } else { cylFrame(dt); ctlC.update(); renderer.render(sceneC, camC); labels.render(sceneC, camC); }
+  });
+}
+init().catch(e => { $('#load').textContent = 'Viewer failed to start: ' + e.message; console.error(e); });
 </script>
 </body>
 </html>

@@ -1,0 +1,82 @@
+{
+ "bar": "Top-10% for steady-RANS external aero on the Ahmed body: drag within 5% of the wind-tunnel value on a mesh whose last refinement moves Cd by 2% or less, at both slants. 35\u00b0 (fully separated slant) is the case steady RANS is known to handle; 25\u00b0 is the classic failure case, where the experiment has a slant separation bubble that reattaches and RANS mispredicts it in either direction depending on model, wall treatment and mesh. Getting 25\u00b0 right takes hybrid RANS/LES (DDES/IDDES) on tens of millions of cells.",
+ "note": "Cd uses the half-model frontal area. Surfaces, vortices and particles come from the finest mesh of each slant; the slice and the Cd label follow the selected mesh level.",
+ "slants": {
+  "25": {
+   "exp": 0.285,
+   "exp_src": "Ahmed, Ramm & Faltin 1984 (SAE 840300), 60 m/s",
+   "levels": {
+    "coarse": {
+     "cells": 260394,
+     "Cd": 0.2703,
+     "Cd_std": 0.0009,
+     "Cl": 0.2976,
+     "iters": 1000,
+     "ground": "fixed",
+     "wall_min": 14.0,
+     "run": "a25_coarse"
+    },
+    "fine": {
+     "cells": 1366049,
+     "Cd": 0.2585,
+     "Cd_std": 0.0015,
+     "Cl": 0.312,
+     "iters": 1000,
+     "ground": "fixed",
+     "wall_min": 37.4,
+     "run": "a25_fine"
+    },
+    "medium": {
+     "cells": 590062,
+     "Cd": 0.2639,
+     "Cd_std": 0.0008,
+     "Cl": 0.3072,
+     "iters": 1000,
+     "ground": "fixed",
+     "wall_min": 49.2,
+     "run": "a25_medium"
+    }
+   },
+   "best": "fine",
+   "ladder_change_pct": -2.05
+  },
+  "35": {
+   "exp": 0.257,
+   "exp_src": "Ahmed, Ramm & Faltin 1984 (SAE 840300), 60 m/s",
+   "levels": {
+    "coarse": {
+     "cells": 261096,
+     "Cd": 0.2761,
+     "Cd_std": 0.0001,
+     "Cl": 0.127,
+     "iters": 1000,
+     "ground": "fixed",
+     "wall_min": 4.8,
+     "run": "a35_coarse"
+    },
+    "fine": {
+     "cells": 1368058,
+     "Cd": 0.2579,
+     "Cd_std": 0.0,
+     "Cl": 0.1004,
+     "iters": 1000,
+     "ground": "fixed",
+     "wall_min": 38.7,
+     "run": "a35_fine"
+    },
+    "medium": {
+     "cells": 591870,
+     "Cd": 0.2638,
+     "Cd_std": 0.0,
+     "Cl": 0.0661,
+     "iters": 1000,
+     "ground": "fixed",
+     "wall_min": 11.6,
+     "run": "a35_medium"
+    }
+   },
+   "best": "fine",
+   "ladder_change_pct": -2.24
+  }
+ }
+}

@@ -1,0 +1,95 @@
+{
+ "runs": [
+  {
+   "label": "v1 inlet 10D, coarse, \u00b110D",
+   "St": 0.1673,
+   "Cd": 1.3932,
+   "cells": 7713,
+   "source": "v1 (inlet 10D)"
+  },
+  {
+   "label": "v1 inlet 10D, fine, \u00b110D",
+   "St": 0.1696,
+   "Cd": 1.3914,
+   "cells": 26992,
+   "source": "v1 (inlet 10D)"
+  },
+  {
+   "label": "v1 inlet 10D, coarse, \u00b130D",
+   "St": 0.1665,
+   "Cd": 1.38,
+   "cells": 9971,
+   "source": "v1 (inlet 10D)"
+  },
+  {
+   "label": "v1 inlet 10D, fine, \u00b130D",
+   "St": 0.1685,
+   "Cd": 1.3807,
+   "cells": 32661,
+   "source": "v1 (inlet 10D)"
+  },
+  {
+   "label": "v2 inlet 20D, \u00b130D, linearUpwind (animated run)",
+   "St": 0.1652,
+   "Cd": 1.3423,
+   "cycles": 7,
+   "cells": 35156,
+   "window": [
+    70.004,
+    115.0
+   ],
+   "source": "v2",
+   "case": "cyl_x20_frames"
+  },
+  {
+   "label": "v2 inlet 20D, \u00b130D, central, Co 0.5",
+   "St": 0.1652,
+   "Cd": 1.341,
+   "cycles": 6,
+   "cells": 35156,
+   "window": [
+    80.003,
+    120.001
+   ],
+   "source": "v2",
+   "case": "cyl_x20_lin_leg1"
+  },
+  {
+   "label": "v2 inlet 20D, \u00b130D, linearUpwind",
+   "St": 0.1655,
+   "Cd": 1.3463,
+   "cycles": 6,
+   "cells": 35156,
+   "window": [
+    80.0,
+    120.0
+   ],
+   "source": "v2",
+   "case": "cyl_x20_lu_leg1"
+  }
+ ],
+ "reference": {
+  "St": [
+   0.164,
+   0.166
+  ],
+  "Cd": [
+   1.33,
+   1.35
+  ],
+  "src": "Williamson 1996; Park, Kwon & Choi 1998 (St 0.165, Cd 1.33); Qu et al. 2013 (St 0.1648, Cd 1.326)"
+ },
+ "best": {
+  "label": "v2 inlet 20D, \u00b130D, linearUpwind (animated run)",
+  "St": 0.1652,
+  "Cd": 1.3423,
+  "cycles": 7,
+  "cells": 35156,
+  "window": [
+   70.004,
+   115.0
+  ],
+  "source": "v2",
+  "case": "cyl_x20_frames"
+ }
+}
