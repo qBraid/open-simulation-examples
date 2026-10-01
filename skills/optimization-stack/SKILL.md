@@ -53,9 +53,19 @@ HGS-CVRP 0.11%, PyVRP 0.22%. Measured here on 30 stratified instances
 | n 600–1000 (7) | 0.87% | 0.92% | 1.78% |
 | all 30 | **0.49%** | 0.60% | 0.99% |
 
-At the full budget, PyVRP on the 6 smallest instances averages 0.05%, against 0.31%
-at 10% on the same instances. Verdict: **close** to the top tier. All 100 instances at
-the full budget costs about $4 on `cpu-32v-128g`.
+**At the full published budget** (2.4·n s, one pinned core per instance, one seed;
+dedicated 32-vCPU box, 54 min wall for all 30): PyVRP averages **0.34%**, and racing
+the 10%-time cuOpt runs gives **0.31%**. By size:
+- n < 300: 0.14%, beats the bar;
+- n 300–599: 0.27%;
+- n 600–1000: 0.69%.
+
+Verdict: **close, not reached** (bar 0.22%). The gap is on the largest instances; one
+seed and an uncalibrated CPU speed add noise. All 100 instances × 3 seeds costs
+about $5 on `cpu-32v-128g`.
+
+**Recipe:** `fullbench.py --cores 20-29` runs one instance per pinned core,
+longest first.
 
 **cuOpt trap.** cuOpt minimises **fleet size first**, then distance. On distance-only
 benchmarks its default lost 13% on X-n101. Setting `min_vehicles = k_min + 1` reached
