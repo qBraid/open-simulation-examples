@@ -16,6 +16,7 @@ import pickle
 import time
 
 import jax
+import jax_compat  # noqa: F401  (Brax 0.14 on JAX >= 0.11)
 from brax.training.agents.ppo import networks as ppo_networks
 from brax.training.agents.ppo import train as ppo
 from mujoco_playground import registry, wrapper
@@ -27,16 +28,26 @@ p.add_argument("--run", required=True)
 p.add_argument("--steps", type=int, default=None, help="override num_timesteps")
 p.add_argument("--num_evals", type=int, default=21)
 p.add_argument("--restore", default=None, help="orbax checkpoint dir to resume from")
+p.add_argument("--restore_pkl", default=None, help="params_*.pkl saved by this script to resume from")
+p.add_argument("--step_offset", type=int, default=0, help="steps already trained (when resuming)")
+p.add_argument("--impl", default=None, help="physics backend override: warp | jax")
 p.add_argument("--seed", type=int, default=0)
+p.add_argument("--smoke", action="store_true", help="tiny CPU run to exercise the code path")
 a = p.parse_args()
 
 os.makedirs(a.run, exist_ok=True)
 env_cfg = registry.get_default_config(a.env)
+if a.impl:
+    env_cfg.impl = a.impl
+if a.smoke:
+    env_cfg.impl = "jax"
 env = registry.load(a.env, config=env_cfg)
 ppo_params = locomotion_params.brax_ppo_config(a.env)
 if a.steps:
     ppo_params.num_timesteps = a.steps
 ppo_params.num_evals = a.num_evals
+if a.smoke:
+    ppo_params.update(num_envs=32, batch_size=32, num_minibatches=4, num_timesteps=40_000, num_evals=2, episode_length=50)
 
 net_kw = dict(ppo_params.get("network_factory", {}))
 ppo_kw = dict(ppo_params)
@@ -53,7 +64,7 @@ print(f"devices={jax.devices()} steps={ppo_params.num_timesteps} envs={ppo_param
 def progress(step, metrics):
     times.append(time.time())
     rec = {
-        "step": int(step),
+        "step": int(step) + a.step_offset,
         "wall_s": round(times[-1] - t_start, 1),
         "reward": float(metrics.get("eval/episode_reward", float("nan"))),
         "reward_std": float(metrics.get("eval/episode_reward_std", float("nan"))),
@@ -68,7 +79,7 @@ def progress(step, metrics):
 
 
 def save_params(step, make_policy, params):
-    with open(os.path.join(a.run, f"params_{int(step):012d}.pkl"), "wb") as f:
+    with open(os.path.join(a.run, f"params_{int(step) + a.step_offset:012d}.pkl"), "wb") as f:
         pickle.dump(jax.device_get(params), f)
 
 
@@ -79,10 +90,13 @@ make_inference_fn, params, metrics = ppo.train(
     network_factory=network_factory,
     randomization_fn=randomizer,
     progress_fn=progress,
+    restore_value_fn=True,
     policy_params_fn=save_params,
     save_checkpoint_path=os.path.join(os.path.abspath(a.run), "ckpt"),
     restore_checkpoint_path=a.restore,
+    restore_params=(pickle.load(open(a.restore_pkl, "rb")) if a.restore_pkl else None),
     seed=a.seed,
+    **({"num_eval_envs": 32} if a.smoke else {}),
     **ppo_kw,
 )
 with open(os.path.join(a.run, "params_final.pkl"), "wb") as f:

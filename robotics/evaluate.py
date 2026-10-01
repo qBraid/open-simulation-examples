@@ -18,6 +18,7 @@ import pickle
 import time
 
 import jax
+import jax_compat  # noqa: F401  (Brax 0.14 on JAX >= 0.11)
 import jax.numpy as jp
 import numpy as np
 from brax.training.acme import running_statistics
