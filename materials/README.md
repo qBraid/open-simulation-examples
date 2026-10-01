@@ -17,6 +17,7 @@ Open `viewer.html` (or `qbraid-canvas materials/viewer.html`) for the interactiv
 | Model (licence) | n | F1 ours [95% CI] | F1, authors' predictions on the same structures | F1 full test set (leaderboard) | MAE meV/atom | per-structure agreement with authors: MAE meV/atom / within 10 meV | s per relaxation (L4) | leaderboard rank |
 |---|---|---|---|---|---|---|---|---|
 | MACE-MP-0 (MIT) | 2000 | **0.676** [0.636, 0.712] | 0.676 | 0.669 | 57 | 0.41 / 99.8% | 1.32 | #52 of 65 |
+| MACE-MPA-0 (MIT) | 1000 | **0.876** [0.835, 0.913] | 0.872 | 0.852 | 29 | 1.45 / 98.7% | 0.84 | #30 of 65 |
 
 **Verdict.** The pipeline is **reached**: it reproduces the leaderboard exactly, matching the published predictions structure by structure to well under 1 meV/atom. The top-10% band of the 65-model leaderboard is F1 ≥ 0.925. The table above shows where the open models we ran sit relative to it.
 
