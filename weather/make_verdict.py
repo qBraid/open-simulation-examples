@@ -59,13 +59,14 @@ def stop(lon_, lat_, dist, lead, html_, **kw):
 L = tracks["Hurricane Laura"]; B = tracks["Typhoon Bavi"]
 laura_land = L["tr"][min(len(L["tr"]) - 1, 6)] if L["tr"] else [-93, 29.5, 0]
 e72 = next((e for e in L["errors"] if e["lead_h"] == 72), None)
+b72 = next((e for e in B["errors"] if e["lead_h"] == 72), None)
 tour = [
     stop(-40, 15, 4.8, 0, f"<b>One GPU, five days of weather.</b> NVIDIA {NAME} steps the whole atmosphere 6 h at a time from the ERA5 state of 24 Aug 2020, 00 UTC. Moisture, winds at 850 hPa and 500 hPa height contours are all model output.", ov="tcwv", mode="fc", hold=5000),
     stop(-74, 19, 2.3, 0, "<b>Hurricane Laura</b> starts as a tropical storm near Hispaniola. Its moisture core is the bright plume, and the particles trace the model's own winds.", ov="tcwv", mode="fc", hold=4000),
     stop(-86, 24, 2.2, 0, "Play forward. <b>Cyan</b> is the forecast track, <b>red</b> is ERA5. For two days they agree to within about 170 km.", ov="msl", mode="fc", play_to=48, hold=7000),
     stop(-90, 26, 2.0, 72, (f"At +72 h the forecast centre is <b>{e72['km']} km</b> from ERA5's, with {e72['p_fc']:.0f} vs {e72['p_era5']:.0f} hPa. " if e72 else "") +
          (f"The real Laura recurves north into Louisiana; {NAME} " + ("keeps it heading west. " if (L["errors"] and max(e["km"] for e in L["errors"]) > 600) else "follows it. ") + "Drag the divider to compare."), ov="msl", mode="swipe", hold=7500),
-    stop(127, 31, 2.5, 72, "<b>Typhoon Bavi</b> in the Yellow Sea, half a world away, comes out of the same forward pass. Here the forecast holds the track to about 110 km at +72 h.", ov="tcwv", mode="fc", hold=5500),
+    stop(127, 31, 2.5, 72, "<b>Typhoon Bavi</b> in the Yellow Sea, half a world away, comes out of the same forward pass." + (f" Here the forecast centre is {b72['km']} km from ERA5's at +72 h." if b72 else ""), ov="tcwv", mode="fc", hold=5500),
     stop(20, -45, 3.4, 120, "Day-5 error in 2 m temperature. Most of the error sits in the Southern Ocean storm track and over the continents, where small-scale weather has been smoothed out.", ov="t2m", mode="err", hold=6500),
     stop(-30, 25, 4.8, 120, html.replace("<b>Verdict", "<b>Skill vs ECMWF").replace("</b>", "</b>", 1), ov="tcwv", mode="fc", hold=8000),
 ]

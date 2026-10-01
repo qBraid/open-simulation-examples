@@ -64,10 +64,21 @@ env/bin/uv pip install --python env/bin/python "earth2studio[sfno]==0.19.0" \
   "makani @ git+https://github.com/NVIDIA/makani.git@b38fcb2799d7dbc146fa60459f3f9823394a8bf1" \
   "torch==2.11.*" "torch-harmonics==0.9.2" "torchvision==0.26.*" scipy
 export EARTH2STUDIO_CACHE=/big/disk/e2s-cache
+# FCN3 additionally needs torch-harmonics built with CUDA kernels (the PyPI wheel is CPU-only):
+env/bin/uv pip install --python env/bin/python "nvidia-cuda-nvcc==13.0.*" "nvidia-nvvm==13.0.*" \
+  "nvidia-cuda-crt==13.0.*" "nvidia-cuda-cccl==13.0.*" ninja setuptools wheel
+CU=$(env/bin/python -c "import site;print(site.getsitepackages()[0])")/nvidia/cu13
+mkdir -p $CU/lib64 && ln -sf $CU/lib/libcudart.so.13 $CU/lib64/libcudart.so   # the linker wants -lcudart
+git clone --depth 1 --branch v0.9.2 https://github.com/NVIDIA/torch-harmonics.git && cd torch-harmonics
+CUDA_HOME=$CU PATH=$CU/bin:$PATH FORCE_CUDA_EXTENSION=1 TORCH_CUDA_ARCH_LIST=8.9 MAX_JOBS=2 \
+  ../env/bin/python -m pip install --no-build-isolation --no-deps . && cd ..
+
 python forecast_score.py sfno results/          # 12 starts in 2020, GPU, about 17 min on an L4
+python forecast_score.py fcn3 results/          # same starts with FourCastNet 3
 python hres_score.py results/                   # IFS HRES on the same starts (CPU, network-bound)
-python make_verdict.py results/ results/sfno_viz_2020082400.npz
-python build_viewer.py results/ results/sfno_viz_2020082400.npz
+python make_verdict.py results/ results/<model>_viz_2020082400.npz --model <sfno|fcn3>
+python build_viewer.py results/ results/<model>_viz_2020082400.npz --model <sfno|fcn3>
+python verify_viewer.py viewer.html results/   # sandboxed-frame check + screenshots (Playwright)
 ```
 The WB2 reference numbers in `results/wb2_ref_2020.json` come from
 `gs://weatherbench2/benchmark_results/*_vs_era5_1440x721_2020.nc`.
