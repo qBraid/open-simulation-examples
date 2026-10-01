@@ -21,7 +21,7 @@ then use public data or the user's own feeds.
 | Vanilla and exotic pricing, curves, calendars | QuantLib (`pip install QuantLib`, 1.43) | Analytic, FD, lattice and MC engines. Validate each engine against a closed form or a published table before trusting it. |
 | Heston / stochastic vol | QuantLib `AnalyticHestonEngine` or `COSHestonEngine` | Matches Lewis (2000) reference prices to ~1e-12 bp. Use FD only when you need early exercise or barriers. |
 | American options | QuantLib FD (`FdBlackScholesVanillaEngine`, 800x1600) | Within 2.6 bp of a 20,001-step Leisen-Reimer lattice. Barone-Adesi-Whaley and Bjerksund-Stensland approximations can be off by up to ~250 bp; never use them for anything you report. |
-| Portfolio VaR/ES, full revaluation | CuPy on GPU (`cupy-cuda12x`) | An L4 revalues a 500-option book at ~10^6 scenarios/s. A linear book has a closed form; use it as the known answer. |
+| Portfolio VaR/ES, full revaluation | CuPy on GPU (`cupy-cuda12x[ctk]`) | An L4 revalues a 500-option book at ~10^6 scenarios/s. A linear book has a closed form; use it as the known answer. |
 | Portfolio optimisation | cvxpy + Clarabel (long-only QPs), Riskfolio-Lib for risk measures | Shrink the covariance (Ledoit-Wolf). Never trust sample-mean optimisation out of sample. |
 | Public data | Ken French Data Library (returns, factors), CBOE index history (VIX family, SKEW), FRED | Fetch at run time; do not commit raw files (publisher terms). |
 
@@ -51,6 +51,8 @@ Follow DeMiguel, Garlappi & Uppal (2009):
 If a user's backtest shows a big win, check for look-ahead and missing costs first.
 
 ## Compute on qBraid
+
+- **Install CuPy with its toolkit extra:** `pip install "cupy-cuda12x[ctk]" nvidia-cuda-cccl-cu12`. Plain `cupy-cuda12x` imports fine, then fails at the first random draw with `Failure finding libcurand.so`. qBraid GPU images ship the driver but no CUDA toolkit.
 
 - **Pricing and backtests:** single-threaded and seconds to minutes. The pod is fine.
 - **GPU MC:** `gpu-l4` ($0.49/h) is enough. The validation run (32 replications up to 1e7, 8 at 1e8) plus a 2M-scenario option-book revaluation takes minutes.

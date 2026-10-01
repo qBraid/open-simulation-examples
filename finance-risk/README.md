@@ -27,7 +27,8 @@ CBOE index history), which shapes what it can claim.
 
 ```bash
 python3.12 -m venv venv && . venv/bin/activate
-pip install QuantLib numpy scipy pandas cvxpy cupy-cuda12x   # cupy only for mc_risk.py (GPU)
+pip install QuantLib numpy scipy pandas cvxpy
+pip install "cupy-cuda12x[ctk]" nvidia-cuda-cccl-cu12   # GPU only (mc_risk.py); [ctk] brings the CUDA runtime libs
 ./fetch_data.sh
 python pricing.py        # ~3 min, 1 core   -> results/pricing.json
 python backtest.py       # ~25 s, 1 core    -> results/backtest*.json
