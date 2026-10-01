@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Finance and Risk Lab</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{--bg:#f4f5f2;--panel:#ffffffee;--ink:#15191b;--muted:#5b6569;--line:#d5dad6;--accent:#0f6e66;--warn:#c2410c;--bad:#b91c1c;--chip:#e8ece8;--scene:#eef0ec;
+  --s1:#0f6e66;--s2:#6b4fb3;--s3:#c2410c;--s4:#2563eb;--s5:#a16207;--s6:#be185d}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b0e10;--panel:#14191ceb;--ink:#e6ebe9;--muted:#93a09c;--line:#2a3431;--accent:#45c2b3;--warn:#fb923c;--bad:#f87171;--chip:#1e2629;--scene:#0b0e10;
+  --s1:#45c2b3;--s2:#a78bfa;--s3:#fb923c;--s4:#60a5fa;--s5:#facc15;--s6:#f472b6}}
+:root[data-theme="dark"]{--bg:#0b0e10;--panel:#14191ceb;--ink:#e6ebe9;--muted:#93a09c;--line:#2a3431;--accent:#45c2b3;--warn:#fb923c;--bad:#f87171;--chip:#1e2629;--scene:#0b0e10;
+  --s1:#45c2b3;--s2:#a78bfa;--s3:#fb923c;--s4:#60a5fa;--s5:#facc15;--s6:#f472b6}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:14px/1.5 "IBM Plex Sans",system-ui,sans-serif;overflow:hidden}
+#app{position:fixed;inset:0}canvas#gl{position:absolute;inset:0;width:100%;height:100%;display:block}
+header{position:absolute;top:0;left:0;right:0;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;padding:10px 16px;background:linear-gradient(var(--bg),transparent);z-index:5}
+header h1{margin:0;font-size:17px;font-weight:600;letter-spacing:-.01em}
+header .sub{color:var(--muted);font-size:12.5px}
+nav{display:flex;gap:6px;flex-wrap:wrap}
+nav button,.btn{font:500 12.5px "IBM Plex Sans",sans-serif;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:5px 11px;border-radius:999px;cursor:pointer}
+nav button[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.right{margin-left:auto;display:flex;gap:6px}
+.panel{position:absolute;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;backdrop-filter:blur(8px);z-index:4;box-shadow:0 10px 30px -18px rgba(0,0,0,.4)}
+.info{left:16px;top:96px;width:330px;max-height:calc(100% - 200px);overflow:auto}
+.info h2{margin:0 0 4px;font-size:15px}.info p{margin:6px 0;color:var(--muted);font-size:13px}
+.kpi{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
+.kpi div{background:var(--chip);border-radius:8px;padding:6px 8px}.kpi b{display:block;font:600 16px "IBM Plex Mono",monospace}.kpi span{font-size:11px;color:var(--muted)}
+.mono{font-family:"IBM Plex Mono",monospace}
+.bottom{left:16px;right:16px;bottom:14px}
+.scrub{display:flex;align-items:center;gap:10px}
+.scrub input{flex:1;accent-color:var(--accent)}
+#spark{width:100%;height:46px;display:block;margin-top:6px;cursor:pointer}
+.legend{right:16px;top:96px;width:200px;font-size:12px}
+.cbar{height:10px;border-radius:4px;margin:6px 0 2px}
+.tick{display:flex;justify-content:space-between;color:var(--muted);font-size:11px}
+.badge{display:inline-block;background:var(--warn);color:#fff;border-radius:999px;padding:1px 8px;font-size:11.5px;margin-left:6px}
+.lbl{font:11.5px "IBM Plex Mono",monospace;color:var(--muted);pointer-events:none;white-space:nowrap}
+.lbl.big{font-size:12.5px;color:var(--ink);background:var(--panel);padding:2px 6px;border-radius:6px;border:1px solid var(--line)}
+.page2d{position:absolute;inset:86px 16px 16px 16px;overflow:auto;z-index:4;display:none}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(560px,1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.card h3{margin:0 0 6px;font-size:14px}
+.card canvas{width:100%;height:280px;display:block}
+table{border-collapse:collapse;width:100%;font-size:12.5px}th,td{padding:5px 7px;border-bottom:1px solid var(--line);text-align:right}th:first-child,td:first-child{text-align:left}
+th{font:500 11px "IBM Plex Mono",monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+td.mono{font-family:"IBM Plex Mono",monospace}
+.pill{display:inline-block;padding:1px 8px;border-radius:999px;font:500 11px "IBM Plex Mono",monospace}
+.ok{background:#16a34a22;color:#15803d}.close{background:#ca8a0422;color:#a16207}
+#tour{position:absolute;left:50%;transform:translateX(-50%);bottom:110px;max-width:560px;width:calc(100% - 32px);display:none;z-index:6}
+#tour b{display:block;margin-bottom:4px}
+.stamp{font:11px "IBM Plex Mono",monospace;color:var(--muted)}
+@media (max-width:760px){.info{width:auto;right:16px;top:auto;bottom:120px;max-height:30%}.legend{display:none}header .sub{display:none}}
+</style>
+<script>{const t=new URLSearchParams(location.search).get("theme");if(t)document.documentElement.dataset.theme=t;}</script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+</head>
+<body>
+<div id="app">
+<canvas id="gl"></canvas>
+<header>
+  <h1>Finance and Risk Lab</h1><span class="sub">QuantLib · GPU Monte Carlo · walk-forward portfolios · open source on qBraid</span>
+  <nav id="tabs"></nav>
+  <div class="right"><button class="btn primary" id="tourBtn">▶ Guided tour</button><button class="btn" id="themeBtn">◐</button></div>
+</header>
+<div class="panel info" id="info"></div>
+<div class="panel legend" id="legend"></div>
+<div class="panel bottom" id="bottom"></div>
+<div class="page2d" id="page2d"></div>
+<div class="panel" id="tour"><b id="tourTitle"></b><span id="tourText"></span><div style="margin-top:8px;display:flex;gap:6px;justify-content:flex-end"><button class="btn" id="tourStop">Exit</button><button class="btn primary" id="tourNext">Next ▸</button></div></div>
+</div>
+<script>window.DATA = __DATA__;</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const D = window.DATA;
+const $ = s => document.querySelector(s);
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const STRAT = {"1/N":"--s1","minvar":"--s2","minvar_lw":"--s4","meanvar":"--s3","maxsharpe_lw":"--s5","erc":"--s6"};
+const SNAME = {"1/N":"1/N","minvar":"Min-variance","minvar_lw":"Min-var (Ledoit-Wolf)","meanvar":"Mean-variance (sample)","maxsharpe_lw":"Max-Sharpe (shrunk)","erc":"Risk parity"};
+const fmt = (x,d=2)=>Number(x).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});
+const usd = x => (x<0?'-':'')+'$'+(Math.abs(x)/1e6).toFixed(2)+'M';
+
+// viridis LUT (matplotlib), 16 stops
+const VIR=[[68,1,84],[72,26,108],[71,47,125],[65,68,135],[57,86,140],[49,104,142],[42,120,142],[35,137,142],[31,154,138],[34,170,130],[53,183,121],[84,197,104],[122,209,81],[165,219,54],[210,226,27],[253,231,37]];
+function viridis(t){t=Math.min(1,Math.max(0,t))*(VIR.length-1);const i=Math.floor(t),f=t-i,a=VIR[i],b=VIR[Math.min(i+1,VIR.length-1)];return [(a[0]+(b[0]-a[0])*f)/255,(a[1]+(b[1]-a[1])*f)/255,(a[2]+(b[2]-a[2])*f)/255];}
+function vgrad(){return 'linear-gradient(90deg,'+VIR.map((c,i)=>`rgb(${c})${' '+(i/(VIR.length-1)*100).toFixed(0)}%`).join(',')+')';}
+
+// ---------- renderer ----------
+const canvas = $('#gl');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+const labels = new CSS2DRenderer(); labels.domElement.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:3';
+$('#app').appendChild(labels.domElement);
+
+function makeStage(camPos, target){
+  const scene = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(40,1,0.05,500); cam.position.set(...camPos);
+  const ctl = new OrbitControls(cam, labels.domElement); ctl.target.set(...target); ctl.enableDamping=true; ctl.dampingFactor=0.08;
+  labels.domElement.style.pointerEvents='auto';
+  scene.add(new THREE.HemisphereLight(0xffffff,0x334455,1.1));
+  const key = new THREE.DirectionalLight(0xffffff,1.6); key.position.set(6,10,8); scene.add(key);
+  const rim = new THREE.DirectionalLight(0x88ccff,0.6); rim.position.set(-8,4,-6); scene.add(rim);
+  return {scene,cam,ctl,update:()=>{}};
+}
+function label(text, pos, big=false){const d=document.createElement('div');d.className='lbl'+(big?' big':'');d.textContent=text;const o=new CSS2DObject(d);o.position.copy(pos);return o;}
+function axisLine(a,b,col){const g=new THREE.BufferGeometry().setFromPoints([a,b]);return new THREE.Line(g,new THREE.LineBasicMaterial({color:col,transparent:true,opacity:.6}));}
+
+// =====================================================================================
+// 1. Implied-vol surface over time
+// =====================================================================================
+const VS = D.vol; const NZ = VS.z_grid.length, NT = VS.tenors_days.length;
+const vsStage = makeStage([10,8,13.5],[0,2.4,0]);
+const VMAX = 0.6, VMIN = 0.05, XS = 8/ (NZ-1), ZS = 7/(NT-1), YS = 8.5;
+const zPos = j => -3.5 + j*ZS;           // tenor axis (index spaced)
+const xPos = i => -4 + i*XS;              // moneyness axis
+const vsGeo = new THREE.BufferGeometry();
+const vsPos = new Float32Array(NZ*NT*3), vsCol = new Float32Array(NZ*NT*3);
+for(let j=0;j<NT;j++)for(let i=0;i<NZ;i++){const k=(j*NZ+i)*3;vsPos[k]=xPos(i);vsPos[k+2]=zPos(j);}
+const idx=[];for(let j=0;j<NT-1;j++)for(let i=0;i<NZ-1;i++){const a=j*NZ+i,b=a+1,c=a+NZ,d=c+1;idx.push(a,c,b,b,c,d);}
+vsGeo.setIndex(idx); vsGeo.setAttribute('position',new THREE.BufferAttribute(vsPos,3)); vsGeo.setAttribute('color',new THREE.BufferAttribute(vsCol,3));
+const vsMesh = new THREE.Mesh(vsGeo,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.55,metalness:0,side:THREE.DoubleSide,toneMapped:false}));
+const vsWire = new THREE.LineSegments(new THREE.WireframeGeometry(vsGeo),new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:.18}));
+vsStage.scene.add(vsMesh, vsWire);
+// ATM line (tube rebuilt per frame is costly; use a thick line of points)
+const atmGeo = new THREE.BufferGeometry(); const atmPos=new Float32Array(NT*3); atmGeo.setAttribute('position',new THREE.BufferAttribute(atmPos,3));
+const atmLine = new THREE.Line(atmGeo,new THREE.LineBasicMaterial({color:0xffffff,linewidth:2}));
+const atmPts = new THREE.Points(atmGeo,new THREE.PointsMaterial({color:0xffffff,size:.16}));
+vsStage.scene.add(atmLine, atmPts);
+// floor + axes
+const floor = new THREE.GridHelper(10,20,0x888888,0x888888); floor.material.transparent=true; floor.material.opacity=.15; vsStage.scene.add(floor);
+const iATM = VS.z_grid.indexOf(0);
+vsStage.scene.add(axisLine(new THREE.Vector3(xPos(0),0,4),new THREE.Vector3(xPos(NZ-1),0,4),0x999999));
+vsStage.scene.add(label('downside strikes (puts)',new THREE.Vector3(xPos(0),0,4.6)), label('upside (calls)',new THREE.Vector3(xPos(NZ-1),0,4.6)), label('ATM',new THREE.Vector3(xPos(iATM),0,4.4)));
+[0,2,5,8,11].forEach(j=>vsStage.scene.add(label(VS.tenors_days[j]+'d',new THREE.Vector3(4.6,0,zPos(j)))));
+vsStage.scene.add(label('tenor →',new THREE.Vector3(4.6,0,4.2)));
+[0.2,0.4,0.6,0.8,1.0].forEach(v=>{vsStage.scene.add(label((v*100).toFixed(0)+'%',new THREE.Vector3(-4.4,v*YS,-3.5)));vsStage.scene.add(axisLine(new THREE.Vector3(-4.1,v*YS,-3.5),new THREE.Vector3(4,v*YS,-3.5),0x777777));});
+const vsTitle = label('',new THREE.Vector3(0,9.4,-3.5),true); vsStage.scene.add(vsTitle);
+let vsT = VS.frames.length-1, vsPlay=false;
+function vsSet(t){
+  vsT = Math.max(0,Math.min(VS.frames.length-1,t));
+  const i0=Math.floor(vsT), i1=Math.min(i0+1,VS.frames.length-1), f=vsT-i0, A=VS.frames[i0], B=VS.frames[i1];
+  for(let j=0;j<NT;j++)for(let i=0;i<NZ;i++){const v=A.iv[j][i]*(1-f)+B.iv[j][i]*f,k=(j*NZ+i)*3;vsPos[k+1]=v*YS;const c=viridis((v-VMIN)/(VMAX-VMIN));vsCol[k]=c[0];vsCol[k+1]=c[1];vsCol[k+2]=c[2];}
+  for(let j=0;j<NT;j++){const v=A.atm[j]*(1-f)+B.atm[j]*f;atmPos[j*3]=xPos(iATM);atmPos[j*3+1]=v*YS+0.02;atmPos[j*3+2]=zPos(j);}
+  vsGeo.attributes.position.needsUpdate=vsGeo.attributes.color.needsUpdate=atmGeo.attributes.position.needsUpdate=true; vsGeo.computeVertexNormals();
+  vsWire.geometry.dispose(); vsWire.geometry=new THREE.WireframeGeometry(vsGeo);
+  const F = VS.frames[Math.round(vsT)];
+  vsTitle.element.innerHTML = `${F.date} · VIX ${F.vix.toFixed(1)}`+(F.event?`<span class="badge">${F.event}</span>`:'');
+  const sl=$('#vsSlider'); if(sl) sl.value=vsT;
+  const info=$('#vsInfo'); if(info) info.innerHTML=`<div class="kpi"><div><b>${(F.atm[2]*100).toFixed(1)}%</b><span>30-day ATM vol</span></div><div><b>${F.skew_index.toFixed(0)}</b><span>CBOE SKEW</span></div>
+  <div><b>${(F.iv[2][0]*100).toFixed(0)}% / ${(F.iv[2][NZ-1]*100).toFixed(0)}%</b><span>30d wing vols (−2.4σ / +1.6σ)</span></div><div><b>${F.inverted?'inverted':'upward'}</b><span>term structure</span></div></div>`;
+  drawSpark();
+}
+function drawSpark(){
+  const c=$('#spark'); if(!c) return; const r=c.getBoundingClientRect(); c.width=r.width*devicePixelRatio; c.height=r.height*devicePixelRatio;
+  const g=c.getContext('2d'); g.scale(devicePixelRatio,devicePixelRatio); const w=r.width,h=r.height, fr=VS.frames, mx=85;
+  g.strokeStyle=css('--accent'); g.lineWidth=1.4; g.beginPath(); fr.forEach((f,i)=>{const x=i/(fr.length-1)*w,y=h-f.vix/mx*h; i?g.lineTo(x,y):g.moveTo(x,y);}); g.stroke();
+  g.fillStyle=css('--warn'); fr.forEach((f,i)=>{if(f.event){const x=i/(fr.length-1)*w;g.fillRect(x-1,0,2,h);}});
+  const x=vsT/(fr.length-1)*w; g.fillStyle=css('--ink'); g.fillRect(x-1,0,2,h);
+  g.fillStyle=css('--muted'); g.font='10px IBM Plex Mono'; g.fillText('VIX 2011–2026, events in orange',4,10);
+}
+vsStage.update = (dt)=>{ if(vsPlay){ vsSet(vsT + dt*6); if(vsT>=VS.frames.length-1) vsPlay=false, $('#vsPlay').textContent='▶ play'; } };
+
+// =====================================================================================
+// 2. Monte Carlo risk: path fan + tail
+// =====================================================================================
+const MC = D.mc; const fanStage = makeStage([0.9,0.9,10.8],[0.4,-0.4,0]);
+let fanAnim = 0;
+if(MC){
+  const P = MC.option_book.path_fan.pnl, days=P.length, npath=P[0].length;
+  const allT = P[days-1]; const sorted=[...allT].sort((a,b)=>a-b);
+  const lim = Math.max(Math.abs(sorted[5]),Math.abs(sorted[sorted.length-6]));
+  const sx = 9/days, sy = 3.2/lim;
+  const VaR = MC.option_book.var99, ES = MC.option_book.es975;
+  const pos = new Float32Array(npath*(days+1)*2*3), col = new Float32Array(npath*(days+1)*2*3);
+  let k=0;
+  const tailCol=new THREE.Color(css('--warn')), baseCol=new THREE.Color(css('--accent')), esCol=new THREE.Color(css('--bad'));
+  for(let p=0;p<npath;p++){
+    const end=P[days-1][p], c = end <= -ES ? esCol : end <= -VaR ? tailCol : baseCol, a = (end<=-VaR)?1:0.35;
+    let px=-4.5, py=0;
+    for(let d=0;d<days;d++){const nx=-4.5+(d+1)*sx, ny=P[d][p]*sy;
+      pos.set([px,py,0,nx,ny,0],k*6); col.set([c.r*a,c.g*a,c.b*a,c.r*a,c.g*a,c.b*a],k*6); k++; px=nx; py=ny;}
+  }
+  const fg=new THREE.BufferGeometry(); fg.setAttribute('position',new THREE.BufferAttribute(pos,3)); fg.setAttribute('color',new THREE.BufferAttribute(col,3));
+  const fan=new THREE.LineSegments(fg,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:.55,blending:THREE.AdditiveBlending,depthWrite:false}));
+  fanStage.scene.add(fan);
+  // terminal histogram as 3D bars (GPU 2M-scenario distribution), standing in z at x=end
+  const H = MC.option_book.loss_hist, maxc = Math.max(...H.counts);
+  const bars = new THREE.Group();
+  H.counts.forEach((c,i)=>{ const lo=-H.edges[i+1], hi=-H.edges[i]; if(Math.abs(lo)>lim*1.05 && Math.abs(hi)>lim*1.05) return;
+    const y0=Math.max(-lim,lo)*sy, y1=Math.min(lim,hi)*sy, hgt=c/maxc*2.4; if(hgt<0.003) return;
+    const mid=-(H.edges[i]+H.edges[i+1])/2, colr = mid<=-ES?esCol: mid<=-VaR?tailCol:baseCol;
+    const m=new THREE.Mesh(new THREE.BoxGeometry(hgt,Math.max(0.01,y1-y0),0.35),new THREE.MeshStandardMaterial({color:colr,roughness:.4,emissive:colr,emissiveIntensity:mid<=-VaR?.35:.05}));
+    m.position.set(4.7+hgt/2,(y0+y1)/2,0); bars.add(m); });
+  fanStage.scene.add(bars);
+  const plane=(y,c,txt,dy=0.18,x=3.2)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(12,0.012),new THREE.MeshBasicMaterial({color:c}));m.position.set(0.8,y,0.01);fanStage.scene.add(m);fanStage.scene.add(label(txt,new THREE.Vector3(x,y+dy,0),true));return m;};
+  plane(-VaR*sy,tailCol,`VaR 99% ${usd(VaR)}`); plane(-ES*sy,esCol,`ES 97.5% ${usd(ES)}`,-0.3,0.6); plane(0,0x888888,'P&L 0');
+  for(let d=0;d<=days;d+=2) fanStage.scene.add(label('day '+d,new THREE.Vector3(-4.5+d*sx,-lim*sy-0.35,0)));
+  fanStage.scene.add(label('loss distribution, 2M GPU scenarios',new THREE.Vector3(5.6,lim*sy*0.72,0)));
+  fg.setDrawRange(0,0);
+  fanStage.update=(dt)=>{ if(fanAnim<1){fanAnim=Math.min(1,fanAnim+dt*0.35); fg.setDrawRange(0, Math.floor(fanAnim*npath*days)*2);} const s=1+0.06*Math.sin(performance.now()/350); bars.children.forEach(b=>{ if(b.material.emissiveIntensity>.2) b.material.emissiveIntensity=.25+.2*Math.sin(performance.now()/300);}); };
+}
+
+// =====================================================================================
+// 3. Efficient frontier through time
+// =====================================================================================
+const FR = D.frontiers; const frStage = makeStage([5.5,6.5,15.5],[0,2,-1]);
+const cl=(x,a,b)=>Math.min(b,Math.max(a,x));
+const fxs = v => -4 + cl(v,0,0.35)/0.35*8, fys = r => cl(r,-0.02,0.35)/0.35*5;
+const fzs = i => -6.5 + i/(FR.length-1)*13;
+FR.forEach(f=>f.pts.sort((p,q)=>p[0]-q[0]));
+// stacked ex-ante frontiers, coloured by year
+FR.forEach((f,i)=>{ const c=viridis(0.1+0.85*i/(FR.length-1));
+  const g=new THREE.BufferGeometry().setFromPoints(f.pts.map(p=>new THREE.Vector3(fxs(p[0]),fys(p[1]),fzs(i))));
+  frStage.scene.add(new THREE.Line(g,new THREE.LineBasicMaterial({color:new THREE.Color(...c),transparent:true,opacity:.45}))); });
+// floor grid + axes in the vol/return plane at the back
+const frGrid=new THREE.GridHelper(14,28,0x888888,0x888888); frGrid.material.transparent=true; frGrid.material.opacity=.12; frGrid.position.y=-0.01; frStage.scene.add(frGrid);
+[0.05,0.1,0.15,0.2,0.25,0.3,0.35].forEach(v=>frStage.scene.add(label((v*100).toFixed(0)+'%',new THREE.Vector3(fxs(v),-0.35,7.1))));
+frStage.scene.add(label('annualised volatility →',new THREE.Vector3(0,-0.8,7.1)));
+[0,0.1,0.2,0.3].forEach(r=>{frStage.scene.add(label((r*100).toFixed(0)+'%',new THREE.Vector3(-4.5,fys(r),-6.8)));frStage.scene.add(axisLine(new THREE.Vector3(-4.2,fys(r),-6.8),new THREE.Vector3(4,fys(r),-6.8),0x777777));});
+frStage.scene.add(label('expected excess return',new THREE.Vector3(-4.5,fys(0.35)+0.4,-6.8)));
+for(let i=0;i<FR.length;i+=10) frStage.scene.add(label(FR[i].date.slice(0,4),new THREE.Vector3(4.6,0,fzs(i))));
+frStage.scene.add(label(FR.at(-1).date.slice(0,4),new THREE.Vector3(4.6,0,fzs(FR.length-1))));
+const strats = Object.keys(STRAT);
+const balls = {};
+strats.forEach(s=>{ const c=new THREE.Color(css(STRAT[s]));
+  const pts = FR.map((f,i)=>new THREE.Vector3(fxs(f.ports[s][0]),fys(f.ports[s][1]),fzs(i)));
+  frStage.scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:c,transparent:true,opacity:.28})));
+  balls[s]=new THREE.Mesh(new THREE.SphereGeometry(.2,28,18),new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:.55,roughness:.3})); frStage.scene.add(balls[s]); });
+let curTube=null; const tubeMat=new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xffffff,emissiveIntensity:.35,roughness:.3});
+const assetGeo=new THREE.BufferGeometry(); const assetPts=new THREE.Points(assetGeo,new THREE.PointsMaterial({size:.14,color:0x9aa4a8})); frStage.scene.add(assetPts);
+const sweep=new THREE.Mesh(new THREE.PlaneGeometry(8.4,5.6),new THREE.MeshBasicMaterial({color:0x88ccff,transparent:true,opacity:.07,side:THREE.DoubleSide,depthWrite:false})); sweep.position.y=2.8; frStage.scene.add(sweep);
+const frTitle=label('',new THREE.Vector3(0,5.9,0),true); frStage.scene.add(frTitle);
+let frT=0, frPlay=true, frLast=-1;
+function frSet(t){ frT=(t+FR.length)%FR.length; const i=Math.floor(frT), f=frT-i, A=FR[i], B=FR[Math.min(i+1,FR.length-1)], z=fzs(frT);
+  if(Math.abs(frT-frLast)>0.04){ frLast=frT; if(curTube){frStage.scene.remove(curTube);curTube.geometry.dispose();}
+    const pts=A.pts.map(p=>new THREE.Vector3(fxs(p[0]),fys(p[1]),z)); if(pts.length>1){curTube=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),80,0.05,8,false),tubeMat);frStage.scene.add(curTube);} }
+  assetGeo.setFromPoints(A.assets.map(a=>new THREE.Vector3(fxs(a[0]),fys(a[1]),z)));
+  strats.forEach(s=>{balls[s].position.set(fxs(A.ports[s][0]+(B.ports[s][0]-A.ports[s][0])*f),fys(A.ports[s][1]+(B.ports[s][1]-A.ports[s][1])*f),z);});
+  sweep.position.z=z; frTitle.position.z=z; frTitle.element.textContent=`Ex-ante frontier · Dec ${A.date.slice(0,4)} (prior 10 years)`;
+  const sl=$('#frSlider'); if(sl) sl.value=frT; }
+frStage.update=(dt)=>{ if(frPlay) frSet(frT+dt*1.5); };
+
+// =====================================================================================
+// stage switching, UI
+// =====================================================================================
+const TABS = [
+  {id:'vol',name:'Vol surface',stage:vsStage},
+  {id:'risk',name:'Monte Carlo risk',stage:fanStage},
+  {id:'frontier',name:'Frontier through time',stage:frStage},
+  {id:'backtest',name:'Backtest',page:true},
+  {id:'valid',name:'Validation',page:true}];
+let cur = null;
+function setTab(id){
+  cur = TABS.find(t=>t.id===id);
+  [...$('#tabs').children].forEach(b=>b.setAttribute('aria-selected',b.dataset.id===id));
+  labels.domElement.innerHTML=''; // CSS2D re-attaches visible labels on render
+  $('#page2d').style.display = cur.page?'block':'none';
+  ['#info','#legend','#bottom'].forEach(s=>$(s).style.display = cur.page?'none':'block');
+  if(cur.page){ (id==='backtest'?drawBacktest:drawValidation)(); return; }
+  if(cur.stage!==window._lastStage){ window._lastStage=cur.stage; }
+  panels[id]();
+  resize();
+}
+const panels = {
+  vol(){ $('#info').innerHTML=`<h2>S&amp;P 500 implied-vol surface, 2011–2026</h2>
+    <p>Height and colour are implied volatility by strike (x, in standard moves from the forward) and tenor (depth). Play the history or click the VIX strip: watch the surface lift and the short end invert in stress (COVID, Volmageddon, the 2024 carry unwind).</p>
+    <div id="vsInfo"></div>
+    <p class="stamp">Model surface anchored to public CBOE indices: VIX9D/VIX/VIX3M/VIX6M/VIX1Y set the ATM term structure; SKEW sets the slope and curvature of a bounded quadratic smile (a heuristic: Gram-Charlier breaks down at SKEW-level skewness). An illustration anchored to public data, not a traded-option surface: free option-chain history does not exist.</p>`;
+    $('#legend').innerHTML=`<b>Implied vol</b><div class="cbar" style="background:${vgrad()}"></div><div class="tick"><span>5%</span><span>32%</span><span>≥60%</span></div><p class="stamp">white line: at-the-money term structure</p>`;
+    $('#bottom').innerHTML=`<div class="scrub"><button class="btn" id="vsPlay">▶ play</button><input id="vsSlider" type="range" min="0" max="${VS.frames.length-1}" step="0.01" value="${vsT}"><span class="mono" style="font-size:12px">${VS.frames.length} months</span></div><canvas id="spark"></canvas>`;
+    $('#vsPlay').onclick=()=>{ if(vsT>=VS.frames.length-1) vsT=0; vsPlay=!vsPlay; $('#vsPlay').textContent=vsPlay?'❚❚ pause':'▶ play'; };
+    $('#vsSlider').oninput=e=>{vsPlay=false;$('#vsPlay').textContent='▶ play';vsSet(+e.target.value);};
+    $('#spark').onclick=e=>{const r=e.target.getBoundingClientRect();vsPlay=false;vsSet((e.clientX-r.left)/r.width*(VS.frames.length-1));};
+    vsSet(vsT); },
+  risk(){ const A=MC?MC.linear_validation:null, B=MC?MC.option_book:null;
+    $('#info').innerHTML = MC? `<h2>10-day market risk, 500-option book</h2>
+    <p>1,500 simulated P&amp;L paths, fully revalued with Black-Scholes every day. Paths that end beyond VaR glow orange; beyond ES, red. On the right, the loss distribution from 2 million GPU scenarios.</p>
+    <div class="kpi"><div><b>${usd(B.var99)}</b><span>VaR 99%, 10-day</span></div><div><b>${usd(B.es975)}</b><span>ES 97.5% (FRTB)</span></div>
+    <div><b>${fmt(B.gpu_scen_per_s/1e6,1)}M/s</b><span>scenarios on ${D.mc.device}</span></div><div><b>${fmt(B.speedup,0)}×</b><span>vs NumPy, 2 CPU threads</span></div></div>
+    <p><b>Validated against a closed form.</b> On a linear 20-asset book the MC estimates converge to the analytic VaR/ES, and the spread across 32 replications matches the asymptotic standard error (chart below).</p><canvas id="conv" style="width:100%;height:170px"></canvas>`
+    : `<h2>Monte Carlo risk</h2><p>GPU results not yet available in this build.</p>`;
+    $('#legend').innerHTML=`<b>Path colour</b><p class="stamp"><span style="color:${css('--accent')}">■</span> body · <span style="color:${css('--warn')}">■</span> beyond VaR 99% · <span style="color:${css('--bad')}">■</span> beyond ES 97.5%</p>`;
+    $('#bottom').innerHTML=`<div class="scrub"><button class="btn" id="fanReplay">↻ replay paths</button><span class="stamp">Drag to orbit. The histogram stands at day 10.</span></div>`;
+    $('#fanReplay').onclick=()=>{fanAnim=0;}; fanAnim=0; if(MC) drawConv(); },
+  frontier(){ $('#info').innerHTML=`<h2>The efficient frontier is a moving target</h2>
+    <p>Each line is the long-only frontier estimated from the prior 10 years of 30 US industry portfolios, one per December from ${FR[0].date.slice(0,4)} to ${FR.at(-1).date.slice(0,4)} (colour = year). The white tube is the current year; spheres are where each strategy sat <i>ex ante</i>; grey dots are the 30 industries. Note how far the sample-moment frontier and the mean-variance portfolio jump from year to year: that instability is why optimised portfolios struggle to beat 1/N out of sample.</p>
+    <p style="line-height:1.9">${strats.map(s=>`<span style="color:${css(STRAT[s])}">●</span> ${SNAME[s]}`).join('<br>')}</p>`;
+    $('#legend').innerHTML=`<b>Frontier year</b><div class="cbar" style="background:${vgrad()}"></div><div class="tick"><span>${FR[0].date.slice(0,4)}</span><span>${FR.at(-1).date.slice(0,4)}</span></div><p class="stamp">axes clipped at 35% vol / 35% return</p>`;
+    $('#bottom').innerHTML=`<div class="scrub"><button class="btn" id="frPlay">${frPlay?'❚❚ pause':'▶ play'}</button><input id="frSlider" type="range" min="0" max="${FR.length-1}" step="0.01" value="${frT}"></div>`;
+    $('#frPlay').onclick=()=>{frPlay=!frPlay;$('#frPlay').textContent=frPlay?'❚❚ pause':'▶ play';};
+    $('#frSlider').oninput=e=>{frPlay=false;$('#frPlay').textContent='▶ play';frSet(+e.target.value);}; frSet(frT); }
+};
+
+// ---------- 2D charts ----------
+function ctx2d(c){const r=c.getBoundingClientRect();c.width=r.width*devicePixelRatio;c.height=r.height*devicePixelRatio;const g=c.getContext('2d');g.scale(devicePixelRatio,devicePixelRatio);return [g,r.width,r.height];}
+function axes(g,w,h,pad,xl,yl){g.strokeStyle=css('--line');g.lineWidth=1;g.beginPath();g.moveTo(pad.l,pad.t);g.lineTo(pad.l,h-pad.b);g.lineTo(w-pad.r,h-pad.b);g.stroke();g.fillStyle=css('--muted');g.font='11px IBM Plex Mono';g.fillText(yl,pad.l+4,pad.t+10);g.fillText(xl,w-pad.r-g.measureText(xl).width,h-pad.b-6);}
+function drawConv(){ const c=$('#conv'); if(!c) return; const [g,w,h]=ctx2d(c); const A=MC.linear_validation, rows=A.convergence, pad={l:44,r:8,t:12,b:22};
+  axes(g,w,h,pad,'N scenarios (log)','VaR 99% estimate'); const cf=A.var99_closed_form;
+  const ys=rows.map(r=>[r.var_mean-2*r.var_sd,r.var_mean+2*r.var_sd]).flat(); const lo=Math.min(...ys,cf), hi=Math.max(...ys,cf);
+  const X=i=>pad.l+(i+.5)/rows.length*(w-pad.l-pad.r), Y=v=>h-pad.b-(v-lo)/(hi-lo)*(h-pad.t-pad.b);
+  g.fillStyle=css('--accent')+'33'; g.beginPath(); rows.forEach((r,i)=>{const x=X(i);i?g.lineTo(x,Y(cf+2*r.var_se_theory)):g.moveTo(x,Y(cf+2*r.var_se_theory));}); [...rows].reverse().forEach((r,j)=>{g.lineTo(X(rows.length-1-j),Y(cf-2*r.var_se_theory));}); g.fill();
+  g.strokeStyle=css('--muted'); g.setLineDash([4,3]); g.beginPath(); g.moveTo(pad.l,Y(cf)); g.lineTo(w-pad.r,Y(cf)); g.stroke(); g.setLineDash([]);
+  rows.forEach((r,i)=>{g.strokeStyle=css('--warn');g.lineWidth=2;g.beginPath();g.moveTo(X(i),Y(r.var_mean-2*r.var_sd));g.lineTo(X(i),Y(r.var_mean+2*r.var_sd));g.stroke();g.fillStyle=css('--warn');g.beginPath();g.arc(X(i),Y(r.var_mean),3,0,7);g.fill();g.fillStyle=css('--muted');g.fillText('1e'+Math.log10(r.N),X(i)-10,h-6);});
+  g.fillStyle=css('--muted'); g.fillText('closed form (dashed) · ±2 SE theory (band) · ±2 SD over 32 reps (bars)',pad.l+4,pad.t+24); }
+
+function drawBacktest(){
+  const B=D.backtest, S=D.series; const keys=Object.keys(STRAT);
+  const rows=keys.map(k=>{const a=B.strategies[k]['10bp'],b=B.strategies[k]['50bp'];return `<tr><td><span style="color:${css(STRAT[k])}">●</span> ${SNAME[k]}</td><td class="mono">${fmt(a.sharpe,3)}</td><td class="mono">${fmt(b.sharpe,3)}</td><td class="mono">${a.jk_p_vs_1N===undefined?'–':fmt(a.jk_p_vs_1N,2)}</td><td class="mono">${fmt(a.ann_excess_return*100,1)}%</td><td class="mono">${fmt(a.ann_vol*100,1)}%</td><td class="mono">${fmt(a.turnover_monthly*100,1)}%</td><td class="mono">${fmt(a.max_drawdown*100,0)}%</td></tr>`;}).join('');
+  $('#page2d').innerHTML=`<div class="grid2">
+   <div class="card" style="grid-column:1/-1"><h3>Out-of-sample, ${B.period[0]} → ${B.period[1]} (${B.months} months), 30 US industries, 120-month rolling window, monthly rebalance</h3>
+   <table><tr><th>Strategy</th><th>Sharpe @10bp</th><th>Sharpe @50bp</th><th>p vs 1/N</th><th>Excess ret</th><th>Vol</th><th>Turnover/mo</th><th>Max DD</th></tr>${rows}</table>
+   <p class="stamp" style="margin-top:8px">p: Jobson-Korkie test with Memmel (2003) correction, H0 Sharpe = Sharpe(1/N). <b>No optimised portfolio beats 1/N at 5% significance</b>, reproducing DeMiguel, Garlappi &amp; Uppal (2009). Sample mean-variance is the worst: estimation error in expected returns swamps the optimisation gain. Shrinkage (Ledoit-Wolf) and minimum-variance help modestly; costs erase most of it.</p></div>
+   <div class="card"><h3>Growth of $1 (log scale, net of 10bp costs)</h3><canvas id="cw"></canvas><div id="lg" class="stamp"></div></div>
+   <div class="card"><h3>Underwater: drawdown from peak</h3><canvas id="cd"></canvas></div></div>`;
+  const dates=S.dates; const [g,w,h]=ctx2d($('#cw')); const pad={l:40,r:10,t:10,b:22};
+  const all=keys.flatMap(k=>S[k].wealth); const lo=Math.log(Math.min(...all)), hi=Math.log(Math.max(...all));
+  axes(g,w,h,pad,'',''); const X=i=>pad.l+i/(dates.length-1)*(w-pad.l-pad.r), Y=v=>h-pad.b-(Math.log(v)-lo)/(hi-lo)*(h-pad.t-pad.b);
+  [1,10,100].forEach(v=>{if(Math.log(v)<lo||Math.log(v)>hi)return;g.fillStyle=css('--muted');g.fillText('$'+v,4,Y(v)+4);g.strokeStyle=css('--line');g.beginPath();g.moveTo(pad.l,Y(v));g.lineTo(w-pad.r,Y(v));g.stroke();});
+  for(let y=1980;y<=2025;y+=10){const i=dates.findIndex(d=>d.startsWith(String(y)));if(i>0){g.fillStyle=css('--muted');g.fillText(y,X(i)-12,h-6);}}
+  keys.forEach(k=>{g.strokeStyle=css(STRAT[k]);g.lineWidth=k==='1/N'?2.4:1.4;g.beginPath();S[k].wealth.forEach((v,i)=>i?g.lineTo(X(i),Y(v)):g.moveTo(X(i),Y(v)));g.stroke();});
+  $('#lg').innerHTML=keys.map(k=>`<span style="color:${css(STRAT[k])}">●</span> ${SNAME[k]} $${fmt(S[k].wealth.at(-1),0)}`).join(' · ');
+  const [g2,w2,h2]=ctx2d($('#cd')); axes(g2,w2,h2,pad,'',''); const Y2=v=>pad.t+(-v)/0.65*(h2-pad.t-pad.b), X2=i=>pad.l+i/(dates.length-1)*(w2-pad.l-pad.r);
+  [-0.2,-0.4,-0.6].forEach(v=>{g2.fillStyle=css('--muted');g2.fillText((v*100)+'%',4,Y2(v)+4);});
+  ['meanvar','1/N','minvar_lw'].forEach(k=>{g2.fillStyle=css(STRAT[k])+'40';g2.strokeStyle=css(STRAT[k]);g2.lineWidth=1.2;g2.beginPath();g2.moveTo(X2(0),Y2(0));S[k].drawdown.forEach((v,i)=>g2.lineTo(X2(i),Y2(v)));g2.lineTo(X2(dates.length-1),Y2(0));g2.closePath();g2.fill();g2.stroke();});
+  g2.fillStyle=css('--muted'); g2.fillText('shown: mean-variance, 1/N, min-var (LW)',pad.l+6,h2-pad.b-8);
+}
+function drawValidation(){
+  const P=D.pricing, s=P.summary, A=MC?MC.linear_validation:null;
+  const hrows=P.heston.map(r=>`<tr><td>${r.set} ${r.type} K=${r.K}</td><td class="mono">${r.reference.toFixed(6)}</td><td class="mono">${r.analytic_fourier.toFixed(6)}</td><td class="mono">${r.analytic_fourier_bp.toExponential(1)}</td><td class="mono">${r.cos_bp.toExponential(1)}</td><td class="mono">${r.fd_200x100x100_bp.toFixed(2)}</td></tr>`).join('');
+  const arows=P.american.map(r=>`<tr><td>S=${r.S} σ=${r.vol} T=${r.T}</td><td class="mono">${r.LS2001_fd.toFixed(3)}</td><td class="mono">${r.bermudan50_fd_2000x2000.toFixed(4)}</td><td>${r.bermudan50_within_rounding?'<span class="pill ok">within rounding</span>':'<span class="pill close">'+(r.bermudan50_fd_2000x2000-r.LS2001_fd).toFixed(4)+'</span>'}</td><td class="mono">${r.lattice_LR_20001.toFixed(4)}</td><td class="mono">${r.fd_800x1600_bp_vs_lattice.toFixed(2)}</td><td class="mono">${r.baw_bp_vs_lattice.toFixed(0)}</td></tr>`).join('');
+  const crow=A?A.convergence.map(r=>`<tr><td>1e${Math.log10(r.N)}</td><td class="mono">${usd(r.var_mean)}</td><td class="mono">${fmt(r.var_sd/r.var_se_theory,2)}</td><td class="mono">${usd(r.es_mean)}</td><td class="mono">${fmt(r.es_sd/r.es_se_theory,2)}</td><td class="mono">${fmt(r.scen_per_s/1e6,1)}M</td></tr>`).join(''):'';
+  $('#page2d').innerHTML=`<div class="grid2">
+   <div class="card"><h3>Black-Scholes: QuantLib vs closed form (${s.bs_cases} options)</h3><table><tr><th>Engine</th><th>Max error</th><th>Verdict</th></tr>
+    <tr><td>Analytic</td><td class="mono">${s.bs_analytic_max_bp.toExponential(1)} bp</td><td><span class="pill ok">machine precision</span></td></tr>
+    <tr><td>Finite difference 400×800</td><td class="mono">${s.bs_fd_max_bp.toFixed(2)} bp</td><td><span class="pill ok">&lt; 5 bp</span></td></tr>
+    <tr><td>Monte Carlo 400k</td><td class="mono">${s.bs_mc_within_3se}/${s.bs_cases} within 3 SE</td><td><span class="pill ok">consistent</span></td></tr></table></div>
+   <div class="card"><h3>GPU Monte Carlo: estimator error bars vs theory</h3>${A?`<table><tr><th>N</th><th>VaR99 mean</th><th>SD/SE th.</th><th>ES97.5 mean</th><th>SD/SE th.</th><th>scen/s</th></tr>${crow}</table><p class="stamp">Closed form: VaR99 ${usd(A.var99_closed_form)}, ES97.5 ${usd(A.es975_closed_form)}. SD/SE ≈ 1 means the error bars are exactly what asymptotic theory predicts.</p>`:'<p class="stamp">pending</p>'}</div>
+   <div class="card" style="grid-column:1/-1"><h3>Heston: QuantLib vs published reference prices</h3><table><tr><th>Case</th><th>Reference</th><th>QuantLib analytic</th><th>err bp</th><th>COS bp</th><th>FD bp</th></tr>${hrows}</table>
+   <p class="stamp">${Object.values(P.heston_sources).join(' · ')}</p></div>
+   <div class="card" style="grid-column:1/-1"><h3>American puts vs Longstaff &amp; Schwartz (2001), Table 1</h3>
+   <p class="stamp">Finding: the paper's finite-difference "American" values are for exercise 50 times a year. Our Bermudan-50 FD prices match ${s.bermudan50_within_rounding}/${s.american_cases} to the published 3 decimals; the 5 high-vol 2-year cells differ by ≤ ${s.bermudan50_vs_LS2001_max_bp_of_strike.toFixed(2)} bp of strike, and our grid is converged to 1e-5 there. Continuous exercise is worth about 0.005–0.009 more (lattice column).</p>
+   <table><tr><th>Case (K=40, r=6%)</th><th>LS 2001</th><th>Bermudan-50 FD</th><th>match</th><th>American lattice</th><th>FD vs lattice bp</th><th>BAW approx bp</th></tr>${arows}</table></div>
+  </div><p class="stamp" style="margin:10px 4px">${D.stamp}</p>`;
+}
+
+// ---------- tour ----------
+const TOUR=[
+ {tab:'vol',cam:[10,8,13.5],tgt:[0,2.4,0],t:0,title:'A decade and a half of S&P 500 volatility',text:'Each frame is one month-end surface: height is implied vol by strike (left = downside puts) and tenor (depth). This is calm 2011.'},
+ {tab:'vol',cam:[-14,13,19],tgt:[-0.5,4.6,0],frame:'2020-03-16',title:'March 2020',text:'VIX 82.7. The whole surface lifts, the short end inverts above the long end, and the put wing explodes.'},
+ {tab:'risk',cam:[0.9,0.9,10.8],tgt:[0.4,-0.4,0],title:'10-day risk of an option book, on the GPU',text:'1,500 daily-revalued paths fan out; the orange and red tails are the scenarios that define VaR 99% and ES 97.5%. The bars are 2 million GPU scenarios.'},
+ {tab:'risk',cam:[6.5,0.5,5],tgt:[4.6,-1,0],title:'The tail, up close',text:'Expected Shortfall averages everything beyond the 97.5% quantile. The estimators were validated against a closed form, with error bars matching theory.'},
+ {tab:'frontier',cam:[5.5,6.5,15.5],tgt:[0,2,-1],title:'The frontier keeps moving',text:'Fifty-two years of ex-ante frontiers stacked in depth. The sample mean-variance portfolio (orange) jumps around; that estimation error is the whole story of the next slide.'},
+ {tab:'backtest',title:'1/N is hard to beat',text:'Out of sample since 1973, no optimised portfolio beats equal weighting at 5% significance once costs are paid, as DeMiguel, Garlappi & Uppal found in 2009.'},
+ {tab:'valid',title:'Every number is checked',text:'QuantLib matches closed forms to machine precision and Lewis\'s Heston prices to 1e-12 bp. Along the way we found that Longstaff & Schwartz\'s American reference values are really Bermudan-50.'}];
+let tourI=-1, fly=null;
+function tourGo(i){ tourI=i; if(i<0||i>=TOUR.length){$('#tour').style.display='none';tourI=-1;return;}
+  const s=TOUR[i]; setTab(s.tab); $('#tour').style.display='block'; $('#tourTitle').textContent=`${i+1}/${TOUR.length} · ${s.title}`; $('#tourText').textContent=s.text;
+  $('#tourNext').textContent = i===TOUR.length-1?'Finish':'Next ▸';
+  if(s.frame){vsPlay=false;vsSet(VS.frames.findIndex(f=>f.date===s.frame));}
+  else if(s.tab==='vol'&&s.t!==undefined){vsSet(0);vsPlay=true;}
+  if(s.cam&&cur.stage){fly={st:cur.stage,p0:cur.stage.cam.position.clone(),t0:cur.stage.ctl.target.clone(),p1:new THREE.Vector3(...s.cam),t1:new THREE.Vector3(...s.tgt),k:0};}}
+$('#tourBtn').onclick=()=>tourGo(0); $('#tourNext').onclick=()=>tourGo(tourI+1); $('#tourStop').onclick=()=>tourGo(-1);
+$('#themeBtn').onclick=()=>{const r=document.documentElement;const dark=matchMedia('(prefers-color-scheme: dark)').matches;const curT=r.dataset.theme||(dark?'dark':'light');r.dataset.theme=curT==='dark'?'light':'dark';sceneBg();setTab(cur.id);};
+TABS.forEach(t=>{const b=document.createElement('button');b.textContent=t.name;b.dataset.id=t.id;b.onclick=()=>{tourGo(-1);setTab(t.id);};$('#tabs').appendChild(b);});
+
+function sceneBg(){const c=new THREE.Color(css('--scene'));[vsStage,fanStage,frStage].forEach(s=>{s.scene.background=c;s.scene.fog=new THREE.Fog(c,18,42);});}
+function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);labels.setSize(w,h);[vsStage,fanStage,frStage].forEach(s=>{s.cam.aspect=w/h;s.cam.updateProjectionMatrix();});}
+addEventListener('resize',()=>{resize(); if(cur&&cur.page) setTab(cur.id); else drawSpark();});
+sceneBg(); resize();
+const [hash,arg]=location.hash.slice(1).split('@'); setTab(TABS.some(t=>t.id===hash)?hash:'vol');
+if(arg&&hash==='vol'){const i=VS.frames.findIndex(f=>f.date===arg); if(i>=0){vsSet(i); vsStage.cam.position.set(-14,13,19); vsStage.ctl.target.set(-0.5,4.6,0);}}
+if(arg&&hash==='frontier'){frPlay=false; frSet(+arg);}
+let last=performance.now();
+function loop(now){ requestAnimationFrame(loop); if(document.hidden) return; const dt=Math.max(0,Math.min(0.05,(now-last)/1000)); last=now;
+  if(!cur||cur.page) return; const st=cur.stage;
+  [vsStage,fanStage,frStage].forEach(s=>s.ctl.enabled=(s===st));
+  if(fly&&fly.st===st){fly.k=Math.min(1,fly.k+dt/1.8);const e=fly.k<.5?2*fly.k*fly.k:1-Math.pow(-2*fly.k+2,2)/2;st.cam.position.lerpVectors(fly.p0,fly.p1,e);st.ctl.target.lerpVectors(fly.t0,fly.t1,e);if(fly.k>=1)fly=null;}
+  st.update(dt); st.ctl.update(); renderer.render(st.scene,st.cam); labels.render(st.scene,st.cam); }
+requestAnimationFrame(loop);
+window.__ready = true;
+</script>
+</body>
+</html>
