@@ -42,8 +42,9 @@ from boltz.data.msa.mmseqs2 import run_mmseqs2
 meta = []
 for i, ch, smi, nres, nheavy in sel:
     lines = ["version: 1", "sequences:"]
+    seen = {}  # Boltz requires identical chains (homo-multimers) to share one MSA file
     for k, (cid, seq) in enumerate(ch):
-        a3m = f"{OUT}/msa/{i}_{k}.a3m"
+        a3m = seen.setdefault(seq, f"{OUT}/msa/{i}_{k}.a3m")
         if not os.path.exists(a3m):
             res = run_mmseqs2([seq], prefix=f"{OUT}/msa/tmp_{i}_{k}", use_env=True, use_filter=True)
             open(a3m, "w").write(res[0] if isinstance(res, list) else res[0][0])
