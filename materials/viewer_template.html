@@ -225,27 +225,34 @@ function makeDiscovery() {
   let morph = 1, mStart = 0;
   function setModel(m) { if (!pts.pred[m]) return; for (let i = 0; i < n; i++) { yFrom[i] = yNow[i]; yTo[i] = map(pts.pred[m][i]); } morph = 0; mStart = performance.now(); classify(m); cur = m; panel(); }
   if (n) { const m0 = pts.pred[cur]; for (let i = 0; i < n; i++) { yNow[i] = yTo[i] = map(m0[i]); } classify(cur); }
-  // leaderboard bars (in-scene, to the right)
-  const LB = new THREE.Group(); LB.position.set(S / 2 + 4.2, -S / 2, 0); G.add(LB);
+  // leaderboard: horizontal bars, to the right of the parity plot
+  const LB = new THREE.Group(); LB.position.set(S / 2 + 3.4, S / 2 - .4, 0); G.add(LB);
   const lb = (D.leaderboard || []).slice();
   const ours = disc.scores || {};
-  const keep = lb.filter((r, i) => i < 10 || ['MACE-MPA-0', 'MACE-MP-0', 'ORB v3', 'CHGNet', 'M3GNet'].includes(r.model));
+  const OURS_NAME = { mp0: 'MACE-MP-0', mpa0: 'MACE-MPA-0', orb3: 'ORB v3', eqv3: 'EquiformerV3+DeNS-OAM' };
+  const keepNames = new Set(['MACE-MPA-0', 'MACE-MP-0', 'ORB v3', 'CHGNet', 'M3GNet', 'EquiformerV3+DeNS-OAM']);
+  const keep = lb.filter((r, i) => i < 8 || keepNames.has(r.model));
   const permissive = l => /MIT|Apache|BSD|CC-BY/i.test(l || '');
+  const W = 7.2, rowH = .62, X0 = 0.6, F = f => X0 + (f - .4) / (1 - .4) * W;   // F1 axis 0.4..1.0
   keep.forEach((r, i) => {
-    const h = r.F1 * 9, w = .42, x = i * .62;
-    const mat = new THREE.MeshPhysicalMaterial({ color: permissive(r.lic) ? 0x2aa198 : 0x7f8c99, roughness: .3, clearcoat: .6, transparent: true, opacity: .92 });
-    const bar = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), mat); bar.position.set(x, h / 2, 0); LB.add(bar);
-    const l = label(`${r.model}  ${r.F1.toFixed(3)}`, 'small'); l.position.set(x, h + .35, 0); l.element.style.transform += ' rotate(-50deg)'; l.element.style.transformOrigin = 'left center'; LB.add(l);
-    const mk = Object.entries({ mp0: 'MACE-MP-0', mpa0: 'MACE-MPA-0', orb3: 'ORB v3' }).find(([k, v]) => v === r.model && ours[k]);
-    if (mk) { const s = ours[mk[0]]; const y = s.ours.F1 * 9, lo = s.F1_bootstrap_95[0] * 9, hi = s.F1_bootstrap_95[1] * 9;
-      const dot = new THREE.Mesh(sphereGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x45c2b3, emissiveIntensity: 2.2 })); dot.scale.setScalar(.16); dot.position.set(x, y, w / 2 + .15); LB.add(dot);
-      const wh = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x, lo, w / 2 + .15), new THREE.Vector3(x, hi, w / 2 + .15)]), new THREE.LineBasicMaterial({ color: 0x45c2b3 })); LB.add(wh);
-      const t = label(`ours ${s.ours.F1.toFixed(3)} (n=${s.n})`, 'hl'); t.position.set(x + .2, y - .45, w / 2 + .2); LB.add(t); }
+    const y = -i * rowH, len = F(r.F1) - X0;
+    const mat = new THREE.MeshPhysicalMaterial({ color: permissive(r.lic) ? 0x2aa198 : 0x6f7c88, roughness: .35, clearcoat: .5 });
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(len, rowH * .62, .25), mat); bar.position.set(X0 + len / 2, y, 0); LB.add(bar);
+    const l = label(r.model, 'small axis'); l.element.style.cssText += ';text-align:right'; l.center.set(1, .5); l.position.set(X0 - .12, y, 0); LB.add(l);
+    const v = label(r.F1.toFixed(3), 'small axis'); v.center.set(0, .5); v.position.set(F(r.F1) + .1, y, 0); LB.add(v);
+    const mk = Object.entries(OURS_NAME).find(([k, n]) => n === r.model && ours[k]);
+    if (mk) { const sc = ours[mk[0]]; const z = .2;
+      const dot = new THREE.Mesh(sphereGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x45c2b3, emissiveIntensity: 1.1 })); dot.scale.setScalar(.11); dot.position.set(F(sc.ours.F1), y, z); LB.add(dot);
+      const wh = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(F(sc.F1_bootstrap_95[0]), y, z), new THREE.Vector3(F(sc.F1_bootstrap_95[1]), y, z)]), new THREE.LineBasicMaterial({ color: 0xffffff })); LB.add(wh);
+      const t = label(`our rerun ${sc.ours.F1.toFixed(3)} · n=${sc.n}`, 'small hl'); t.center.set(0, .5); t.position.set(F(sc.F1_bootstrap_95[1]) + .9, y, z); LB.add(t); }
   });
-  const top10 = lb.length ? lb[Math.max(0, Math.ceil(lb.length * .1) - 1)].F1 : 0.925;
-  const tl = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-.4, top10 * 9, 0), new THREE.Vector3(keep.length * .62, top10 * 9, 0)]), new THREE.LineDashedMaterial({ color: 0xe7a640, dashSize: .2, gapSize: .12 }));
-  tl.computeLineDistances(); LB.add(tl); const tll = label(`top-10% bar F1 ≥ ${top10.toFixed(3)}`, 'small'); tll.position.set(keep.length * .62 + .4, top10 * 9, 0); LB.add(tll);
-  const lbt = label('Matbench Discovery leaderboard · F1 on unique prototypes · teal = commercially usable licence', 'axis'); lbt.position.set(keep.length * .31, -0.8, 0); LB.add(lbt);
+  const rank = lb.slice().sort((a, b) => b.F1 - a.F1); const top10 = rank.length ? rank[Math.max(0, Math.ceil(rank.length * .1) - 1)].F1 : 0.925;
+  const yb = -(keep.length - .4) * rowH;
+  const tl = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(F(top10), rowH * .7, .05), new THREE.Vector3(F(top10), yb, .05)]), new THREE.LineDashedMaterial({ color: 0xe7a640, dashSize: .18, gapSize: .1 }));
+  tl.computeLineDistances(); LB.add(tl); const tll = label(`top 10% · F1 ≥ ${top10.toFixed(3)}`, 'small'); tll.center.set(.5, 1); tll.position.set(F(top10), rowH * 1.4, 0); LB.add(tll);
+  [0.5, 0.6, 0.7, 0.8, 0.9, 1.0].forEach(f => { const a = label(f.toFixed(1), 'small axis'); a.position.set(F(f), yb - .2, 0); LB.add(a); });
+  const lbt = label('Matbench Discovery F1 (unique prototypes) · teal = commercially usable licence', 'axis'); lbt.position.set(X0 + W / 2, yb - .8, 0); LB.add(lbt);
+  const LBC = [LB.position.x + X0 + W / 2 - 1.2, LB.position.y + yb / 2, 0];
 
   function panel() {
     const s = ours[cur];
@@ -261,13 +268,14 @@ function makeDiscovery() {
       <p class="note">${D.stamp || ''}</p>`;
     $('#panel').querySelectorAll('[data-m]').forEach(b => b.onclick = () => setModel(b.dataset.m));
   }
-  return { name: 'Discovery', G, bloom: [0.45, 0.06], enter() { flyTo([2.6, -1.0, 23], [2.6, -0.6, 0]); panel(); controlsHTML(`<span class="note">Drag to orbit · scroll to zoom</span><button class="btn" id="lbview">Leaderboard</button><button class="btn" id="pview">Parity</button>`);
-      $('#lbview').onclick = () => flyTo([S / 2 + 7.5, 3.5, 13], [S / 2 + 7.5, 3.6, 0]); $('#pview').onclick = () => flyTo([0, 0, 15.5], [0, 0, 0]); },
+  return { name: 'Discovery', G, bloom: [0.45, 0.06], enter() { flyTo([5.6, -.5, 30.5], [5.6, -.3, 0]); panel(); controlsHTML(`<span class="note">Drag to orbit · scroll to zoom</span><button class="btn" id="lbview">Leaderboard</button><button class="btn" id="pview">Parity</button>`);
+      $('#lbview').onclick = () => flyTo([LBC[0], LBC[1], 14.5], LBC); $('#pview').onclick = () => flyTo([0, 0, 15.5], [0, 0, 0]);
+      if (location.search.includes('lb')) flyTo([LBC[0], LBC[1], 14.5], LBC); },
     update(t) { if (morph < 1) { morph = Math.min(1, (performance.now() - mStart) / 900); const e = ease(morph); for (let i = 0; i < n; i++) yNow[i] = yFrom[i] + (yTo[i] - yFrom[i]) * e; }
       for (let i = 0; i < n; i++) { _m.makeScale(.06, .06, .06); _m.setPosition(map(pts.true[i]), yNow[i], zj[i] * (1 + Math.sin(t * .6 + i) * .05)); inst.setMatrixAt(i, _m); }
       inst.instanceMatrix.needsUpdate = true; },
     tour: [{ pos: [0, 0, 15.5], tgt: [0, 0, 0], text: 'Each dot is a candidate crystal. Green ones were predicted stable and really are: these are the discoveries.' },
-           { pos: [S / 2 + 7.5, 3.5, 13], tgt: [S / 2 + 7.5, 3.6, 0], text: 'Our reruns (glowing markers) land on the published leaderboard values. The open models we can run sit just below the top-10% line.' }] };
+           { pos: [S / 2 + 7.6, -.5, 14.5], tgt: [S / 2 + 7.6, -.5, 0], text: 'Our reruns (glowing markers) land on the published leaderboard values. The open models we can run sit just below the top-10% line.' }] };
 }
 function dftTable() {
   const d = D.dft || {}; if (!Object.keys(d).length) return '<p class="note">pending</p>';
