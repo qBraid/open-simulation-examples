@@ -25,12 +25,15 @@ p.add_argument("--live", required=True)
 p.add_argument("--run", required=True)
 p.add_argument("--params", default="params_final.pkl")
 p.add_argument("--out", default=None)
+p.add_argument("--solver", default="model", choices=["model", "default"], help="default = MuJoCo defaults (iterations=100, ls_iterations=50)")
 a = p.parse_args()
 L = json.load(open(a.live))
 with tempfile.TemporaryDirectory() as d:
     path = os.path.join(d, "go1.mjb")
     open(path, "wb").write(base64.b64decode(L["mjb"]))
     m = mujoco.MjModel.from_binary_path(path)
+if a.solver == "default":
+    m.opt.iterations, m.opt.ls_iterations = 100, 50
 dta = mujoco.MjData(m)
 P = L["policy"]
 f32 = lambda s: np.frombuffer(base64.b64decode(s), np.float32)
@@ -106,7 +109,7 @@ for dur, cmd in SCRIPT:
             lv = dta.sensordata[L["obs"]["local_linvel"][0]:L["obs"]["local_linvel"][0] + 2]
             w = dta.sensordata[L["obs"]["gyro"][0] + 2]
             se_v += float(np.sum((lv - cmd[:2]) ** 2)); se_w += float((w - cmd[2]) ** 2); n += 1
-res = {"mlp_vs_brax_maxdiff": mlp_err, "cpu_mujoco_lin_vel_rmse_mps": (se_v / n) ** 0.5,
+res = {"solver": a.solver, "iterations": int(m.opt.iterations), "ls_iterations": int(m.opt.ls_iterations), "mlp_vs_brax_maxdiff": mlp_err, "cpu_mujoco_lin_vel_rmse_mps": (se_v / n) ** 0.5,
        "cpu_mujoco_yaw_rate_rmse_radps": (se_w / n) ** 0.5, "fell_at_step": fell, "steps": k}
 print(json.dumps(res))
 if a.out:
