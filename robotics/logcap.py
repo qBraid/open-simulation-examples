@@ -4,7 +4,7 @@
 import sys
 
 cap = int(sys.argv[1]) if len(sys.argv) > 1 else 5_000_000
-DROP = ("linesearch iterations limit", "warn_overflow", "Cloning mujoco_menagerie")
+DROP = ("iterations limit reached", "warn_overflow", "Cloning mujoco_menagerie")
 n = 0
 for line in sys.stdin:
     if any(d in line for d in DROP):

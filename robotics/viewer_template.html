@@ -34,7 +34,8 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:14px/1
 #side h2:first-child{margin-top:0}
 .metric{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:13px;padding:4px 0;border-bottom:1px solid var(--line)}
 .metric span:last-child{font:600 13px ui-monospace,Menlo,monospace;text-align:right}
-.metric small{grid-column:1/-1;color:var(--muted);font-size:11.5px}
+.metric small{grid-column:1/-1;color:var(--muted);font-size:11.5px;display:none}
+#side.notes .metric small{display:block}
 .verdict{display:inline-block;font:600 11px ui-monospace,monospace;padding:2px 8px;border-radius:999px;margin-left:6px}
 .v-reached{background:#d9f2e6;color:#14774b}.v-close{background:#fbeccf;color:#94600a}.v-not{background:#f7dcd8;color:#a3342a}
 :root[data-theme="dark"] .v-reached,:root:not([data-theme="light"]) .v-reached{}
@@ -82,7 +83,7 @@ kbd{font:600 11px ui-monospace,monospace;border:1px solid var(--line);border-bot
 </div>
 
 <div id="side" class="glass">
-  <h2>Benchmark verdict</h2>
+  <h2>Benchmark verdict <button id="notes" style="float:right;padding:1px 7px;font-size:11px;text-transform:none;letter-spacing:0">show notes</button></h2>
   <div id="bench"></div>
   <h2>Training · eval reward vs env steps</h2>
   <canvas class="chart" id="curve"></canvas>
@@ -159,6 +160,7 @@ function drawScatter(){
   g.fillStyle=css('--muted');g.fillText('commanded →',W-80,H-20);g.save();g.translate(10,P.t+60);g.rotate(-Math.PI/2);g.restore();
 }
 renderBench();
+document.getElementById('notes').onclick=e=>{const on=document.getElementById('side').classList.toggle('notes');e.target.textContent=on?'hide notes':'show notes';};
 addEventListener('load',()=>{drawCurve();drawScatter();});
 addEventListener('resize',()=>{drawCurve();drawScatter();});
 </script>
@@ -345,15 +347,16 @@ const segColors=['#5b6670','#0f7c72','#2a7ab0','#7b5cc4','#b26a06','#a3342a','#1
 $('#segs').innerHTML=D.script.map((s,i)=>`<div style="width:${100*s.dur/(T_END+DT)}%;background:${segColors[i%segColors.length]}" title="${s.label}">${s.label}</div>`).join('');
 const ghostSel=$('#ghost');ghostSel.innerHTML='<option value="">ghost: off</option>'+Object.keys(R).filter(k=>k!=='final').map(k=>`<option value="${k}">ghost: ${R[k].label}</option>`).join('');
 const defaultGhost=Object.keys(R).find(k=>k!=='final')||'';ghostSel.value=defaultGhost;
-let t=0,playing=true,speed=1,camMode='follow',touring=false,tourT=0;
+let t=0,playing=true,speed=1,camMode='follow',touring=false,tourT=0,snapCam=true;
+function jumpTo(x){t=x;snapCam=true;}
 $('#play').onclick=()=>{playing=!playing;$('#play').textContent=playing?'Pause':'Play';$('#play').setAttribute('aria-pressed',playing);};
 $('#speed').onchange=e=>speed=+e.target.value;
 function setCam(m){camMode=m;$('#camFollow').setAttribute('aria-pressed',m==='follow');$('#camFree').setAttribute('aria-pressed',m==='free');controls.enabled=(m==='free');}
 $('#camFollow').onclick=()=>{stopTour();setCam('follow');};
 $('#camFree').onclick=()=>{stopTour();setCam('free');controls.target.copy(robot.bodies[TRUNK].position);};
-$('#scrub').oninput=e=>{t=T_END*e.target.value/1000;};
+$('#scrub').oninput=e=>{jumpTo(T_END*e.target.value/1000);};
 addEventListener('keydown',e=>{if(e.target.tagName==='SELECT')return;if(e.code==='Space'){e.preventDefault();$('#play').click();}
-  if(e.key==='ArrowRight')t=Math.min(T_END,t+0.5);if(e.key==='ArrowLeft')t=Math.max(0,t-0.5);if(e.key==='t'||e.key==='T')$('#tour').click();
+  if(e.key==='ArrowRight')jumpTo(Math.min(T_END,t+0.5));if(e.key==='ArrowLeft')jumpTo(Math.max(0,t-0.5));if(e.key==='t'||e.key==='T')$('#tour').click();
   if(e.key==='g'||e.key==='G'){const o=[...ghostSel.options].map(o=>o.value);ghostSel.value=o[(o.indexOf(ghostSel.value)+1)%o.length];}});
 
 // ---------- guided tour ----------
@@ -498,7 +501,7 @@ function drawLive(){
   const P=liveTrailGeo.attributes.position.array,C=liveTrailGeo.attributes.color.array;
   live.trail.forEach((p,i)=>{P[i*3]=p[0];P[i*3+1]=p[1];P[i*3+2]=0.005;C.set(viridis(p[2]/VMAX),i*3);});
   liveTrailGeo.setDrawRange(0,live.trail.length);liveTrailGeo.attributes.position.needsUpdate=true;liveTrailGeo.attributes.color.needsUpdate=true;
-  const b=robot.bodies[TRUNK],yaw=headingOf(b.quaternion),c=Math.cos(yaw),s=Math.sin(yaw),base=new THREE.Vector3(b.position.x,b.position.y,b.position.z+0.28);
+  const b=robot.bodies[TRUNK],yaw=headingOf(b.quaternion),c=Math.cos(yaw),s=Math.sin(yaw),base=new THREE.Vector3(b.position.x,b.position.y,b.position.z+0.17);
   const sd=mjd.sensordata,ax=sd[LV.obs.local_linvel[0]],ay=sd[LV.obs.local_linvel[0]+1];
   const set=(arr,vx,vy)=>{const wx=c*vx-s*vy,wy=s*vx+c*vy,L=Math.hypot(wx,wy);arr.visible=L>0.05;if(!arr.visible)return;arr.position.copy(base);arr.setDirection(v3.set(wx/L,wy/L,0));arr.setLength(0.15+L*0.55);};
   set(arrCmd,live.cmd[0],live.cmd[1]);set(arrAct,ax,ay);
@@ -518,7 +521,7 @@ let last=performance.now();
 function updateArrows(){
   const i=Math.min(Math.round(t/DT),MAIN.n-1),b=robot.bodies[TRUNK],yaw=headingOf(b.quaternion),c=Math.cos(yaw),s=Math.sin(yaw);
   const cx=MAIN.cmd[i*3],cy=MAIN.cmd[i*3+1],ax=MAIN.linvel[i*3],ay=MAIN.linvel[i*3+1];
-  const base=new THREE.Vector3(b.position.x,b.position.y,b.position.z+0.28);
+  const base=new THREE.Vector3(b.position.x,b.position.y,b.position.z+0.17);
   const set=(arr,vx,vy)=>{const wx=c*vx-s*vy,wy=s*vx+c*vy,L=Math.hypot(wx,wy);arr.visible=L>0.05;if(!arr.visible)return;arr.position.copy(base);arr.setDirection(v3.set(wx/L,wy/L,0));arr.setLength(0.15+L*0.55);};
   set(arrCmd,cx,cy);set(arrAct,ax,ay);
   $('#vcmd').textContent=Math.hypot(cx,cy).toFixed(2);$('#vact').textContent=Math.hypot(ax,ay).toFixed(2);$('#vyaw').textContent=MAIN.cmd[i*3+2].toFixed(2);
@@ -530,7 +533,7 @@ function loop(now){
   const dt=Math.min((now-last)/1000,0.05);last=now;
   if(live.on&&live.ready){liveStep(dt);drawLive();liveFeet();}
   else if(!live.on){
-  if(playing){t+=dt*speed;if(t>T_END){t=0;}}
+  if(playing){t+=dt*speed;if(t>T_END){jumpTo(0);}}
   applyPose(robot,MAIN,t);
   const gk=ghostSel.value;ghost.root.visible=!!gk;Object.entries(ghostTrails).forEach(([k,l])=>l.visible=(k===gk));
   if(gk)applyPose(ghost,R[gk],Math.min(t,(R[gk].n-1)*DT));
@@ -545,25 +548,26 @@ function loop(now){
     if(idx!==tourIdx){tourIdx=idx;const s=TOUR[idx];cap.innerHTML=`<b>${idx+1} / ${TOUR.length} · ${s.title}</b>${s.text}`;cap.style.display='block';if(s.ghost!==undefined)ghostSel.value=s.ghost;if(s.t!==undefined&&idx>0)t=s.t;}
     if(tourT>acc){stopTour();}
     const s=TOUR[tourIdx]||TOUR[0];const [p,l]=s.world?[new THREE.Vector3(...s.world),new THREE.Vector3(...s.lookWorld)]:rigTarget(s.off,s.look);
-    camPos.lerp(p,1-Math.exp(-dt*1.6));camLook.lerp(l,1-Math.exp(-dt*2.2));camera.position.copy(camPos);camera.lookAt(camLook);
+    if(snapCam){camPos.copy(p);camLook.copy(l);}else{camPos.lerp(p,1-Math.exp(-dt*1.6));camLook.lerp(l,1-Math.exp(-dt*2.2));}camera.position.copy(camPos);camera.lookAt(camLook);
   }else if(camMode==='follow'){
-    const [p,l]=rigTarget(followOff,followLook);camPos.lerp(p,1-Math.exp(-dt*2.5));camLook.lerp(l,1-Math.exp(-dt*5));camera.position.copy(camPos);camera.lookAt(camLook);
+    const [p,l]=rigTarget(followOff,followLook);if(snapCam){camPos.copy(p);camLook.copy(l);}else{camPos.lerp(p,1-Math.exp(-dt*2.5));camLook.lerp(l,1-Math.exp(-dt*5));}camera.position.copy(camPos);camera.lookAt(camLook);
   }else{controls.target.lerp(robot.bodies[TRUNK].position,1-Math.exp(-dt*3));controls.update();}
+  snapCam=false;
   renderer.render(scene,camera);
   requestAnimationFrame(loop);
 }
 camPos.set(-2.6,-1.8,1.2);
 requestAnimationFrame(loop);
 // URL-hash shortcuts (used for scripted screenshots): #live, #live-kick, #t=12.5, #tour, #dark/#light
-(function(){const h=location.hash.slice(1);if(!h)return;h.split('&').forEach(p=>{
+(function(){let h='';try{h=(location.hash||'').slice(1);}catch(e){}if(!h)return;h.split('&').forEach(p=>{
   if(p==='dark'||p==='light'){document.documentElement.dataset.theme=p;applyTheme();dispatchEvent(new Event('resize'));}
-  if(p.startsWith('t=')){t=+p.slice(2);}
+  if(p.startsWith('t=')){jumpTo(+p.slice(2));}
   if(p==='free'){setCam('free');}
   if(p==='tour'){$('#tour').click();}
   if(p.startsWith('live')){if(!LV){$('#live').style.display='none';return;}$('#jx').value=1.0;$('#live').click();if(p==='live-kick')setTimeout(()=>$('#kick').click(),3500);}
 });})();
 if(!LV){$('#live').style.display='none';}
-window.__viewer={live:()=>$('#live').click(),liveState:()=>live,setTime:x=>{t=x;},setGhost:k=>{ghostSel.value=k;},tour:()=>$('#tour').click(),setCam};
+window.__viewer={live:()=>$('#live').click(),liveState:()=>live,setTime:x=>jumpTo(x),setGhost:k=>{ghostSel.value=k;},tour:()=>$('#tour').click(),setCam};
 </script>
 </body>
 </html>

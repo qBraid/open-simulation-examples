@@ -1,0 +1,104 @@
+{
+ "env": "Go1JoystickFlatTerrain",
+ "params": "params_final.pkl",
+ "tag": "final",
+ "step": 217907200,
+ "tracking": {
+  "n_envs": 512,
+  "episode_s": 20.0,
+  "settle_s": 1.0,
+  "lin_vel_rmse_mps": 0.0822643779312548,
+  "yaw_rate_rmse_radps": 0.08513168171230572,
+  "fall_rate": 0.0,
+  "samples": 413312,
+  "wall_s": 23.6
+ },
+ "rollout": {
+  "dt": 0.02,
+  "nbody": 14,
+  "n_frames": 1250,
+  "script": [
+   {
+    "t": 0.0,
+    "dur": 2.0,
+    "cmd": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "label": "stand"
+   },
+   {
+    "t": 2.0,
+    "dur": 4.0,
+    "cmd": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "label": "walk forward 1.0 m/s"
+   },
+   {
+    "t": 6.0,
+    "dur": 4.0,
+    "cmd": [
+     0.8,
+     0.0,
+     0.7
+    ],
+    "label": "arc left"
+   },
+   {
+    "t": 10.0,
+    "dur": 3.0,
+    "cmd": [
+     0.0,
+     0.6,
+     0.0
+    ],
+    "label": "strafe left 0.6 m/s"
+   },
+   {
+    "t": 13.0,
+    "dur": 3.0,
+    "cmd": [
+     -0.7,
+     0.0,
+     0.0
+    ],
+    "label": "back up"
+   },
+   {
+    "t": 16.0,
+    "dur": 3.0,
+    "cmd": [
+     0.0,
+     0.0,
+     -1.1
+    ],
+    "label": "spin right"
+   },
+   {
+    "t": 19.0,
+    "dur": 4.0,
+    "cmd": [
+     1.4,
+     0.0,
+     -0.4
+    ],
+    "label": "fast arc right 1.4 m/s"
+   },
+   {
+    "t": 23.0,
+    "dur": 2.0,
+    "cmd": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "label": "stop"
+   }
+  ],
+  "fell_at_frame": null
+ }
+}

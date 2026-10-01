@@ -16,6 +16,21 @@ MATLAB Simulink + Simscape Multibody, MSC Adams, and NVIDIA Isaac Sim/Lab (free,
 Legged-robot RL has no single leaderboard. The strongest public reference for this exact task is the **MuJoCo Playground technical report** (2025), which trained the same environment with the same PPO recipe and deployed the policy on a real Go1. We compare against it directly and add physical task metrics that the reward alone hides.
 
 <!--BENCH-->
+| Check | Result | Verdict | Notes |
+|---|---|---|---|
+| Final eval reward vs published plateau | 28.1 vs ≈27 | **reached** | at 218M steps; reference = Playground report Fig. 11 (5 seeds, band ≈26–28, read off the figure ±1) |
+| Reward at 20M steps (sample efficiency) | 18.4 vs ≈18 | **reached** | nearest eval at 22.9M |
+| Reward at 60M steps (mid-training) | 20.3 vs ≈25 | **not reached** | nearest eval at 57.3M. We lag the reference by ~20M steps here, then catch up (26.7 at 126M). Likely causes: one seed vs a 5-seed mean, and the job-cap resume at 45.9M restarted Adam's moment estimates |
+| Velocity tracking RMSE (xy) | 0.082 m/s | **reached** | 512 episodes × 20 s, env's own random commands up to 1.5 m/s, 1 s settling excluded; bar ≤0.15 m/s is ours (no published RMSE) |
+| Yaw-rate tracking RMSE | 0.085 rad/s | **reached** | commands up to 1.2 rad/s |
+| Falls | 0.00% of 512 | **reached** | torso up-vector below horizontal at any point in 20 s |
+| Throughput (L4, Warp) vs A100 (MJX, published) | 183k vs 417k steps/s | — | different GPU and backend: A100 has ~5× the memory bandwidth of the L4. On qBraid that is $0.14 per 100M steps on gpu-l4 |
+| Training time / cost | 37 min · $0.30 | — | 218M steps on one gpu-l4 ($0.49/h), two capped jobs; all GPU use incl. evals and a failed start: 42 min, $0.34 |
+| Early policy (ghost) for contrast | 11M steps | — | tracking RMSE 0.93 m/s, falls 0.2% |
+| Sim-to-sim: same policy in CPU MuJoCo (browser physics) | 0.057 m/s | **reached** | scripted 25 s joystick course, no fall; trained on MuJoCo Warp |
+| …with MuJoCo's full default solver | 0.066 m/s | **reached** | iterations=100, ls_iterations=50 (training used 1 / 5): the policy does not exploit the coarse solver |
+| JS policy vs Brax inference | 1.0e-06 | **reached** | max |action diff|; the browser runs this exact network |
+<!--/BENCH-->
 
 **How the references were read.**
 - The final-reward reference is read off Fig. 11 of the report (Go1JoystickFlatTerrain, Brax PPO, 5 seeds, A100). The curve plateaus around 27 by 100–200M steps, and we treat the 5-seed band as roughly 26–28 (±1 for reading a plot).
@@ -69,3 +84,11 @@ python3 build_viewer.py --run runs/go1_flat --geometry geometry.json --ghost ear
 - **Humanoid joystick tasks** (Berkeley Humanoid, G1): about 3–4× slower per step, so A100/H100 class.
 
 <!--STAMP-->
+## Verification stamp
+```
+2026-10-01 · env: jax[cuda12] 0.11.2, playground 0.2.0, brax 0.14.2, mujoco 3.14.0
+machine: qBraid gpu-l4 (NVIDIA L4 24 GB, driver 595), shared pool
+task: Go1JoystickFlatTerrain, official Playground PPO config, seed 0
+training: 217.9M steps, 36.7 min GPU, $0.30
+```
+<!--/STAMP-->
