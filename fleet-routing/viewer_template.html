@@ -605,7 +605,7 @@ const refMeshes = [];
 Object.entries(B.refs).forEach(([name,g],j)=>{
   const pl = new THREE.Mesh(new THREE.PlaneGeometry(BX.length*SP+1.2, 1.6), new THREE.MeshBasicMaterial({transparent:true, opacity:.14, side:THREE.DoubleSide, depthWrite:false}));
   pl.rotateX(-Math.PI/2); pl.position.set((BX.length-1)*SP/2, gapY(g), 0); bench.add(pl); refMeshes.push(pl);
-  const l=document.createElement('div'); l.className='lbl'; l.textContent=`${name}: ${g}%`; const o=new CSS2DObject(l); o.position.set(BX.length*SP+0.3, gapY(g)+(j? -0.07:0.1), 0.9); bench.add(o); });
+  const l=document.createElement('div'); l.className='lbl'; l.textContent=`${name}: ${g}%`; const o=new CSS2DObject(l); o.position.set(1.2, gapY(g)+(j? -0.08:0.1), 1.0); bench.add(o); });
 [0.1,0.5,1,2,5,10,20].forEach(g=>{ const l=document.createElement('div'); l.className='lbl'; l.textContent=g+'%'; const o=new CSS2DObject(l); o.position.set(-1.25, gapY(g), -0.8); bench.add(o);
   const tick=new THREE.Mesh(new THREE.BoxGeometry(BX.length*SP+1.0,0.004,0.004), new THREE.MeshBasicMaterial({color:0x888888, transparent:true, opacity:.35})); tick.position.set((BX.length-1)*SP/2,gapY(g),-0.8); bench.add(tick); });
 { const l=document.createElement('div'); l.className='lbl big'; l.textContent='gap to best-known solution'; const o=new CSS2DObject(l); o.position.set(-1.25, 3.75, -0.8); bench.add(o); }
