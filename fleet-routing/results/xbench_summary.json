@@ -1,14 +1,14 @@
 {
- "instances": 13,
- "race_mean_gap_pct": 0.47194615384615385,
- "pyvrp_mean_gap_pct": 0.47194615384615385,
- "ortools_mean_gap_pct": 9.743225,
- "ortools_no_solution": 1,
- "cuopt_mean_gap_pct": null,
- "cuopt_instances": 0,
- "cuopt_mode": null,
+ "instances": 21,
+ "race_mean_gap_pct": 0.5177619047619048,
+ "pyvrp_mean_gap_pct": 0.5177619047619048,
+ "ortools_mean_gap_pct": 8.329326315789475,
+ "ortools_no_solution": 2,
+ "cuopt_mean_gap_pct": 0.7393263157894737,
+ "cuopt_instances": 19,
+ "cuopt_mode": "default+k1",
  "at_bks": 2,
- "within_0_5pct": 6,
+ "within_0_5pct": 9,
  "full_budget": {
   "instances": 0,
   "pyvrp_mean_gap_pct": null,
@@ -20,7 +20,7 @@
   "protocol": "Tmax = 2.4 n s, 10 seeds, all 100 X instances"
  },
  "verdict": "CLOSE",
- "note": "13 of the 100 X instances (every ~3rd by size, n = 100 to 1000), one seed, at <b>10% of the published time budget</b> (0.24\u00b7n s instead of 2.4\u00b7n s), because the shared CPU allows ~5 cores across ten projects. Racing PyVRP and OR-Tools gives a mean gap to best-known of <b>0.47%</b>; 2 instances hit the best-known solution exactly and 6 are within 0.5%. OR-Tools alone averages 9.74% and found no feasible plan within budget on 1 tight-capacity instance(s). Verdict rule: reached = within the published PyVRP gap; close = within about 2x of it or matching it at full budget on a subset; otherwise not reached.",
- "short": "13 CVRPLIB X instances at 10% of the published time: the open-source race averages 0.47% from best-known (published state of the art at full time: 0.11\u20130.22%).",
+ "note": "21 of the 100 X instances (every ~3rd by size, n = 100 to 1000), one seed, at <b>10% of the published time budget</b> (0.24\u00b7n s instead of 2.4\u00b7n s), because the shared CPU allows ~5 cores across ten projects. Racing PyVRP and OR-Tools gives a mean gap to best-known of <b>0.52%</b>; 2 instances hit the best-known solution exactly and 9 are within 0.5%. OR-Tools alone averages 8.33% and found no feasible plan within budget on 2 tight-capacity instance(s). NVIDIA cuOpt on one L4 GPU, same budget, averages 0.74% over 19 instances (objective setting chosen on X-n101 only: default+k1; cuOpt minimises fleet size before distance by default). Verdict rule: reached = within the published PyVRP gap; close = within about 2x of it or matching it at full budget on a subset; otherwise not reached.",
+ "short": "21 CVRPLIB X instances at 10% of the published time: the open-source race averages 0.52% from best-known (published state of the art at full time: 0.11\u20130.22%).",
  "stamp": "2026-10-01 \u00b7 CPU solvers on the qBraid subscription pod (1 core, solvers one after another) \u00b7 cuOpt on the qBraid pool L4 \u00b7 0.1 \u00d7 2.4\u00b7n s per solver"
 }

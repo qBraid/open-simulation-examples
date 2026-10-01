@@ -129,6 +129,7 @@ th{color:var(--text-muted);font-weight:500}
       <div class="lg" style="font-size:11px">Vans, pins and route ribbons are drawn several times real size so they read at city scale.</div>
     </div>
     <div class="hud" id="benchcard">
+      <div id="bc-legend" style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;line-height:1.7"></div>
       <b id="bc-title">CVRPLIB X benchmark</b>
       <div id="bc-body" class="note" style="margin-top:4px"></div>
       <canvas id="mini" width="560" height="380"></canvas>
@@ -605,12 +606,12 @@ const refMeshes = [];
 Object.entries(B.refs).forEach(([name,g],j)=>{
   const pl = new THREE.Mesh(new THREE.PlaneGeometry(BX.length*SP+1.2, 1.6), new THREE.MeshBasicMaterial({transparent:true, opacity:.14, side:THREE.DoubleSide, depthWrite:false}));
   pl.rotateX(-Math.PI/2); pl.position.set((BX.length-1)*SP/2, gapY(g), 0); bench.add(pl); refMeshes.push(pl);
-  const l=document.createElement('div'); l.className='lbl'; l.textContent=`${name}: ${g}%`; const o=new CSS2DObject(l); o.position.set(1.2, gapY(g)+(j? -0.08:0.1), 1.0); bench.add(o); });
+});
 [0.1,0.5,1,2,5,10,20].forEach(g=>{ const l=document.createElement('div'); l.className='lbl'; l.textContent=g+'%'; const o=new CSS2DObject(l); o.position.set(-1.25, gapY(g), -0.8); bench.add(o);
   const tick=new THREE.Mesh(new THREE.BoxGeometry(BX.length*SP+1.0,0.004,0.004), new THREE.MeshBasicMaterial({color:0x888888, transparent:true, opacity:.35})); tick.position.set((BX.length-1)*SP/2,gapY(g),-0.8); bench.add(tick); });
 { const l=document.createElement('div'); l.className='lbl big'; l.textContent='gap to best-known solution'; const o=new CSS2DObject(l); o.position.set(-1.25, 3.75, -0.8); bench.add(o); }
 BX.forEach((r,i)=>{ if(i%3 && i!==BX.length-1) return; const l=document.createElement('div'); l.className='lbl'; l.textContent='n='+r.n; const o=new CSS2DObject(l); o.position.set(i*SP, -0.05, 1.05); bench.add(o); });
-bNames.forEach(s=>{ if(!barIdx.some(b=>b[1]===s)) return; const l=document.createElement('div'); l.className='lbl big'; l.style.color=css('--s-'+s); l.textContent=s; const o=new CSS2DObject(l); o.position.set(-1.25,0.05,bZ[s]); bench.add(o); });
+
 camB.position.set(-7.5, 8.2, 22); ctlB.target.set(BX.length*SP*0.47, 1.0, 0); ctlB.update();
 const coinGeo = new THREE.CylinderGeometry(0.2,0.2,0.05,24), coinMat = new THREE.MeshStandardMaterial({color:0xf2c14e, metalness:.8, roughness:.25, emissive:0x553300, emissiveIntensity:.3});
 const coins = new THREE.InstancedMesh(coinGeo, coinMat, Math.max(1,barIdx.length)); coins.castShadow = true; bench.add(coins);
@@ -638,6 +639,9 @@ function benchInfo(i){
     bNames.filter(s=>r.solvers[s]).map(s=>`<span style="color:var(--s-${s})">■</span> ${s}: <b>${fmtPct(r.solvers[s].gap)}</b>`).join(' · ')+`<br><span class="muted">winning routes (${(r.routes||[]).length} vehicles)</span>`;
   mini(i);
 }
+document.getElementById('bc-legend').innerHTML =
+  bNames.filter(s=>barIdx.some(b=>b[1]===s)).map(s=>`<span style="color:var(--s-${s})">■</span> ${s}`).join(' &nbsp; ')+
+  `<br><span style="color:var(--s-pyvrp);opacity:.6">▬</span> plane: published PyVRP 0.22% · <span style="color:var(--s-highs);opacity:.6">▬</span> HGS-CVRP 0.11% (full time)<br><span style="color:#d9a520">●</span> coin: hit best-known exactly · bars: gap, log scale`;
 benchInfo(BX.length? BX.length-1 : -1);
 
 // ---------------------------------------------------------------- picking
