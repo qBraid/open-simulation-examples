@@ -89,9 +89,10 @@ if ph:
     P["verdict"] = f"{NAME[best]}: {b:.1f}% mean error on 7 high-symmetry frequencies " + ("(reached: PBE-level)" if b < 5 else "(close)" if b < 10 else "(not reached)")
     P["verdict_class"] = "v-reached" if b < 5 else "v-close" if b < 10 else "v-not"
     if "mp0" in ph:
-        P["note"] = (f"MACE-MP-0 puts the Γ optical mode at {ph['mp0']['high_symmetry_model']['G_LTO']:.1f} THz against 15.5 THz measured: the known 'softening' of "
-                     f"universal potentials. The MIT-licensed b3 update, retrained partly for this, reaches {ph.get('mp0b3', ph[best])['high_symmetry_model']['G_LTO']:.1f} THz. "
-                     "PBE itself gives about 15.1 THz, so the remaining gap is mostly the functional.")
+        P["note"] = (f"MACE-MP-0 puts the Γ optical mode at {ph['mp0']['high_symmetry_model']['G_LTO']:.1f} THz against 15.5 THz measured: the known 'softening' of universal potentials.")
+        if "mp0b3" in ph:
+            P["note"] += (f" The MIT-licensed b3 update, retrained partly for this, reaches {ph['mp0b3']['high_symmetry_model']['G_LTO']:.1f} THz. "
+                          "PBE itself gives about 15.1 THz, so the remaining gap is mostly the functional.")
     D["phonons"] = P
 
 # ---------- MD ----------

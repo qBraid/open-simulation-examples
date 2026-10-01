@@ -23,8 +23,9 @@ ids = s[s.unique_prototype].material_id.sample(n=n_sample, random_state=SEED).to
 ids = ids[shard::n_shards]
 if model == "orb3":  # ORB v3 conservative-inf-mpa (Apache-2.0); leaderboard used fmax 0.02
     from orb_models.forcefield import pretrained
-    from orb_models.forcefield.calculator import ORBCalculator
-    calc = ORBCalculator(pretrained.orb_v3_conservative_inf_mpa(device="cuda", precision="float32-high"), device="cuda")
+    from orb_models.forcefield.inference.calculator import ORBCalculator
+    orbff, adapter = pretrained.orb_v3_conservative_inf_mpa(device="cuda", precision="float32-high", compile=False)
+    calc = ORBCalculator(orbff, adapter, device="cuda")  # same 2025-04-04 checkpoint as the leaderboard run
 else:
     calc = mace_mp(model={"mp0": "medium", "mpa0": "medium-mpa-0"}[model], device="cuda", default_dtype=dtype)
 FMAX = 0.02 if model == "orb3" else 0.05

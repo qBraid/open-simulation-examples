@@ -128,6 +128,7 @@ stage.appendChild(labelRenderer.domElement);
 const scene = new THREE.Scene();
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.55;
 const camera = new THREE.PerspectiveCamera(42, 1, 0.05, 500);
 camera.position.set(0, 4, 18);
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -141,13 +142,15 @@ const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.55, 0.6, 0.82); com
 composer.addPass(new OutputPass());
 function applyTheme() {
   scene.background = new THREE.Color(css('--scene-bg'));
-  bloom.strength = isDark() ? 0.6 : 0.12; bloom.threshold = isDark() ? 0.78 : 0.95;
+  const b = (worlds[active] && worlds[active].bloom) || [0.35, 0.08];
+  bloom.strength = isDark() ? b[0] : b[1]; bloom.threshold = isDark() ? 0.86 : 0.97; bloom.radius = 0.45;
   renderer.toneMappingExposure = isDark() ? 1.0 : 1.08;
   worlds.forEach(w => w.theme && w.theme());
 }
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h); composer.setSize(w, h); labelRenderer.setSize(w, h); bloom.setSize(w, h);
-  camera.aspect = w / h; camera.updateProjectionMatrix(); }
+  camera.aspect = w / h; const pw = (w > 760 && !$('#panel').classList.contains('hidden')) ? ($('#panel').offsetWidth + 24) / 2 : 0;
+  if (pw) camera.setViewOffset(w, h, pw, 0, w, h); else camera.clearViewOffset(); camera.updateProjectionMatrix(); }
 addEventListener('resize', resize);
 
 function label(text, cls = '') { const el = document.createElement('div'); el.className = 'lbl ' + cls; el.textContent = text; return new CSS2DObject(el); }
@@ -155,7 +158,7 @@ const sphereGeo = new THREE.SphereGeometry(1, 28, 18);
 const lowSphere = new THREE.SphereGeometry(1, 12, 8);
 const cylGeo = new THREE.CylinderGeometry(1, 1, 1, 12, 1, true);
 function atomMaterial(hex, emissive = 0) {
-  return new THREE.MeshPhysicalMaterial({ color: hex, metalness: 0.05, roughness: 0.32, clearcoat: 0.7, clearcoatRoughness: 0.25, emissive: hex, emissiveIntensity: emissive });
+  return new THREE.MeshPhysicalMaterial({ color: hex, metalness: 0.0, roughness: 0.42, clearcoat: 0.35, clearcoatRoughness: 0.35, emissive: hex, emissiveIntensity: emissive });
 }
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _v = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0);
 function bondMatrix(a, b, r, out) { _v.subVectors(b, a); const L = _v.length(); _q.setFromUnitVectors(_up, _v.normalize());
@@ -169,8 +172,10 @@ function cellBox(cell, color) { // cell: 3x3 rows
 }
 
 // ---------- camera flights ----------
-let flight = null;
-function flyTo(pos, target, dur = 1.6) { flight = { p0: camera.position.clone(), t0: controls.target.clone(), p1: new THREE.Vector3(...pos), t1: new THREE.Vector3(...target), s: performance.now(), d: dur * 1000 }; }
+let flight = null, NOW = 0;
+const STILL = location.search.includes('still');
+function flyTo(pos, target, dur = 1.6) { if (STILL) { camera.position.set(...pos); controls.target.set(...target); return; }
+  flight = { p0: camera.position.clone(), t0: controls.target.clone(), p1: new THREE.Vector3(...pos), t1: new THREE.Vector3(...target), s: NOW, d: dur * 1000 }; }
 const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
 // ---------- small 2D charts ----------
@@ -212,10 +217,10 @@ function makeDiscovery() {
   const yl = label('model prediction (eV/atom)', 'axis'); yl.position.set(-S / 2 - .6, S / 2 + .6, 0); G.add(yl);
   // points
   const n = pts.true.length;
-  const inst = new THREE.InstancedMesh(lowSphere, new THREE.MeshStandardMaterial({ roughness: .35, metalness: .1, emissive: 0xffffff, emissiveIntensity: .12 }), Math.max(1, n));
+  const inst = new THREE.InstancedMesh(lowSphere, new THREE.MeshStandardMaterial({ roughness: .4, metalness: .05 }), Math.max(1, n));
   G.add(inst);
   const yNow = new Float32Array(n), yFrom = new Float32Array(n), yTo = new Float32Array(n), zj = new Float32Array(n).map(() => (Math.random() - .5) * .5);
-  const CL = { TP: new THREE.Color(0x2fbf71), TN: new THREE.Color(0x8a97a6), FP: new THREE.Color(0xf0a326), FN: new THREE.Color(0xe5533d) };
+  const CL = { TP: new THREE.Color(0x35d07f), TN: new THREE.Color(0x5d6b7a), FP: new THREE.Color(0xf0a326), FN: new THREE.Color(0xff5a43) };
   function classify(m) { pts.pred[m].forEach((p, i) => { const t = pts.true[i]; const c = p <= 0 ? (t <= 0 ? 'TP' : 'FP') : (t <= 0 ? 'FN' : 'TN'); inst.setColorAt(i, CL[c]); }); inst.instanceColor.needsUpdate = true; }
   let morph = 1, mStart = 0;
   function setModel(m) { if (!pts.pred[m]) return; for (let i = 0; i < n; i++) { yFrom[i] = yNow[i]; yTo[i] = map(pts.pred[m][i]); } morph = 0; mStart = performance.now(); classify(m); cur = m; panel(); }
@@ -256,7 +261,7 @@ function makeDiscovery() {
       <p class="note">${D.stamp || ''}</p>`;
     $('#panel').querySelectorAll('[data-m]').forEach(b => b.onclick = () => setModel(b.dataset.m));
   }
-  return { name: 'Discovery', G, enter() { flyTo([2.6, -1.0, 23], [2.6, -0.6, 0]); panel(); controlsHTML(`<span class="note">Drag to orbit · scroll to zoom</span><button class="btn" id="lbview">Leaderboard</button><button class="btn" id="pview">Parity</button>`);
+  return { name: 'Discovery', G, bloom: [0.45, 0.06], enter() { flyTo([2.6, -1.0, 23], [2.6, -0.6, 0]); panel(); controlsHTML(`<span class="note">Drag to orbit · scroll to zoom</span><button class="btn" id="lbview">Leaderboard</button><button class="btn" id="pview">Parity</button>`);
       $('#lbview').onclick = () => flyTo([S / 2 + 7.5, 3.5, 13], [S / 2 + 7.5, 3.6, 0]); $('#pview').onclick = () => flyTo([0, 0, 15.5], [0, 0, 0]); },
     update(t) { if (morph < 1) { morph = Math.min(1, (performance.now() - mStart) / 900); const e = ease(morph); for (let i = 0; i < n; i++) yNow[i] = yFrom[i] + (yTo[i] - yFrom[i]) * e; }
       for (let i = 0; i < n; i++) { _m.makeScale(.06, .06, .06); _m.setPosition(map(pts.true[i]), yNow[i], zj[i] * (1 + Math.sin(t * .6 + i) * .05)); inst.setMatrixAt(i, _m); }
@@ -279,21 +284,21 @@ function makeCrystals() {
   const G = new THREE.Group(); G.visible = false; scene.add(G);
   const E = D.eos || { models: {}, solids: [] };
   const models = Object.keys(E.models); let cur = models.includes('mp0b3') ? 'mp0b3' : models[0];
-  const items = []; const cols = 6, sp = 4.2;
+  const items = []; const cols = 6, sp = 5.0;
   const ped = new THREE.CylinderGeometry(1.45, 1.6, .22, 48);
   E.solids.forEach((s, k) => {
     const g = new THREE.Group(); const cx = (k % cols - (cols - 1) / 2) * sp, cz = (Math.floor(k / cols) - 1.5) * sp; g.position.set(cx, 0, cz); G.add(g);
-    const pm = new THREE.Mesh(ped, new THREE.MeshPhysicalMaterial({ color: 0x888888, roughness: .4, clearcoat: .8 })); pm.position.y = -.12; g.add(pm);
+    const pm = new THREE.Mesh(ped, new THREE.MeshPhysicalMaterial({ color: 0x888888, roughness: .55, metalness: .2, clearcoat: .3 })); pm.position.y = -.12; g.add(pm);
     const xtal = new THREE.Group(); g.add(xtal);
     const sc = 2.0 / s.a;  // fit the cubic cell into ~2 units
     xtal.scale.setScalar(sc); xtal.position.set(-1, .25, -1);
-    s.atoms.forEach(([el, x, y, z]) => { const m = new THREE.Mesh(sphereGeo, atomMaterial(CPK[el] ?? 0xcccccc, .05)); m.scale.setScalar((RAD[el] || .6) * .55 / sc * .9 * Math.min(1, s.a / 4.5)); m.position.set(x, y, z); xtal.add(m); });
+    s.atoms.forEach(([el, x, y, z]) => { const m = new THREE.Mesh(sphereGeo, atomMaterial(CPK[el] ?? 0xcccccc, 0)); m.scale.setScalar(Math.min(.3, .2 * (RAD[el] || .6) / .6) / sc); m.position.set(x, y, z); xtal.add(m); });
     xtal.add(cellBox([[s.a, 0, 0], [0, s.a, 0], [0, 0, s.a]], 0x9fb3c8));
     const l = label(s.solid); l.position.set(0, 2.75, 0); g.add(l);
     const e = label('', 'small'); e.position.set(0, -.6, 1.7); g.add(e);
     items.push({ s, g, pm, xtal, e, sc });
   });
-  function recolor() { const r = E.models[cur]; items.forEach((it, k) => { const err = (r[k].a0 - it.s.a0_exp) / it.s.a0_exp * 100; it.pm.material.color = ramp(BALANCE, (err + 3) / 6); it.e.element.textContent = `${err >= 0 ? '+' : ''}${err.toFixed(2)}%`; }); }
+  function recolor() { const r = E.models[cur]; items.forEach((it, k) => { const err = (r[k].a0 - it.s.a0_exp) / it.s.a0_exp * 100; it.pm.material.color = ramp(BALANCE, (err + 3) / 6).multiplyScalar(.75); it.e.element.textContent = `${err >= 0 ? '+' : ''}${err.toFixed(2)}%`; }); }
   let focus = -1;
   const ray = new THREE.Raycaster(), ptr = new THREE.Vector2();
   renderer.domElement.addEventListener('click', ev => { if (!G.visible) return; ptr.set(ev.clientX / innerWidth * 2 - 1, -ev.clientY / innerHeight * 2 + 1); ray.setFromCamera(ptr, camera);
@@ -318,9 +323,9 @@ function makeCrystals() {
         it.xtal.scale.setScalar(it.sc / 2); } else it.xtal.scale.setScalar(it.sc); };
   }
   if (items.length) recolor();
-  return { name: 'Crystals', G, enter() { focus = -1; flyTo([0, 15, 20], [0, 0, 0]); panel(); controlsHTML('<span class="note">Click a pedestal to fly in</span>'); },
+  return { name: 'Crystals', G, bloom: [0.12, 0.03], enter() { focus = -1; flyTo([0, 25, 25], [0, -1, 1.5]); panel(); controlsHTML('<span class="note">Click a pedestal to fly in</span>'); },
     update(t) { items.forEach((it, k) => { it.xtal.rotation.y = 0; it.g.rotation.y = Math.sin(t * .25 + k) * .25 + t * .15; }); },
-    tour: [{ pos: [0, 15, 20], tgt: [0, 0, 0], text: 'Twenty-four reference crystals. One universal potential reproduces their DFT lattice constants to about half a percent.' }] };
+    tour: [{ pos: [0, 25, 25], tgt: [0, -1, 1.5], text: 'Twenty-four reference crystals. One universal potential reproduces their DFT lattice constants to about half a percent.' }] };
 }
 
 // ============================================================
@@ -333,7 +338,7 @@ function makePhonons() {
   const pos0 = (modes.supercell_positions || []).map(p => new THREE.Vector3(...p));
   const N = pos0.length, ctr = pos0.reduce((a, p) => a.add(p), new THREE.Vector3()).multiplyScalar(1 / Math.max(N, 1));
   pos0.forEach(p => p.sub(ctr));
-  const atoms = new THREE.InstancedMesh(sphereGeo, atomMaterial(0xd8b878, .08), Math.max(N, 1)); G.add(atoms);
+  const atoms = new THREE.InstancedMesh(sphereGeo, atomMaterial(0xc9a45c, 0), Math.max(N, 1)); G.add(atoms);
   const bonds = []; for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) if (pos0[i].distanceTo(pos0[j]) < 2.6) bonds.push([i, j]);
   const bm = new THREE.InstancedMesh(cylGeo, new THREE.MeshStandardMaterial({ color: 0x9aa7b3, roughness: .4, metalness: .3 }), Math.max(bonds.length, 1)); G.add(bm);
   const cur3 = pos0.map(p => p.clone());
@@ -342,7 +347,8 @@ function makePhonons() {
   function draw() {
     if (!chart || !P.bands_by_model) return; const cv = chart, x = chartCtx(cv, 340, 210);
     const pad = { l: 26, r: 6, t: 8, b: 18 }; const nseg = P.bands_by_model[Object.keys(P.bands_by_model)[0]].length;
-    const { X, Y } = axes(x, 340, 210, pad, [0, nseg], [0, 17], 'Γ  X  W  K  Γ  L', 'THz', [], [0, 5, 10, 15]);
+    const { X, Y } = axes(x, 340, 210, pad, [0, nseg], [0, 17], '', 'THz', [], [0, 5, 10, 15]);
+    ['Γ', 'X', 'W', 'K', 'Γ', 'L'].forEach((q, i) => { x.strokeStyle = css('--line'); x.beginPath(); x.moveTo(X(i), Y(0)); x.lineTo(X(i), Y(17)); x.stroke(); x.fillStyle = css('--muted'); x.fillText(q, X(i) - 3, 210 - 4); });
     const colors = { mp0: '#e5533d', mpa0: '#f0a326', mp0b3: css('--accent') };
     Object.entries(P.bands_by_model).forEach(([m, segs]) => { x.strokeStyle = colors[m]; x.lineWidth = m === 'mp0b3' ? 1.8 : 1.1;
       segs.forEach((seg, si) => { const nb = seg.freqs[0].length; for (let b = 0; b < nb; b++) { x.beginPath(); seg.freqs.forEach((f, qi) => { const xx = X(si + qi / (seg.freqs.length - 1)); qi ? x.lineTo(xx, Y(f[b])) : x.moveTo(xx, Y(f[b])); }); x.stroke(); } }); });
@@ -364,14 +370,14 @@ function makePhonons() {
     chart = $('#disp'); draw();
     $('#panel').querySelectorAll('[data-l]').forEach(b => b.onclick = () => { cur = b.dataset.l; panel(); });
   }
-  return { name: 'Phonons', G, theme: draw, enter() { flyTo([14, 9, 16], [0, 0, 0]); panel(); controlsHTML('<span class="note">Each mode animates at a visual rate proportional to its frequency</span>'); },
+  return { name: 'Phonons', G, bloom: [0.15, 0.03], theme: draw, enter() { flyTo([24, 15, 28], [0, 0, 0]); panel(); controlsHTML('<span class="note">Each mode animates at a visual rate proportional to its frequency</span>'); },
     update(t) { if (!N) return; const m = modes[cur]; const w = m ? m.freq * 0.35 : 0;
       for (let i = 0; i < N; i++) { const p = cur3[i].copy(pos0[i]);
         if (m) { const c = Math.cos(w * t), s = Math.sin(w * t); p.x += amp * (m.re[i][0] * c + m.im[i][0] * s); p.y += amp * (m.re[i][1] * c + m.im[i][1] * s); p.z += amp * (m.re[i][2] * c + m.im[i][2] * s); }
-        _m.makeScale(.42, .42, .42); _m.setPosition(p); atoms.setMatrixAt(i, _m); }
+        _m.makeScale(.36, .36, .36); _m.setPosition(p); atoms.setMatrixAt(i, _m); }
       atoms.instanceMatrix.needsUpdate = true;
       bonds.forEach(([i, j], k) => bm.setMatrixAt(k, bondMatrix(cur3[i], cur3[j], .13, _m))); bm.instanceMatrix.needsUpdate = true; },
-    tour: [{ pos: [14, 9, 16], tgt: [0, 0, 0], text: 'Phonons are where universal potentials are weakest. The original MACE-MP-0 vibrates silicon about a quarter too slowly; the b3 update fixes most of that.' }] };
+    tour: [{ pos: [24, 15, 28], tgt: [0, 0, 0], text: 'Phonons are where universal potentials are weakest. The original MACE-MP-0 vibrates silicon about a quarter too slowly; the b3 update fixes most of that.' }] };
 }
 
 // ============================================================
@@ -423,7 +429,7 @@ function makeMD() {
     chart = $('#arr'); drawArr();
     $('#panel').querySelectorAll('[data-t]').forEach(b => b.onclick = () => { T = b.dataset.t; fpos = 0; panel(); });
   }
-  return { name: 'Li-ion MD', G, theme: drawArr,
+  return { name: 'Li-ion MD', G, bloom: [0.85, 0.1], theme: drawArr,
     enter() { flyTo([24, 14, 26], [0, 0, 0]); panel();
       controlsHTML(`<button class="btn" id="pp">❚❚</button><label>time <input type="range" id="scrub" min="0" max="1000" value="0"></label><label>speed <input type="range" id="spd" min="0.2" max="4" step="0.1" value="1"></label><span class="note mono" id="tlab"></span>`);
       $('#pp').onclick = () => { playing = !playing; $('#pp').textContent = playing ? '❚❚' : '▶'; };
@@ -452,8 +458,8 @@ worlds.push(makeDiscovery(), makeCrystals(), makePhonons(), makeMD());
 let active = -1;
 function controlsHTML(h) { $('#controls').innerHTML = h + ` <span style="flex:1"></span><button class="btn primary" id="tourb">▶ Guided tour</button><button class="btn" id="themeb">◐</button><button class="btn" id="toggle-panel">Info</button>`;
   $('#tourb').onclick = startTour; $('#themeb').onclick = () => { document.documentElement.dataset.theme = isDark() ? 'light' : 'dark'; applyTheme(); worlds[active] && worlds[active].enter && worlds[active].theme && worlds[active].theme(); };
-  $('#toggle-panel').onclick = () => $('#panel').classList.toggle('hidden'); }
-function show(i, fly = true) { if (active >= 0) worlds[active].G.visible = false; active = i; worlds[i].G.visible = true; worlds[i].enter();
+  $('#toggle-panel').onclick = () => { $('#panel').classList.toggle('hidden'); resize(); }; }
+function show(i, fly = true) { if (active >= 0) worlds[active].G.visible = false; active = i; worlds[i].G.visible = true; worlds[i].enter(); applyTheme();
   document.querySelectorAll('#worlds button').forEach((b, k) => b.setAttribute('aria-pressed', k === i));
   try { localStorage.setItem('mat-world', i); } catch (e) {} if (location.hash !== '#' + i) history.replaceState(null, '', '#' + i); }
 worlds.forEach((w, i) => { const b = document.createElement('button'); b.textContent = w.name; b.onclick = () => { stopTour(); show(i); }; $('#worlds').appendChild(b); });
@@ -463,13 +469,13 @@ let tour = null;
 function startTour() { const steps = []; worlds.forEach((w, i) => w.tour.forEach(s => steps.push({ ...s, w: i }))); tour = { steps, k: -1, next: 0 }; nextStep(); }
 function stopTour() { tour = null; $('#caption').classList.remove('on'); }
 function nextStep() { if (!tour) return; tour.k++; if (tour.k >= tour.steps.length) { stopTour(); return; } const s = tour.steps[tour.k];
-  if (s.w !== active) show(s.w); setTimeout(() => flyTo(s.pos, s.tgt, 2.2), 60); $('#caption').textContent = s.text; $('#caption').classList.add('on'); tour.next = performance.now() + 6500; }
+  if (s.w !== active) show(s.w); setTimeout(() => flyTo(s.pos, s.tgt, 2.2), 60); $('#caption').textContent = s.text; $('#caption').classList.add('on'); tour.next = NOW + 6500; }
 renderer.domElement.addEventListener('pointerdown', () => { if (tour) stopTour(); });
 
 // loop
 let last = performance.now(), t0 = last, running = true;
 document.addEventListener('visibilitychange', () => { running = !document.hidden; if (running) { last = performance.now(); requestAnimationFrame(loop); } });
-function loop(now) { if (!running) return; const dt = Math.min(.05, (now - last) / 1000); last = now; const t = (now - t0) / 1000;
+function loop(now) { if (!running) return; NOW = now; const dt = Math.min(.05, (now - last) / 1000); last = now; const t = (now - t0) / 1000;
   if (flight) { const f = Math.min(1, (now - flight.s) / flight.d), e = ease(f); camera.position.lerpVectors(flight.p0, flight.p1, e); controls.target.lerpVectors(flight.t0, flight.t1, e); if (f >= 1) flight = null; }
   if (tour && now > tour.next) nextStep();
   if (active >= 0) worlds[active].update(t, dt);
