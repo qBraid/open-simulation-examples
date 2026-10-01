@@ -21,6 +21,8 @@ VMETA = {
 }
 CONV = {"tcwv": lambda a: a, "t2m": lambda a: a - 273.15, "msl": lambda a: a / 100.0}
 WIND_SCALE = 0.5  # m/s per int8 step
+LABEL = {"sfno": "SFNO-small", "fcn3": "FourCastNet 3"}
+FULL = {"sfno": "NVIDIA SFNO (sfno_73ch_small)", "fcn3": "NVIDIA FourCastNet 3 (FCN3)"}
 STORMS = [  # name, approx position at init (lon, lat), search radius deg
     ("Hurricane Laura", -72.0, 18.0, 6.0),
     ("Typhoon Bavi", 125.5, 24.0, 6.0),
@@ -106,7 +108,7 @@ def track(frames, lon0, lat0, rad, lat, lon):
 
 
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument("results"); ap.add_argument("viz"); ap.add_argument("--out", default=os.path.join(HERE, "viewer.html")); ap.add_argument("--init", default="2020-08-24T00:00")
+    ap = argparse.ArgumentParser(); ap.add_argument("results"); ap.add_argument("viz"); ap.add_argument("--out", default=os.path.join(HERE, "viewer.html")); ap.add_argument("--init", default="2020-08-24T00:00"); ap.add_argument("--model", default="sfno")
     a = ap.parse_args()
     Z = np.load(a.viz)
     lat, lon = Z["lat"], Z["lon"]
@@ -129,7 +131,9 @@ def main():
     land_pts, land_lens = pack(os.path.join(HERE, "data", "land-50m.json"))
     blobs["land_pts"] = b64z_pts(land_pts)
 
-    S = json.load(open(os.path.join(a.results, "sfno_scores.json")))
+    S = json.load(open(os.path.join(a.results, f"{a.model}_scores.json")))
+    other = "sfno" if a.model == "fcn3" else "fcn3"
+    O = json.load(open(os.path.join(a.results, f"{other}_scores.json"))) if os.path.exists(os.path.join(a.results, f"{other}_scores.json")) else None
     H = json.load(open(os.path.join(a.results, "hres_scores.json")))
     R = json.load(open(os.path.join(a.results, "wb2_ref_2020.json")))
     init = datetime.fromisoformat(a.init)
@@ -144,8 +148,10 @@ def main():
         k = ["24", "72", "120"]
         sf = S["rmse"][var]; hp = H["rmse"][var]
         return [
-            {"label": "SFNO (this run, 12 inits)", "color": "--c-model", "bold": True,
+            {"label": f"{LABEL[a.model]} (this run, {len(S['inits'])} starts)", "color": "--c-model", "bold": True,
              "vals": [float(np.mean(sf[h])) for h in k], "band": [[float(np.min(sf[h])), float(np.max(sf[h]))] for h in k]},
+            *([{"label": f"{LABEL[other]} (this run)", "color": "--c-model", "dash": True,
+                "vals": [float(np.mean(O["rmse"][var][h])) for h in k]}] if O and len(O.get("inits", [])) >= 6 else []),
             {"label": "IFS HRES, same 12 inits", "color": "--c-hres", "vals": [float(np.mean(hp[h])) for h in k]},
             {"label": "IFS HRES, WB2 2020 (730 inits)", "color": "--c-hres", "dash": True, "vals": [R["hres"][var].get(h) for h in k]},
             {"label": "GraphCast, WB2 2020", "color": "--c-gc", "dash": True, "vals": [R["graphcast"][var].get(h) for h in k]},
@@ -155,7 +161,7 @@ def main():
     rel = {v: (np.mean(S["rmse"][v]["120"]) / np.mean(H["rmse"][v]["120"]) - 1) * 100 for v in ("z500", "t850", "t2m")}
     verdict = json.load(open(os.path.join(a.results, "verdict.json"))) if os.path.exists(os.path.join(a.results, "verdict.json")) else {}
     payload = {
-        "model_label": "NVIDIA SFNO (FourCastNet v2, 73 ch)", "init": init.isoformat()[:16], "gpu": S.get("gpu", "NVIDIA L4"),
+        "model_label": FULL[a.model], "init": init.isoformat()[:16], "gpu": S.get("gpu", "NVIDIA L4"),
         "step_s": float(np.mean(S["step_s"])), "grid": {"nx": 360, "ny": 181, "wnx": 180, "wny": 91}, "leads": leads, "truth_leads": tleads,
         "vars": list(VMETA), "vmeta": vmeta, "wind_scale": WIND_SCALE,
         "cmaps": {"ice": lut("ice"), "thermal": lut("thermal"), "deep_r": lut("deep_r"), "diverging": lut("balance")},
