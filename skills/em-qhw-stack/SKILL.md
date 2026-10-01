@@ -159,12 +159,26 @@ the small outputs (CSV, participation JSON) back after every point.
   the same absolute prefix; the RPATH is absolute. Use `tar -C <prefix>` with
   relative paths, because `./` segments in library paths break naive tarballs.
 
-**Verified result (stamp 2026-10-01).** Island 240 × 190 µm in a 150 µm trench, Ta on
-sapphire: f01 4.80 GHz, alpha -290 MHz, chi/kappa 0.5. Surface participation is 4.7e-4,
-against 8.5e-4 for Palace's example. Predicted T1 is 146-245 µs (raw to calibrated),
-against IBM medians of 145-287 µs. Total cost was about 37 CPU-minutes on a shared pool
-box. Planar edge participation, not the solver, is what keeps this below the tantalum
-records (above 0.5 ms).
+**Verified result (stamp 2026-10-01).** Island 240 × 146 µm in a 150 µm trench, Ta on
+sapphire, solved as a full chip in 3D (Palace eigenmode + EPR): f01 4.809 GHz, alpha
+-270 MHz, E_J/E_C 49, resonator 6.84 GHz, 2chi 1.06 MHz, chi/kappa 0.69. Surface
+participation is 5.2e-4, against 8.5e-4 for Palace's example. Predicted T1 is 142-250 µs
+(raw to calibrated), against IBM medians of 145-287 µs. Planar edge participation, not
+the solver, is what keeps this below the tantalum records (above 0.5 ms).
+
+**Always close the loop with a full-chip eigenmode.** The capacitance (LOM) model of the
+island and claw put f01 8% high and alpha about 20% too strong, against the 3D solve of
+the same geometry. The 3D chip has about 7% more island capacitance, from claw and
+meander loading and anisotropic sapphire (eps_z = 11.5). Two corrections closed it:
+- re-size the island and resonator from the 3D/LOM E_C ratio;
+- set L_J from f01 ∝ √E_J, reusing the same mesh.
+Each eigenmode iteration is 5-17 min on 10 ranks of a `cpu-32v-128g`. DeviceLayout.jl
+1.8.0 (`eigen/gen.jl`) generates the chip, the Palace config and a full-chip GDS
+in about 1 min after a 3-min precompile.
+
+**Fast Palace on a fresh instance:** copy the `ldd` closure of an already-built Palace to
+the same absolute prefix (79 MB). This works on any instance with the same image, and
+skips the 15-25 min superbuild.
 
 **Validation, and the honest gap.** Wang 2015 Design A (Table S1) is the
 reference. Our pad p_MS is about 2× theirs, so our raw T1 predictions are

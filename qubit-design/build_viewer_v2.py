@@ -99,6 +99,23 @@ def main():
             pj = json.load(open(os.path.join(V, d["participation"])))
             if "edge_density" in pj:
                 d["density"] = pack_density(pj["edge_density"])
+    ep = os.path.join(V, "eigen", "summary.json")
+    if os.path.exists(ep):  # final Hamiltonian from the full-chip 3D eigenmode solve (EPR), not the LOM estimate
+        es = json.load(open(ep)); f = es["final"]
+        for d in designs:
+            if d["kind"] != "final":
+                continue
+            h = d["ham"]
+            EC = f["E_J_GHz"] / f["EJ_over_EC"]
+            Ic = 2 * np.pi * f["E_J_GHz"] * 1e9 * 6.62607015e-34 / 2.067833848e-15
+            h.update({k: f[k] for k in ("f01_GHz", "alpha_MHz", "EJ_over_EC", "fr_GHz", "chi_MHz", "pull_2chi_MHz",
+                                        "kappa_MHz", "chi_over_kappa", "T1_budget")})
+            h.update({"EJ_GHz": f["E_J_GHz"], "EC_GHz": EC, "LJ_nH": f["L_J_nH"],
+                      "Rn_kOhm_AB": (np.pi * 180e-6 / 2) / Ic / 1e3,
+                      "T1_purcell_filtered_us": f["T1_budget"]["ganjam2024_raw"]["T1_purcell_filtered_us"],
+                      "levels_GHz": [lv[0] for lv in json.load(open(os.path.join(V, "eigen", es["final_iteration"], "ham.json")))["numerical"]["levels_GHz"] if lv[1].endswith(",0>")][:4],
+                      "source": "3D eigenmode (Palace) + EPR"})
+            d["eigen"] = {"iterations": es["iterations"], "lom_vs_eigen": es["lom_vs_eigen"]}
     data["designs"] = designs
     data["sweep"] = json.load(open(os.path.join(V, "sweep.json")))
     fm = os.path.join(V, "final_fieldmap.npz")
