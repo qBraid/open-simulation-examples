@@ -37,13 +37,13 @@ h1{margin:0;font-size:26px;letter-spacing:-.01em}
 #labels{position:absolute;inset:0;pointer-events:none}
 .hud{position:absolute;background:var(--hud);border:1px solid var(--hud-line);color:var(--stage-ink);border-radius:10px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .hud.info{top:10px;left:10px;padding:6px 10px;font-size:11.5px}
-.hud.ctl{top:44px;left:10px;padding:10px;display:grid;gap:8px;width:226px;font-size:12px}
+.hud.ctl{bottom:10px;left:10px;padding:10px;display:grid;gap:7px;width:232px;font-size:12px}
 .hud.ctl .row{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
 .hud.ctl .lab{width:100%;font:600 10.5px/1 "Inter",sans-serif;letter-spacing:.06em;text-transform:uppercase;opacity:.7;margin-top:2px}
 .seg button{padding:5px 9px;border-radius:7px}
 .seg button[aria-pressed="true"],.btn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
 .seg button:disabled{opacity:.35;cursor:not-allowed}
-.hud.cap{left:50%;transform:translateX(-50%);bottom:14px;max-width:min(620px,86%);padding:10px 14px;font-size:13.5px;display:none}
+.hud.cap{left:50%;transform:translateX(-50%);top:46px;max-width:min(600px,70%);padding:10px 14px;font-size:13.5px;display:none}
 .hud.cap b{display:block;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);margin-bottom:2px}
 .hud.cbar{right:10px;bottom:10px;padding:8px 10px;font-size:11px;width:220px}
 .hud.cbar canvas{width:100%;height:10px;border-radius:3px;display:block;margin:4px 0 2px}
@@ -72,7 +72,7 @@ svg text{fill:var(--muted);font:10.5px "Inter",sans-serif}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
 ul.lim{margin:0;padding-left:18px;font-size:12.5px;color:var(--muted)}
 @media (max-width:980px){.layout{grid-template-columns:1fr}.stage{height:68vh}}
-@media (max-width:560px){header{padding:14px 16px 8px}.layout{padding:0 16px 30px}.hud.ctl{width:auto;right:10px}.hud.cbar{display:none}h1{font-size:21px}}
+@media (max-width:560px){header{padding:14px 16px 8px}.layout{padding:0 16px 30px}.hud.ctl{width:auto;right:10px;max-height:46%;overflow:auto}.hud.cap{max-width:92%}.hud.cbar{display:none}h1{font-size:21px}}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
 </head>
@@ -106,7 +106,8 @@ ul.lim{margin:0;padding-left:18px;font-size:12.5px;color:var(--muted)}
       </div>
       <div class="lab">Vortex threshold</div>
       <div class="row seg" id="seg-q"><button data-q="2" aria-pressed="true">Q* = 2</button><button data-q="8" aria-pressed="false">Q* = 8</button></div>
-      <div class="row"><button class="btn" id="tour">Guided tour</button><button class="btn" id="reset">Reset view</button></div>
+      <div class="row"><button class="btn" id="cmp">Compare 25° | 35°</button></div>
+      <div class="row"><button class="btn" id="tourbtn">Guided tour</button><button class="btn" id="reset">Reset view</button></div>
     </div>
     <div class="hud ctl" id="ctl-cyl" style="display:none">
       <div class="lab">Field</div>
@@ -171,7 +172,7 @@ function colorbar(title, stops, ticks) {
 const stage = $('#stage'), canvas = $('#gl');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.92;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.localClippingEnabled = true;
@@ -252,21 +253,23 @@ async function buildSlant(key) {
     p.rotation.x = Math.PI / 2; p.position.set((x0 + x1) / 2, 0.0015, (z0 + z1) / 2); p.visible = false; p.renderOrder = 1;
     o.slices[lv] = p; o.group.add(p);
   }
+  o.tagEl = document.createElement('div'); o.tagEl.className = 'tag3d';
+  o.tag = new CSS2DObject(o.tagEl); o.tag.position.set(0.35, 0, 0.6); o.group.add(o.tag);
   o.group.visible = false; sceneA.add(o.group);
   return o;
 }
 
-// benchmark tag above the body
-const tagEl = document.createElement('div'); tagEl.className = 'tag3d';
-const tag = new CSS2DObject(tagEl); tag.position.set(0.5, 0, 0.78); sceneA.add(tag);
+let compare = false;
 function verdict(err) { const a = Math.abs(err); return a <= 5 ? ['ok', 'within 5%'] : a <= 10 ? ['warn', 'within 10%'] : ['bad', 'outside 10%']; }
 function updateTag() {
-  const S = D.ahmed.slants[curSlant], L = S.levels[curLevel];
-  if (!L) { tagEl.innerHTML = 'no run at this level'; return; }
-  const err = 100 * (L.Cd - S.exp) / S.exp, [cls, txt] = verdict(err);
-  tagEl.innerHTML = `<div style="opacity:.7;font-size:11px">${curSlant}° slant · ${curLevel} mesh · ${(L.cells / 1e6).toFixed(2)}M cells</div>
-    <div class="big">C<sub>d</sub> ${L.Cd.toFixed(3)}</div>
-    <div>experiment ${S.exp.toFixed(3)} · <span class="${cls}">${err >= 0 ? '+' : ''}${err.toFixed(1)}% (${txt})</span></div>`;
+  for (const [k, o] of Object.entries(slants)) {
+    const S = D.ahmed.slants[k], lv = S.levels[curLevel] ? curLevel : S.best, L = S.levels[lv];
+    const err = 100 * (L.Cd - S.exp) / S.exp, [cls, txt] = verdict(err);
+    o.tagEl.innerHTML = `<div style="opacity:.7;font-size:11px">${k}° slant · ${lv} mesh · ${(L.cells / 1e6).toFixed(2)}M cells</div>
+      <div class="big">C<sub>d</sub> ${L.Cd.toFixed(3)}</div>
+      <div>experiment ${S.exp.toFixed(3)} · <span class="${cls}">${err >= 0 ? '+' : ''}${err.toFixed(1)}% (${txt})</span></div>`;
+    o.tagEl.style.display = active === 'ahmed' && (compare || k === curSlant) && (!tour || tour.i === tour.steps.length - 1) ? '' : 'none';
+  }
 }
 
 // ---------- particles (advected through the solver's velocity grid) ----------
@@ -341,15 +344,20 @@ function stepParticles(dt) {
 }
 
 function applyAhmed() {
-  for (const [k, o] of Object.entries(slants)) o.group.visible = k === curSlant;
+  const keys = Object.keys(slants);
+  keys.forEach((k, j) => {
+    const o = slants[k]; o.group.visible = compare || k === curSlant;
+    o.group.position.y = compare ? (j - (keys.length - 1) / 2) * 0.62 : 0;
+    o.body.visible = layers.body;
+    for (const [lv, m] of Object.entries(o.iso)) m.visible = layers.iso && lv === String(qLev);
+    for (const [lv, p] of Object.entries(o.slices)) p.visible = !compare && layers.slice && lv === curLevel;
+  });
   const O = slants[curSlant]; if (!O) return;
-  O.body.visible = layers.body;
-  for (const [lv, m] of Object.entries(O.iso)) m.visible = layers.iso && lv === String(qLev);
-  for (const [lv, p] of Object.entries(O.slices)) p.visible = layers.slice && lv === curLevel;
-  pts.visible = streaks.visible = layers.particles;
+  pts.visible = streaks.visible = layers.particles && !compare;
+  $('#cmp').classList.toggle('on', compare);
   const side = camA.position.y < 0 ? 1 : -1; clipNear.normal.set(0, side, 0);
-  const planes = layers.slice ? [clipNear] : [];
-  O.body.material.clippingPlanes = planes; for (const m of Object.values(O.iso)) m.material.clippingPlanes = planes;
+  const planes = layers.slice && !compare ? [clipNear] : [];
+  for (const o of Object.values(slants)) { o.body.material.clippingPlanes = planes; for (const m of Object.values(o.iso)) m.material.clippingPlanes = planes; }
   updateTag();
   const S = D.ahmed.slants[curSlant], L = S.levels[curLevel];
   $('#info').textContent = `simpleFoam k-ω SST · U∞ 40 m/s · Re_L 2.8e6 · ${curSlant}° slant · surface & vortices from ${S.best} mesh${L ? '' : ''}`;
@@ -375,8 +383,8 @@ const tourSteps = () => {
 };
 let tour = null;
 const ease = t => t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
-function startTour() { tour = { i: -1, t0: 0, from: null, steps: tourSteps() }; nextStep(); $('#tour').textContent = 'Stop tour'; $('#tour').classList.add('on'); }
-function stopTour() { tour = null; $('#cap').style.display = 'none'; pins.forEach(p => p.classList.remove('show')); $('#tour').textContent = 'Guided tour'; $('#tour').classList.remove('on'); ctlA.enabled = true; }
+function startTour() { compare = false; tour = { i: -1, t0: 0, from: null, steps: tourSteps() }; nextStep(); $('#tourbtn').textContent = 'Stop tour'; $('#tourbtn').classList.add('on'); }
+function stopTour() { tour = null; updateTag(); $('#cap').style.display = 'none'; pins.forEach(p => p.classList.remove('show')); $('#tourbtn').textContent = 'Guided tour'; $('#tourbtn').classList.remove('on'); ctlA.enabled = true; }
 function nextStep() {
   tour.i++; if (tour.i >= tour.steps.length) { stopTour(); return; }
   const s = tour.steps[tour.i];
@@ -538,16 +546,18 @@ function setTab(t) {
   $('#ctl-ahmed').style.display = t === 'ahmed' ? '' : 'none'; $('#ctl-cyl').style.display = t === 'cyl' ? '' : 'none';
   $('#clchart').style.display = t === 'cyl' ? 'block' : 'none';
   ctlA.enabled = t === 'ahmed' && !tour; ctlC.enabled = t === 'cyl';
-  if (t === 'cyl') { stopTour(); $('#info').textContent = `pimpleFoam laminar · Re = 100 · ${D.cyl.best.label} · vorticity ω_z (colour and height) with dye advected by the solver velocity`; colorbar('vorticity ω_z D / U∞', CW, ['-4', '0', '4']); tag.visible = false; CY.tag && (CY.tag.visible = true); }
-  else { tag.visible = true; CY.tag && (CY.tag.visible = false); applyAhmed(); }
+  updateTag();
+  if (t === 'cyl') { stopTour(); $('#info').textContent = `pimpleFoam laminar · Re = 100 · ${D.cyl.best.label} · vorticity ω_z (colour and height) with dye advected by the solver velocity`; colorbar('vorticity ω_z D / U∞', CW, ['-4', '0', '4']); CY.tag && (CY.tag.visible = true); }
+  else { CY.tag && (CY.tag.visible = false); applyAhmed(); }
   for (const o of [...document.querySelectorAll('.pin')]) o.style.display = t === 'ahmed' ? '' : 'none';
-  tagEl.style.display = t === 'ahmed' ? '' : 'none'; if (CY.tagEl) CY.tagEl.style.display = t === 'cyl' ? '' : 'none';
+  if (CY.tagEl) CY.tagEl.style.display = t === 'cyl' ? '' : 'none';
   if (location.hash !== '#' + t) history.replaceState(null, '', t === 'cyl' ? '#cyl' : '#ahmed');
 }
 $('#tab-ahmed').onclick = () => setTab('ahmed'); $('#tab-cyl').onclick = () => setTab('cyl');
 $('#seg-layers').onclick = e => { const b = e.target.closest('button'); if (!b) return; layers[b.dataset.l] = !layers[b.dataset.l]; applyAhmed(); };
 $('#seg-q').onclick = e => { const b = e.target.closest('button'); if (!b) return; qLev = +b.dataset.q; layers.iso = true; applyAhmed(); };
-$('#tour').onclick = () => tour ? stopTour() : startTour();
+$('#tourbtn').onclick = () => tour ? stopTour() : startTour();
+$('#cmp').onclick = () => { compare = !compare; stopTour(); if (compare) { layers.iso = true; camA.position.set(2.45, -1.15, 1.05); ctlA.target.set(0.85, 0, 0.2); } applyAhmed(); };
 $('#reset').onclick = () => { stopTour(); camA.position.set(-1.25, -1.55, 0.95); ctlA.target.set(0.75, 0, 0.17); };
 $('#seg-cyl').onclick = e => { const b = e.target.closest('button'); if (!b) return; cylRelief = b.dataset.c === 'relief'; for (const x of document.querySelectorAll('#seg-cyl button')) x.setAttribute('aria-pressed', x === b); if (!cylRelief) { CY.geo.computeVertexNormals(); } };
 $('#seg-dye').onclick = e => { const b = e.target.closest('button'); if (!b) return; cylDye = b.dataset.d === 'on'; for (const x of document.querySelectorAll('#seg-dye button')) x.setAttribute('aria-pressed', x === b); };
@@ -575,6 +585,7 @@ async function init() {
   if (KV.q) qLev = +KV.q;
   if (P0 === 'slice') { layers.slice = true; layers.particles = false; camA.position.set(0.95, -1.5, 0.36); ctlA.target.set(0.95, 0, 0.28); }
   if (P0 === 'vortex') { layers.iso = true; layers.particles = false; camA.position.set(2.05, -0.85, 0.75); ctlA.target.set(1.1, 0, 0.26); }
+  if (P0 === 'compare') { compare = true; layers.iso = true; camA.position.set(2.45, -1.15, 1.05); ctlA.target.set(0.85, 0, 0.2); }
   if (P0 === 'front') { camA.position.set(-0.9, -0.75, 0.42); ctlA.target.set(0.15, 0, 0.18); }
   for (const k of ['body', 'iso', 'particles', 'slice']) if (KV[k] != null) layers[k] = KV[k] === '1';
   applyAhmed();

@@ -13,6 +13,7 @@ python "$HERE/mesh.py" "$LEVEL" mesh.msh "$HW" "$XIN" > log.mesh
 if [ "$SCHEME" = linear ]; then sed -i "s/div(phi,U)      Gauss linearUpwind grad(U);/div(phi,U)      Gauss linear;/" system/fvSchemes; fi
 foamDictionary system/controlDict -entry maxCo -set "$MAXCO" > /dev/null
 foamDictionary system/controlDict -entry endTime -set "$T1" > /dev/null
+foamDictionary system/controlDict -entry writeInterval -set "$T1" > /dev/null   # leg 1 must write at its end, or leg 2 restarts from 0
 gmshToFoam mesh.msh > log.gmshToFoam
 foamDictionary constant/polyMesh/boundary -entry entry0/frontAndBack/type -set empty > /dev/null
 foamDictionary constant/polyMesh/boundary -entry entry0/cylinder/type -set wall > /dev/null

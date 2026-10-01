@@ -76,7 +76,11 @@ if want_surface:
     iso = {}
     for lev in (2.0, 8.0):
         c = d.contour([lev], scalars="Qn").extract_surface().triangulate()
-        c = c.connectivity("largest") if c.n_cells and lev > 50 else c
+        if c.n_cells:   # drop small disconnected fragments (far-wake noise)
+            c = c.connectivity("all")
+            ids, counts = np.unique(c["RegionId"], return_counts=True)
+            keep = ids[counts >= 150]
+            c = c.extract_cells(np.isin(c.cell_data["RegionId"], keep)).extract_surface().triangulate()
         if c.n_cells > 26000:
             c = c.decimate_pro(1 - 26000 / c.n_cells, preserve_topology=False)
         if c.n_cells == 0:
