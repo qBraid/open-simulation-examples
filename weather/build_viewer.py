@@ -15,7 +15,7 @@ from land_rings import pack
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 VMETA = {
-    "tcwv": dict(label="Total column water vapour", units="kg/m²", lo=0, hi=70, cmap="ice", err=12),
+    "tcwv": dict(label="Total column water vapour", units="kg/m²", lo=0, hi=70, cmap="ice", err=12, alpha_lo=0.3),
     "t2m": dict(label="2 m temperature", units="°C", lo=-50, hi=45, cmap="thermal", err=5),
     "msl": dict(label="Sea-level pressure", units="hPa", lo=960, hi=1045, cmap="deep_r", err=8),
 }
@@ -29,6 +29,20 @@ STORMS = [  # name, approx position at init (lon, lat), search radius deg
 
 def b64z(arr):
     return base64.b64encode(zlib.compress(np.ascontiguousarray(arr).tobytes(), 9)).decode()
+
+
+def b64z_rows(arr):
+    """8-bit fields: PNG-style 'sub' filter along longitude (byte deltas mod 256), then deflate."""
+    u = np.ascontiguousarray(arr).view(np.uint8)
+    d = np.diff(u, axis=-1, prepend=np.zeros(u.shape[:-1] + (1,), np.uint8)).astype(np.uint8)
+    return b64z(d)
+
+
+def b64z_pts(p):
+    """int16 (lon, lat) pairs: delta-encode each component along the stream, then deflate."""
+    p = np.ascontiguousarray(p, dtype=np.int16).reshape(-1, 2)
+    d = np.diff(p, axis=0, prepend=np.zeros((1, 2), np.int16)).astype(np.int16)
+    return b64z(d)
 
 
 def down(a):  # 0.25 deg (721 x 1440, lon 0..359.75) -> 1 deg (181 x 360)
@@ -54,7 +68,7 @@ def contours(z, levels):
     for lev in levels:
         for line in gen.lines(lev):
             if len(line) < 4: continue
-            line = line[:: max(1, len(line) // 400)]  # cap points per line
+            line = line[:: max(1, len(line) // 160)]  # cap points per line (1 deg grid: smooth enough)
             lo = np.where(line[:, 0] > 180, line[:, 0] - 360, line[:, 0])
             pts.append(np.stack([lo, line[:, 1]], 1)); meta.append([len(line), int(lev)])
     p = np.round(np.concatenate(pts) * 100).astype(np.int16) if pts else np.zeros((0, 2), np.int16)
@@ -87,19 +101,19 @@ def main():
     for v, m in VMETA.items():
         fc = np.stack([q8(CONV[v](down(Z[f"{v}_{h:03d}"])), m["lo"], m["hi"]) for h in leads])
         tr = np.stack([q8(CONV[v](down(Z[f"era5_{v}_{h:03d}"])), m["lo"], m["hi"]) for h in tleads])
-        blobs[f"fc_{v}"] = b64z(fc); blobs[f"tr_{v}"] = b64z(tr); vmeta[v] = m
+        blobs[f"fc_{v}"] = b64z_rows(fc); blobs[f"tr_{v}"] = b64z_rows(tr); vmeta[v] = m
     for c in ("u850", "v850"):
-        blobs[f"fc_{c}"] = b64z(np.stack([np.clip(np.round(down(Z[f"{c}_{h:03d}"]) / WIND_SCALE), -127, 127).astype(np.int8) for h in leads]))
-        blobs[f"tr_{c}"] = b64z(np.stack([np.clip(np.round(down(Z[f"era5_{c}_{h:03d}"]) / WIND_SCALE), -127, 127).astype(np.int8) for h in tleads]))
+        blobs[f"fc_{c}"] = b64z_rows(np.stack([np.clip(np.round(down(Z[f"{c}_{h:03d}"]) / WIND_SCALE), -127, 127).astype(np.int8) for h in leads]))
+        blobs[f"tr_{c}"] = b64z_rows(np.stack([np.clip(np.round(down(Z[f"era5_{c}_{h:03d}"]) / WIND_SCALE), -127, 127).astype(np.int8) for h in tleads]))
     levels = list(range(4800, 6001, 60))
     z5 = {}
     for kind, keyf, ls in (("fc", "z500_{:03d}", leads), ("tr", "era5_z500_{:03d}", tleads)):
         metas, allp = [], []
         for h in ls:
             m_, p_ = contours(down(Z[keyf.format(h)]) / 9.80665, levels); metas.append(m_); allp.append(p_)
-        z5[kind] = metas; blobs[f"z5_{kind}_pts"] = b64z(np.concatenate(allp))
+        z5[kind] = metas; blobs[f"z5_{kind}_pts"] = b64z_pts(np.concatenate(allp))
     land_pts, land_lens = pack(os.path.join(HERE, "data", "land-50m.json"))
-    blobs["land_pts"] = b64z(land_pts)
+    blobs["land_pts"] = b64z_pts(land_pts)
 
     S = json.load(open(os.path.join(a.results, "sfno_scores.json")))
     H = json.load(open(os.path.join(a.results, "hres_scores.json")))

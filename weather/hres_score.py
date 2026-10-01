@@ -20,7 +20,7 @@ def main():
     ap = argparse.ArgumentParser(); ap.add_argument("out"); ap.add_argument("--viz-init", default="2020-08-24T00")
     a = ap.parse_args()
     ds = xr.open_zarr(HRES, storage_options={"token": "anon"})
-    era5 = ARCO()
+    era5 = ARCO(cache=False)
     out = {"model": "ifs_hres", "inits": [], "rmse": {v: {str(h): [] for h in LEADS_H} for v in SCORE_VARS}}
     viz = {}
     for d in INITS:
@@ -28,7 +28,9 @@ def main():
         for v in SCORE_VARS:
             name, lev = NAMES[v]
             for h in LEADS_H:
-                da = ds[name].sel(time=np.datetime64(init), prediction_timedelta=np.timedelta64(h, "h"))
+                # newer xarray leaves WB2's prediction_timedelta as integer hours
+                lead = h if ds.prediction_timedelta.dtype.kind in "iu" else np.timedelta64(h, "h")
+                da = ds[name].sel(time=np.datetime64(init), prediction_timedelta=lead)
                 if lev: da = da.sel(level=lev)
                 f = da.transpose("latitude", "longitude").values
                 if ds.latitude.values[0] < ds.latitude.values[-1]:  # WB2 is south->north; ERA5 ARCO is north->south

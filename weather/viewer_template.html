@@ -145,6 +145,10 @@ async function inflate(b64){
 const NX = P.grid.nx, NY = P.grid.ny, FR = NX*NY;
 const raw = {};
 for (const k of Object.keys(P.blobs)) raw[k] = await inflate(P.blobs[k]);
+// undo the build-time filters: byte deltas along each grid row; int16 deltas along point streams
+function unRows(u8){ for (let o=0; o<u8.length; o+=NX){ let acc = 0; for (let i=0;i<NX;i++){ acc = (acc + u8[o+i]) & 255; u8[o+i] = acc; } } }
+function unPts(u8){ const a = new Int16Array(u8.buffer, u8.byteOffset, u8.byteLength/2); for (let i=2;i<a.length;i++) a[i] += a[i-2]; }
+for (const k of Object.keys(raw)){ if (k.endsWith('_pts')) unPts(raw[k]); else unRows(raw[k]); }
 const asI16 = u8 => new Int16Array(u8.buffer, u8.byteOffset, u8.byteLength/2);
 const asI8 = u8 => new Int8Array(u8.buffer, u8.byteOffset, u8.byteLength);
 document.getElementById('loading').remove();
@@ -249,7 +253,7 @@ const globeMat = new THREE.ShaderMaterial({
     mixF:{value:0}, mixT:{value:0}, lut:{value:null}, elut:{value:LUT.diverging},
     mode:{value:0}, split:{value:.5}, res:{value:new THREE.Vector2(1,1)},
     sunDir:{value:new THREE.Vector3(1,0,0)}, useSun:{value:1}, opacity:{value:.9},
-    errScale:{value:1}, gamma:{value:1}
+    errScale:{value:1}, gamma:{value:1}, alphaLo:{value:.9}
   },
   vertexShader: `
     varying vec2 vUv; varying vec3 vN; varying vec3 vW;
@@ -257,7 +261,7 @@ const globeMat = new THREE.ShaderMaterial({
       gl_Position = projectionMatrix*viewMatrix*vec4(vW,1.); }`,
   fragmentShader: `
     uniform sampler2D land, fa, fb, ta, tb, lut, elut;
-    uniform float mixF, mixT, split, opacity, useSun, errScale, gamma; uniform int mode; uniform vec2 res; uniform vec3 sunDir;
+    uniform float mixF, mixT, split, opacity, useSun, errScale, gamma, alphaLo; uniform int mode; uniform vec2 res; uniform vec3 sunDir;
     varying vec2 vUv; varying vec3 vN; varying vec3 vW;
     vec3 cmap(sampler2D L, float x){ return texture2D(L, vec2(clamp(x,0.,1.)*.996+.002,.5)).rgb; }
     void main(){
@@ -267,15 +271,15 @@ const globeMat = new THREE.ShaderMaterial({
       vec2 uv = vec2(fract(vUv.x - .25), 1. - vUv.y);
       vec2 luv = vec2(fract(vUv.x + .25), vUv.y);
       float landm = texture2D(land, luv).r;
-      vec3 ocean = vec3(.035,.07,.12), ground = vec3(.20,.22,.20);
+      vec3 ocean = vec3(.03,.06,.11), ground = vec3(.28,.27,.22);
       vec3 base = mix(ocean, ground, landm);
       float f = mix(texture2D(fa,uv).r, texture2D(fb,uv).r, mixF);
       float t = mix(texture2D(ta,uv).r, texture2D(tb,uv).r, mixT);
       vec3 col;
       int m = mode;
       if (m == 2) m = (gl_FragCoord.x/res.x < split) ? 0 : 1;
-      if (m == 0) col = mix(base, cmap(lut, pow(f,gamma)), opacity);
-      else if (m == 1) col = mix(base, cmap(lut, pow(t,gamma)), opacity);
+      if (m == 0) col = mix(base, cmap(lut, pow(f,gamma)), mix(alphaLo, opacity, smoothstep(.0,.55,f)));
+      else if (m == 1) col = mix(base, cmap(lut, pow(t,gamma)), mix(alphaLo, opacity, smoothstep(.0,.55,t)));
       else { float e = (f - t)*errScale; col = mix(base, cmap(elut, .5 + .5*e), mix(.25, .95, min(1.,abs(e)*3.))); }
       // sun lighting with soft terminator, faint night glow
       float ndl = dot(normalize(vN), normalize(sunDir));
@@ -445,7 +449,7 @@ function drawCbar(){
 }
 function setOverlay(v){
   S.ov = v; const m = P.vmeta[v];
-  globeMat.uniforms.lut.value = LUT[m.cmap]; globeMat.uniforms.gamma.value = m.gamma || 1;
+  globeMat.uniforms.lut.value = LUT[m.cmap]; globeMat.uniforms.gamma.value = m.gamma || 1; globeMat.uniforms.alphaLo.value = m.alpha_lo ?? .9;
   globeMat.uniforms.errScale.value = (m.hi - m.lo)/m.err;  // normalized byte difference -> [-1,1] at ±err
   document.querySelectorAll('[data-ov]').forEach(b=>b.setAttribute('aria-pressed', b.dataset.ov===v));
   drawCbar();

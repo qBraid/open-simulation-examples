@@ -45,13 +45,14 @@ def main():
     ap.add_argument("model"); ap.add_argument("out")
     ap.add_argument("--viz-init", default="2020-08-24T00")
     ap.add_argument("--inits", default=",".join(INITS))
+    ap.add_argument("--tag", default="")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     dev = torch.device("cuda")
     t0 = time.time()
     model = load_model(a.model).to(dev)
     load_s = time.time() - t0
-    era5 = ARCO()
+    era5 = ARCO(cache=False)  # ARCO chunks bundle all levels: caching costs ~11 GB per date
     nsteps = max(LEADS_H) // 6
     out = {"model": a.model, "inits": [], "rmse": {v: {str(h): [] for h in LEADS_H} for v in SCORE_VARS},
            "load_s": round(load_s, 1), "step_s": []}
@@ -94,10 +95,10 @@ def main():
                     viz[f"era5_{v}_{h:03d}"] = tr[0, 0, k].numpy()
             np.savez_compressed(os.path.join(a.out, f"{a.model}_viz_{init:%Y%m%d%H}.npz"), lat=lat, lon=np.asarray(cs["lon"]),
                                 **{k: v.astype(np.float32) for k, v in viz.items()})
-        json.dump(out, open(os.path.join(a.out, f"{a.model}_scores.json"), "w"), indent=1)
+        json.dump(out, open(os.path.join(a.out, f"{a.model}{a.tag}_scores.json"), "w"), indent=1)
     out["mean"] = {v: {h: float(np.mean(out["rmse"][v][h])) for h in out["rmse"][v]} for v in SCORE_VARS}
     out["gpu"] = torch.cuda.get_device_name(0); out["wall_s"] = round(time.time() - t0, 1)
-    json.dump(out, open(os.path.join(a.out, f"{a.model}_scores.json"), "w"), indent=1)
+    json.dump(out, open(os.path.join(a.out, f"{a.model}{a.tag}_scores.json"), "w"), indent=1)
     print("MEAN", out["mean"], "wall", out["wall_s"])
 
 
