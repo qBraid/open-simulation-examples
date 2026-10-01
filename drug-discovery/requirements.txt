@@ -1,0 +1,6 @@
+# Python 3.12, NVIDIA GPU (tested on L4 24 GB, driver 595). torch comes in with boltz.
+boltz==2.2.1
+posebusters==0.6.5
+rdkit
+gemmi
+scipy
