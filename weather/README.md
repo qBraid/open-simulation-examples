@@ -44,7 +44,13 @@ reference, so the comparison below is apples to apples.
 HRES only on near-surface temperature at day 1. By day 5 it is 36% worse on z500 and 24% worse on T850.
 It is a good demonstration model, not a top-tier forecaster.
 
-__FCN3__
+**FourCastNet 3 (the HRES-class open model): blocked by GPU memory, not by the pipeline.**
+- FCN3 needs CUDA DISCO kernels that the PyPI `torch-harmonics` wheel lacks. We built them from source on the
+  pool with pip's CUDA 13.0 toolchain (recipe below); a DISCO test convolution then runs on the GPU.
+- The full model still runs out of memory on the 22 GB L4. Its decoder (a transposed DISCO convolution back to
+  the 0.25° grid) asks for one 20.4 GB buffer on the first step.
+- Next step: rerun `forecast_score.py fcn3` on a `gpu-a100-sxm` (40 GB or more, $2.49/h). The 12-start set should
+  take about 20–30 min, roughly $1–1.50. That run decides whether this example reaches the bar.
 
 **Storm case: Hurricane Laura (start 24 Aug 2020).** SFNO's track stays within 170 km of ERA5 for 48 h
 and 462 km at 72 h, with central pressure within 2–3 hPa. It then keeps Laura moving west across the

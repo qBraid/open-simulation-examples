@@ -8,8 +8,8 @@ description: Run and score AI global weather forecasts (NVIDIA Earth2Studio with
 ## What runs where
 | Task | Machine | Notes |
 |---|---|---|
-| SFNO 73-ch, 0.25°, 5-day forecast | `gpu-l4` (24 GB) is enough | ~1.2 s per 6 h step on an L4 after warm-up; first model load ~100 s (NGC download) |
-| FCN3, larger models, ensembles | `gpu-a100-sxm` / `gpu-h100-sxm` | ensembles scale linearly in memory; start with 4 members on an L4 |
+| SFNO 73-ch, 0.25°, 5-day forecast | `gpu-l4` (22 GB usable) is enough for SFNO | ~1.2 s per 6 h step on an L4 after warm-up; first model load ~100 s (NGC download) |
+| FCN3 (needs >22 GB), ensembles | `gpu-a100-sxm` / `gpu-h100-sxm` | ensembles scale linearly in memory; start with 4 members on an L4 |
 | Scoring, plotting, viewer build | CPU or the Lab pod | xarray + numpy only |
 
 ## Install (verified 2026-10-01)
@@ -53,7 +53,8 @@ Run the GPU step through the queue on shared boxes.
 ## Choosing the model (the decision that matters)
 - **`SFNO.load_default_package()` is `sfno_73ch_small`**, NVIDIA's public small checkpoint (embed 384, 8 layers).
   It is a good demo model, but it is not HRES-class beyond day 1 (see below). Say so before a user quotes skill numbers.
-- For skill, use FCN3 (FourCastNet 3). It needs the torch-harmonics CUDA build above.
+- For skill, use FCN3 (FourCastNet 3). It needs the torch-harmonics CUDA build above **and a GPU with 40 GB or more**:
+  on a 22 GB L4 its decoder OOMs on the first step (one 20.4 GB allocation). Use `gpu-a100-sxm` or larger.
 - Always state which checkpoint ran. "SFNO" alone is ambiguous.
 
 ## Verified result (2026-10-01, gpu-l4, 12 starts in 2020, 5-day leads)
