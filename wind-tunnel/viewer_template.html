@@ -491,7 +491,7 @@ function drawCl(ph) {
 function panel() {
   const A = D.ahmed, el = $('#panel');
   const rows = [];
-  for (const [k, S] of Object.entries(A.slants)) for (const lv of ['coarse', 'medium', 'fine']) {
+  for (const [k, S] of Object.entries(A.slants)) for (const lv of ['coarse', 'medium', 'fine', 'xfine']) {
     const L = S.levels[lv]; if (!L) continue;
     const e = 100 * (L.Cd - S.exp) / S.exp, ch = Math.abs(e) <= 5 ? 'ok' : Math.abs(e) <= 10 ? 'close' : 'no';
     rows.push(`<tr><td>${k}°</td><td>${lv}</td><td class="n">${(L.cells / 1e6).toFixed(2)}M</td><td class="n">${L.Cd.toFixed(3)}</td><td class="n">${S.exp.toFixed(3)}</td><td><span class="chip ${ch}">${e >= 0 ? '+' : ''}${e.toFixed(1)}%</span></td></tr>`);
@@ -522,7 +522,7 @@ function ladderSVG() {
   for (const [k, S] of Object.entries(A.slants)) {
     s += `<rect x="${pad}" y="${Y(S.exp * 1.05)}" width="${W - pad - 8}" height="${Y(S.exp * 0.95) - Y(S.exp * 1.05)}" fill="${colr[k]}" opacity=".10"/>`;
     s += `<line x1="${pad}" x2="${W - 8}" y1="${Y(S.exp)}" y2="${Y(S.exp)}" stroke="${colr[k]}" stroke-dasharray="4 3" opacity=".8"/>`;
-    const L = ['coarse', 'medium', 'fine'].map(l => S.levels[l]).filter(Boolean);
+    const L = ['coarse', 'medium', 'fine', 'xfine'].map(l => S.levels[l]).filter(Boolean);
     s += `<polyline fill="none" stroke="${colr[k]}" stroke-width="2" points="${L.map(l => `${X(l.cells)},${Y(l.Cd)}`).join(' ')}"/>`;
     s += L.map(l => `<circle cx="${X(l.cells)}" cy="${Y(l.Cd)}" r="4" fill="${colr[k]}"/>`).join('');
     s += `<text x="${W - 10}" y="${Y(S.exp) - 4}" text-anchor="end">${k}° exp. ±5%</text>`;
@@ -576,7 +576,7 @@ async function init() {
   for (const k of keys) slants[k] = await buildSlant(k);
   curSlant = keys.includes('25') ? '25' : keys[0]; curLevel = D.ahmed.slants[curSlant].best;
   $('#seg-slant').innerHTML = keys.map(k => `<button data-s="${k}">${k}°</button>`).join('');
-  $('#seg-level').innerHTML = ['coarse', 'medium', 'fine'].map(l => `<button data-v="${l}">${l}</button>`).join('');
+  $('#seg-level').innerHTML = ['coarse', 'medium', 'fine', 'xfine'].map(l => `<button data-v="${l}">${l}</button>`).join('');
   $('#seg-slant').onclick = e => { const b = e.target.closest('button'); if (!b) return; curSlant = b.dataset.s; const S = D.ahmed.slants[curSlant]; if (!S.levels[curLevel]) curLevel = S.best; applyAhmed(); };
   $('#seg-level').onclick = e => { const b = e.target.closest('button'); if (!b || b.disabled) return; curLevel = b.dataset.v; layers.slice = true; applyAhmed(); };
   await buildCyl();

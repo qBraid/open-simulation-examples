@@ -34,6 +34,8 @@ Traps in `conda-forge::openfoam=2412`. None of them announce themselves:
 | snappyHexMesh: `Cannot open etc file "caseDicts/mesh/generation/meshQualityDict"` | The package ships no `etc/caseDicts` | Inline `meshQualityControls` (see `wind-tunnel/ahmed/case/system/snappyHexMeshDict`) |
 | `import gmsh` fails | `gmsh` is only the binary | Also install `python-gmsh` at the same version |
 | A running `run.sh` dies with a syntax error after you edit it | bash reads scripts incrementally | Never edit a script a live run is executing |
+| A second `mpirun` on the same instance segfaults at startup in UCX (`ucs_mpool_grow`) | qBraid instances have a 64 MB `/dev/shm`, already used up by the first job's ranks | `UCX_TLS=self,tcp mpirun ...` for the second job |
+| A finer mesh needs more iterations | 3.2M cells was still drifting 1.6% per 150 iterations at iteration 871, where 1.37M had settled by about 700 | Stop on a drift criterion (mean of the last 150 vs the previous 150 under 0.15%), not on a fixed count, and copy forces back after every leg |
 
 On the pod, `memory.current` counts page cache. Judge headroom from `anon` in
 `/sys/fs/cgroup/memory.stat`, and cap MPI ranks at what the pod's `cpu.max`
@@ -55,7 +57,7 @@ Machine by mesh size (OpenFOAM, about 1 GB RAM per million cells for RANS):
 | < 50k (2D) | subscription pod, 1–2 ranks | 27k-cell transient cylinder, 200 D/U: 24 min on 2 ranks (measured) |
 | 0.3–1M (3D RANS) | pod, 3 ranks | 592k-cell Ahmed body: snappy 2.7 min serial, 800 SIMPLE iterations 21.7 min on 3 ranks (measured) |
 | 1–1.5M (3D RANS) | a `gpu-l4` box's CPU (cgroup quota 5.1 CPUs), 2 ranks | 1.37M-cell Ahmed body: 1000 SIMPLE iterations about 38 min on 2 ranks (measured 2026-10-01) |
-| 1–10M | `cpu-32v-128g` or `cpu-64v-256g` | about 20–30k cells per core for good scaling |
+| 1–10M | `cpu-32v-128g` or `cpu-64v-256g` | 3.2M-cell Ahmed body on 10 ranks of a shared `cpu-32v-128g`: about 16 SIMPLE iterations per minute, so 1300 iterations takes about 80 min (measured 2026-10-01). Memory-bandwidth bound: ranks at 50–90% CPU |
 | > 10M, or a sweep | several `cpu-64v-256g` instances via cloud orchestration | one case per instance, and terminate each when done |
 
 ## 3. Validation is mandatory
