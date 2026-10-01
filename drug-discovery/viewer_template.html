@@ -328,7 +328,7 @@ renderer.domElement.addEventListener('pointermove', e => {
 function benchSide() {
   const B = D.bench, P = D.published, rows = [];
   rows.push(['Boltz-2 (this run, open weights)', B.boltz2.rmsd_le_2, B.boltz2.success_pb_valid, B.n, true]);
-  for (const [k, v] of Object.entries(B)) if (k.startsWith('vina') || k.startsWith('gold')) rows.push([k.replace('_none', '').replace('_', ' ').toUpperCase() + ' (docking, crystal pocket given)', v.rmsd_le_2, v.success_pb_valid, v.n, false]);
+  for (const [k, v] of Object.entries(B)) if (k === 'vina' || k === 'gold') rows.push([k.toUpperCase() + ' (docking, crystal pocket given)', v.rmsd_le_2, v.success_pb_valid, v.n, false]);
   const bar = (v, c) => `<div style="height:9px;border-radius:3px;background:var(--panel2)"><div style="height:100%;width:${(v * 100).toFixed(1)}%;background:${c};border-radius:3px"></div></div>`;
   side.innerHTML = `<h2>Pose prediction on ${B.n} PoseBusters complexes</h2>
   <p class="note">Success means ligand RMSD under 2 Å and all PoseBusters physical-validity checks passed. The same complexes are used for every row.</p>
@@ -350,7 +350,7 @@ lights(bench.scene); bench.scene.add(bench.group);
 function buildBench() {
   bench.group.clear();
   const B = D.bench, rows = [['Boltz-2', B.boltz2, 0x22b8cf]];
-  for (const [k, v] of Object.entries(B)) if (k.startsWith('vina') || k.startsWith('gold')) rows.push([k.split('_')[0].toUpperCase(), v, k.startsWith('vina') ? 0x9aa3ab : 0xc9a227]);
+  for (const [k, v] of Object.entries(B)) if (k === 'vina' || k === 'gold') rows.push([k.toUpperCase(), v, k === 'vina' ? 0x9aa3ab : 0xc9a227]);
   const H = 16, gap = 5.2, x0 = -(rows.length - 1) * gap / 2;
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(rows.length * gap + 8, 12), new THREE.MeshStandardMaterial({ color: new THREE.Color(css('--panel2')), roughness: 0.9 }));
   floor.rotation.x = -Math.PI / 2; bench.group.add(floor);

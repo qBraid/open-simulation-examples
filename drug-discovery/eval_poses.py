@@ -80,6 +80,7 @@ for c in meta["complexes"]:
         df = PoseBusters(config="redock").bust(mol_pred=f"{OUT}/{i}/pred_ligand.sdf", mol_true=f"{PB}/{i}/{i}_ligand.sdf", mol_cond=f"{OUT}/{i}/pred_protein.pdb")
         checks = {k: bool(v) for k, v in df.iloc[0].items() if isinstance(v, (bool, np.bool_))}
         row["pb_failed"] = [k for k, v in checks.items() if not v and "rmsd" not in k]
+        row["pb_n_checks"] = sum("rmsd" not in k for k in checks)
         row["pb_valid"] = len(row["pb_failed"]) == 0
     except Exception as e:
         row["pb_valid"] = None; row["pb_error"] = str(e)[:120]
@@ -89,7 +90,7 @@ for c in meta["complexes"]:
 # classical baselines on exactly these complexes (PoseBusters paper results)
 base = {}
 for r in csv.DictReader(open(PBRES)):
-    if r["dataset"] != "posebuster" or r["method"] not in ("vina", "gold"): continue
+    if r["dataset"] != "posebuster" or r["method"] not in ("vina", "gold") or r["post-processing"] != "none": continue
     key = f"{r['pdb_id']}_{r['ccd_id']}"
     checks = [k for k in r if k not in ("dataset", "method", "post-processing", "pdb_id", "ccd_id", "has_cofactors", "sequence_identity", "rmsd", "rmsd_within_threshold")]
     valid = all(r[k] == "True" for k in checks)
@@ -101,6 +102,6 @@ summary = dict(n=len(rows), n_scored=len(ok_rows),
     boltz2=dict(rmsd_le_2=sum(r["rmsd"] <= 2 for r in ok_rows) / len(rows), success_pb_valid=sum(r["success"] for r in ok_rows) / len(rows)))
 for (m, pp), d in base.items():
     hit = [d[i] for i in ids if i in d]
-    if hit: summary[f"{m}_{pp or 'none'}"] = dict(n=len(hit), rmsd_le_2=sum(h["rmsd_ok"] for h in hit) / len(hit), success_pb_valid=sum(h["success"] for h in hit) / len(hit))
+    if hit: summary[m] = dict(n=len(hit), rmsd_le_2=sum(h["rmsd_ok"] for h in hit) / len(hit), success_pb_valid=sum(h["success"] for h in hit) / len(hit))
 json.dump(dict(summary=summary, per_complex=rows), open(f"{OUT}/poses.json", "w"), indent=1)
 print(json.dumps(summary, indent=1))
