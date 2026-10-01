@@ -1,0 +1,9 @@
+# GPU (CUDA 12) training stack, verified on qBraid gpu-l4 (driver 595), Python 3.12
+jax[cuda12]==0.11.2  # with jax_compat.py shim for brax 0.14.2
+playground==0.2.0
+mujoco==3.14.0
+mujoco-mjx==3.14.0
+brax==0.14.2
+flax==0.12.10
+optax==0.2.8
+orbax-checkpoint==0.12.6

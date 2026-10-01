@@ -1,0 +1,1 @@
+{"solver": "default", "iterations": 100, "ls_iterations": 50, "mlp_vs_brax_maxdiff": 1.043081283569336e-06, "cpu_mujoco_lin_vel_rmse_mps": 0.06593984074195115, "cpu_mujoco_yaw_rate_rmse_radps": 0.05713078634793953, "fell_at_step": null, "steps": 1250}
