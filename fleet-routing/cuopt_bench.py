@@ -83,6 +83,8 @@ def main():
     ap.add_argument("--out", default="results/xbench_cuopt")
     ap.add_argument("--start", type=int, default=0)
     ap.add_argument("--stop", type=int, default=10**9)
+    ap.add_argument("--mode", default="default", choices=["default", "fixedcost"])
+    ap.add_argument("--kplus", type=int, default=0, help="if > 0, request min_vehicles = k_min + kplus")
     a = ap.parse_args()
     import vrplib
 
@@ -97,7 +99,13 @@ def main():
         n = len(vrplib.read_instance(p)["demand"]) - 1
         tlim = round(a.factor * 2.4 * n, 1)
         try:
-            r = solve(p, tlim)
+            kw = {"mode": a.mode}
+            if a.kplus > 0:
+                import math as _m
+                raw = vrplib.read_instance(p)
+                kw["min_vehicles"] = _m.ceil(sum(raw["demand"]) / raw["capacity"]) + a.kplus
+            r = solve(p, tlim, **kw)
+            r["mode"] = a.mode + (f"+k{a.kplus}" if a.kplus else "")
         except Exception as e:
             r = {"cost": None, "error": repr(e)}
         rec = {"instance": name, "n": n, "bks": bks, "time_limit_s": tlim, **r,

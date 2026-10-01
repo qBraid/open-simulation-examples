@@ -196,11 +196,17 @@ document.getElementById('sub').innerHTML =
 
 // ---------------- KPIs
 const totalStops = C.stops.length-1;
-document.getElementById('kpis').innerHTML =
-  `<div class="kpi"><b id="k-best">${km(C.best)}</b><span>best plan (${C.winner})</span></div>`+
+const KPI_CITY = `<div class="kpi"><b id="k-best">${km(C.best)}</b><span>best plan (${C.winner})</span></div>`+
   `<div class="kpi"><b>${C.bound.gap}%</b><span>certified gap to optimum</span></div>`+
   `<div class="kpi"><b id="k-del">0 / ${totalStops}</b><span>stops delivered</span></div>`+
   `<div class="kpi"><b id="k-km">0.0 km</b><span>driven so far</span></div>`;
+const BS = B.summary || {};
+const KPI_BENCH = `<div class="kpi"><b>${BS.instances||0}</b><span>X instances (n 100–1000)</span></div>`+
+  `<div class="kpi"><b>${fmtPct(BS.race_mean_gap_pct)}</b><span>mean gap, open-source race</span></div>`+
+  `<div class="kpi"><b>${BS.at_bks||0}</b><span>hit best-known exactly</span></div>`+
+  `<div class="kpi"><b>0.11–0.22%</b><span>published SOTA (full time)</span></div>`;
+function kpis(m){ document.getElementById('kpis').innerHTML = m==='bench'? KPI_BENCH : KPI_CITY; }
+kpis('city');
 
 // ---------------- certified bound card
 (function(){
@@ -509,7 +515,7 @@ function buildRoutes(){
   R.forEach((r,i)=>vans.setColorAt(i, r.color)); city.add(vans);
   routeMat.uniforms.uFocus.value = -1; followed = null;
   dayEnd = Math.max(...R.map(r=>r.end)) + 10;
-  document.getElementById('k-best').textContent = km(C.solvers[current].cost);
+  if(mode==='city') document.getElementById('k-best').textContent = km(C.solvers[current].cost);
   setClock(clockT);
 }
 let dayEnd = 120, clockT = 0;
@@ -523,8 +529,8 @@ function setClock(t){
   clockT = Math.min(Math.max(t,0), dayEnd);
   const hour = (DAY0+clockT)/60; setSun(hour);
   const hh = Math.floor(hour), mm = Math.floor((hour-hh)*60);
-  document.getElementById('clock').textContent = `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
-  document.getElementById('scrub').value = Math.round(1000*clockT/dayEnd);
+  if(mode==='city'){ document.getElementById('clock').textContent = `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+  document.getElementById('scrub').value = Math.round(1000*clockT/dayEnd); }
   let delivered=0, driven=0; const pc = pendingC(), done = new Map();
   R.forEach((r,i)=>{ const s=posAt(r,clockT); driven+=s; routeMat.uniforms.uProg.value[i]=s;
     pointAt(r, s, _p); _q.setFromUnitVectors(_z, _d.lengthSq()>0? _d : _z); _p.y=0.006; _m.compose(_p,_q,_s); vans.setMatrixAt(i,_m);
@@ -532,8 +538,8 @@ function setClock(t){
   vans.instanceMatrix.needsUpdate = true;
   for(let i=1;i<=totalStops;i++){ const c = done.get(i) || pc; heads.setColorAt(i-1, c); pins.setColorAt(i-1, c); }
   heads.instanceColor.needsUpdate = pins.instanceColor.needsUpdate = true;
-  document.getElementById('k-del').textContent = `${delivered} / ${totalStops}`;
-  document.getElementById('k-km').textContent = `${driven.toFixed(1)} km`;
+  if(mode==='city'){ document.getElementById('k-del').textContent = `${delivered} / ${totalStops}`;
+  document.getElementById('k-km').textContent = `${driven.toFixed(1)} km`; }
 }
 
 // ---------------------------------------------------------------- solver cards
@@ -549,38 +555,47 @@ function solverCards(){
 solverCards();
 
 // ---------------------------------------------------------------- benchmark arena
-const BX = B.instances, bNames = ["pyvrp","cuopt","ortools"], bZ = {pyvrp:-0.75, cuopt:0, ortools:0.75};
-const gapY = g => 3.4*Math.sqrt(Math.min(Math.max(g,0),10)/10);
-const SP = 1.5;
+const BX = B.instances, bNames = ["pyvrp","cuopt","ortools"], bZ = {pyvrp:0.48, cuopt:0, ortools:-0.48};
+const GMAX = 20, gapY = g => 3.4*Math.log10(1+Math.min(Math.max(g,0),GMAX)/0.1)/Math.log10(1+GMAX/0.1);  // log scale, 0-20%
+const SP = 1.1;
 const bHemi = new THREE.HemisphereLight(0xffffff, 0x333333, 1.3), bSun = new THREE.DirectionalLight(0xffffff, 1.6);
 bSun.position.set(-20,30,25); bSun.castShadow = true; Object.assign(bSun.shadow.camera,{left:-30,right:30,top:20,bottom:-20,near:1,far:120}); bSun.shadow.mapSize.set(2048,2048);
 bench.add(bHemi, bSun);
 const floorMat = new THREE.MeshStandardMaterial({roughness:1});
-const floor = new THREE.Mesh(new THREE.PlaneGeometry(BX.length*SP+8, 6).rotateX(-Math.PI/2), floorMat); floor.position.set((BX.length-1)*SP/2, 0, 0); floor.receiveShadow = true; bench.add(floor);
-const barGeo = new THREE.BoxGeometry(0.5,1,0.5).translate(0,0.5,0);
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(BX.length*SP+8, 4).rotateX(-Math.PI/2), floorMat); floor.position.set((BX.length-1)*SP/2, 0, 0); floor.receiveShadow = true; bench.add(floor);
+const barGeo = new THREE.BoxGeometry(0.36,1,0.36).translate(0,0.5,0);
 const barMat = new THREE.MeshStandardMaterial({roughness:.35, metalness:.1});
 const bars = new THREE.InstancedMesh(barGeo, barMat, Math.max(1,BX.length*3)); bars.castShadow = true; bars.receiveShadow = true; bench.add(bars);
 const barIdx = [];
-BX.forEach((r,i)=>bNames.forEach(s=>{ if(r.solvers[s]) barIdx.push([i,s]); })); bars.count = barIdx.length;
-function benchBars(f){ // f = fraction of time budget (1 = final)
+BX.forEach((r,i)=>bNames.forEach(s=>{ const so=r.solvers[s]; if(!so) return;
+  if(so.gap!=null) barIdx.push([i,s]);
+  else { const l=document.createElement('div'); l.className='lbl'; l.style.color=css('--s-'+s); l.textContent='no plan'; const o=new CSS2DObject(l); o.position.set(i*SP,0.25,bZ[s]); bench.add(o); } }));
+bars.count = barIdx.length;
+let benchBars = function(f){ // f = fraction of time budget (1 = final)
   const M=new THREE.Matrix4();
   barIdx.forEach(([i,s],k)=>{ const so=BX[i].solvers[s]; let g=so.gap;
     if(f<1 && so.trace && so.trace.length){ g=null; for(const p of so.trace) if(p[0]<=f) g=p[1]; if(g==null) g=10; }
     M.makeScale(1, Math.max(gapY(g),0.012), 1).setPosition(i*SP, 0, bZ[s]); bars.setMatrixAt(k,M); });
   bars.instanceMatrix.needsUpdate = true;
-}
+};
 function benchColors(){ barIdx.forEach(([i,s],k)=>bars.setColorAt(k, col('--s-'+s))); if(bars.instanceColor) bars.instanceColor.needsUpdate = true; }
 const refMeshes = [];
 Object.entries(B.refs).forEach(([name,g],j)=>{
-  const pl = new THREE.Mesh(new THREE.PlaneGeometry(BX.length*SP+1.2, 2.3), new THREE.MeshBasicMaterial({transparent:true, opacity:.14, side:THREE.DoubleSide, depthWrite:false}));
+  const pl = new THREE.Mesh(new THREE.PlaneGeometry(BX.length*SP+1.2, 1.6), new THREE.MeshBasicMaterial({transparent:true, opacity:.14, side:THREE.DoubleSide, depthWrite:false}));
   pl.rotateX(-Math.PI/2); pl.position.set((BX.length-1)*SP/2, gapY(g), 0); bench.add(pl); refMeshes.push(pl);
-  const l=document.createElement('div'); l.className='lbl'; l.textContent=`${name}: ${g}%`; const o=new CSS2DObject(l); o.position.set(BX.length*SP+0.4, gapY(g)+(j? -0.06:0.12), 1.2); bench.add(o); });
-[0.1,0.5,1,2,5,10].forEach(g=>{ const l=document.createElement('div'); l.className='lbl'; l.textContent=g+'%'; const o=new CSS2DObject(l); o.position.set(-1.3, gapY(g), -1.1); bench.add(o);
-  const tick=new THREE.Mesh(new THREE.BoxGeometry(0.25,0.01,0.01), new THREE.MeshBasicMaterial({color:0x888888})); tick.position.set(-0.9,gapY(g),-1.1); bench.add(tick); });
-{ const l=document.createElement('div'); l.className='lbl big'; l.textContent='gap to best-known solution'; const o=new CSS2DObject(l); o.position.set(-1.3, 3.75, -1.1); bench.add(o); }
-BX.forEach((r,i)=>{ if(i%3 && i!==BX.length-1) return; const l=document.createElement('div'); l.className='lbl'; l.textContent='n='+r.n; const o=new CSS2DObject(l); o.position.set(i*SP, -0.05, 1.45); bench.add(o); });
-bNames.forEach(s=>{ if(!barIdx.some(b=>b[1]===s)) return; const l=document.createElement('div'); l.className='lbl big'; l.style.color=css('--s-'+s); l.textContent=s; const o=new CSS2DObject(l); o.position.set(-1.3,0.05,bZ[s]); bench.add(o); });
-camB.position.set(-5.5, 6.5, 13.5); ctlB.target.set(BX.length*SP*0.42, 0.9, 0); ctlB.update();
+  const l=document.createElement('div'); l.className='lbl'; l.textContent=`${name}: ${g}%`; const o=new CSS2DObject(l); o.position.set(BX.length*SP+0.3, gapY(g)+(j? -0.07:0.1), 0.9); bench.add(o); });
+[0.1,0.5,1,2,5,10,20].forEach(g=>{ const l=document.createElement('div'); l.className='lbl'; l.textContent=g+'%'; const o=new CSS2DObject(l); o.position.set(-1.25, gapY(g), -0.8); bench.add(o);
+  const tick=new THREE.Mesh(new THREE.BoxGeometry(BX.length*SP+1.0,0.004,0.004), new THREE.MeshBasicMaterial({color:0x888888, transparent:true, opacity:.35})); tick.position.set((BX.length-1)*SP/2,gapY(g),-0.8); bench.add(tick); });
+{ const l=document.createElement('div'); l.className='lbl big'; l.textContent='gap to best-known solution'; const o=new CSS2DObject(l); o.position.set(-1.25, 3.75, -0.8); bench.add(o); }
+BX.forEach((r,i)=>{ if(i%3 && i!==BX.length-1) return; const l=document.createElement('div'); l.className='lbl'; l.textContent='n='+r.n; const o=new CSS2DObject(l); o.position.set(i*SP, -0.05, 1.05); bench.add(o); });
+bNames.forEach(s=>{ if(!barIdx.some(b=>b[1]===s)) return; const l=document.createElement('div'); l.className='lbl big'; l.style.color=css('--s-'+s); l.textContent=s; const o=new CSS2DObject(l); o.position.set(-1.25,0.05,bZ[s]); bench.add(o); });
+camB.position.set(-7.5, 8.2, 22); ctlB.target.set(BX.length*SP*0.47, 1.0, 0); ctlB.update();
+const coinGeo = new THREE.CylinderGeometry(0.2,0.2,0.05,24), coinMat = new THREE.MeshStandardMaterial({color:0xf2c14e, metalness:.8, roughness:.25, emissive:0x553300, emissiveIntensity:.3});
+const coins = new THREE.InstancedMesh(coinGeo, coinMat, Math.max(1,barIdx.length)); coins.castShadow = true; bench.add(coins);
+const _bm = new THREE.Matrix4();
+const benchBars0 = benchBars;
+benchBars = function(f){ benchBars0(f); let c=0; barIdx.forEach(([i,s])=>{ const so=BX[i].solvers[s]; let g=so.gap; if(f<1 && so.trace && so.trace.length){ g=null; for(const p of so.trace) if(p[0]<=f) g=p[1]; }
+  if(g!=null && g<=1e-9){ _bm.makeTranslation(i*SP, 0.06+0.03*Math.sin(performance.now()/300+i), bZ[s]); coins.setMatrixAt(c++, _bm); } }); coins.count=c; coins.instanceMatrix.needsUpdate=true; };
 benchBars(1);
 
 // mini-map of an instance solution
@@ -637,7 +652,7 @@ document.getElementById('scrub').addEventListener('input', e => { stopTour(); se
   else setClock(e.target.value/1000*dayEnd); });
 let benchF = 1;
 function setMode(m){
-  mode=m; document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed', b.dataset.mode===m));
+  mode=m; kpis(m); document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed', b.dataset.mode===m));
   ctlC.enabled = m==='city'; ctlB.enabled = m==='bench';
   document.getElementById('side').style.display = m==='city'? '' : 'none';
   document.getElementById('benchcard').style.display = m==='bench'? 'block' : 'none';
