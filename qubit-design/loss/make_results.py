@@ -4,7 +4,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(__file__))
 import design_v2 as D, run_post, analyze_sweep
 
-RUN = "/tmp/ose-qd"
+RUN = os.environ.get("QD_RUNS", "/tmp/ose-qd")
 OUT = os.path.join(os.path.dirname(__file__), "..", "results", "v2")
 K_CAL = 0.83 / 1.643          # Wang Table S1 Design A pads p_MS / ours (validation run)
 LEADS = {"MS": 0.17e-4, "SA": 0.20e-4, "MA": 0.02e-4}  # Wang 2015 Design A leads (1-10 um + far), their pipeline
@@ -22,8 +22,8 @@ def main(final_tag):
     os.makedirs(OUT, exist_ok=True)
     designs = []
     # v1 geometry, same Ta/sapphire stack and the same targets, for an apples-to-apples comparison
-    meta, ham, s = summarize(f"{RUN}/tr_v1")
-    shutil.copy(f"{RUN}/tr_v1/participation.json", f"{OUT}/v1_participation.json")
+    meta, ham, s = summarize(f"{RUN}/v1")
+    shutil.copy(f"{RUN}/v1/participation.json", f"{OUT}/v1_participation.json")
     designs.append({"name": "v1 (Palace example)", "kind": "v1", "kw": {"W": 24.0, "L": 620.0, "G": 30.0},
                     "participation": "v1_participation.json", "ham": ham, "summary": s})
     rows = analyze_sweep.main(RUN)

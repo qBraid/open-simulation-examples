@@ -310,6 +310,14 @@ function beads(d){
     fragmentShader:GLSL_CMAP+`varying float vq; uniform float alpha; void main(){ vec2 c=gl_PointCoord-0.5; float r=dot(c,c); if(r>0.25) discard; float a=(1.0-r*4.0); gl_FragColor=vec4(inferno(0.28+0.72*vq)*a*(0.75+0.7*vq)*alpha, a*alpha); }`});
   return new THREE.Points(g,m);
 }
+let fmMesh=null;
+function buildFieldmap(){ const f=D.fieldmap; if(!f) return;
+  const raw=Uint8Array.from(atob(f.b64),c=>c.charCodeAt(0)); const rgba=new Uint8Array(f.nx*f.ny*4);
+  for(let i=0;i<raw.length;i++){ const c=inferno(raw[i]/255); const a=Math.min(1,Math.max(0,(raw[i]/255-0.08)/0.6));
+    rgba[4*i]=c.r*255; rgba[4*i+1]=c.g*255; rgba[4*i+2]=c.b*255; rgba[4*i+3]=a*255; }
+  const tex=new THREE.DataTexture(rgba,f.nx,f.ny,THREE.RGBAFormat); tex.needsUpdate=true; tex.magFilter=THREE.LinearFilter; tex.colorSpace=THREE.SRGBColorSpace;
+  const m=new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0});
+  fmMesh=new THREE.Mesh(new THREE.PlaneGeometry(f.x1-f.x0,f.y1-f.y0),m); fmMesh.position.set((f.x0+f.x1)/2,(f.y0+f.y1)/2,0.5); fmMesh.renderOrder=1; lossGroup.add(fmMesh); }
 const beadCache=new Map(); const lossMetal=metalMat(); lossMetal.color.setHex(0x4e5661); let lossSub=null; const metalMeshes=[];
 function beadsFor(i){ if(!beadCache.has(i)){ const b=beads(seq[i]); if(b){ b.renderOrder=2; lossGroup.add(b);} beadCache.set(i,b);} return beadCache.get(i); }
 function buildLoss(t){
@@ -325,6 +333,7 @@ function buildLoss(t){
   beadA=beadsFor(i); beadB=(u>0&&B!==A)?beadsFor(Math.min(n,i+1)):null;
   const show=$("beadsChk").checked;
   if(beadA){ beadA.material.uniforms.alpha.value=1-u; beadA.visible=show; } if(beadB){ beadB.material.uniforms.alpha.value=u; beadB.visible=show; }
+  if(!fmMesh) buildFieldmap(); if(fmMesh) fmMesh.material.opacity = (i===n-1? u : (i>=n?1:0))*0.95;
   const cur = u<0.5?A:B;
   $("iterName").textContent = `${cur.name}: W ${cur.kw.W.toFixed(0)}, G ${cur.kw.G.toFixed(0)}, L ${cur.kw.L.toFixed(0)} µm` + (cur.summary? `   p_surf ${cur.summary.p_sum.toExponential(2)}   T1(Ta) ${cur.summary.T1_raw.toFixed(0)}–${cur.summary.T1_cal.toFixed(0)} µs`:"");
   $("hud").textContent = "loss beads: participation per µm of edge\nmetal drawn 20× thicker than the 0.2 µm film";
@@ -357,12 +366,12 @@ new ResizeObserver(resize).observe($("stage"));
 // tour: [scene, camera pos, target, mode mix or design t, caption]
 const fin = D.designs.length-1;
 const TOUR=[
- ["chip",[0.4,-3.6,3.2],[0,0,0],0,"<b>The chip.</b> Readout resonator (meander), feedline and the transmon island, in tantalum on sapphire. Colour shows the qubit mode's electric field on the metal, from a Palace 3D eigenmode solve."],
+ ["chip",[0.4,-3.6,3.2],[0,0,0],0,"<b>The starting chip.</b> Palace's reference transmon (v1): readout resonator meander, feedline and the transmon island. Colour shows each eigenmode's electric field on the metal, from a full 3D Palace eigenmode solve."],
  ["chip","Q1","Q0",0,"<b>Qubit mode.</b> The field concentrates in the trench around the island. That is where the stored energy, and the surface loss, lives."],
  ["chip",[-0.6,-1.8,1.8],[-0.4,0.2,0],1,"<b>Resonator mode.</b> Morphing to the readout mode: its energy sits along the meander, and only a little leaks onto the qubit through the claw."],
  ["loss",[250,-650,900],[0,350,0],0,"<b>Where the loss is.</b> Each bead is a piece of metal edge; brightness is how much of the qubit's energy sits in the 3-nm lossy layers there. The v1 island is thin with a tight trench, so its edges are hot."],
  ["loss",[120,-120,260],[40,30,0],0,"<b>Edges dominate.</b> Fields diverge near thin-film edges; the trench walls and island corners carry most of the surface participation."],
- ["loss",[300,-800,1100],[0,350,0],1,"<b>Design evolution.</b> Sweeping island width and trench gap at fixed capacitance. Wider, farther-apart edges dilute the field, cutting surface participation; the chosen design balances this against footprint."],
+ ["loss",[300,-800,1100],[0,350,0],1,"<b>Design evolution.</b> Sweeping island width and trench gap at fixed capacitance (same E<sub>C</sub>). Wider, farther-apart edges dilute the field and cut surface participation; the final design (glow: its qubit-mode field) balances that against coupling and footprint."],
 ];
 let tour=-1, tourT=0, camFrom=null;
 function tourStep(k){ tour=k; if(k>=TOUR.length){ tour=-1; $("caption").style.display="none"; $("tourBtn").textContent="▶ Guided tour"; return; }

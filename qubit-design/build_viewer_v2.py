@@ -101,6 +101,18 @@ def main():
                 d["density"] = pack_density(pj["edge_density"])
     data["designs"] = designs
     data["sweep"] = json.load(open(os.path.join(V, "sweep.json")))
+    fm = os.path.join(V, "final_fieldmap.npz")
+    if os.path.exists(fm):
+        import base64
+        z = np.load(fm)
+        E = np.log10(np.maximum(z["Emag"], 1e-30))
+        hi = np.percentile(E, 99.8); lo = hi - 2.5
+        q = np.clip((E - lo) / (hi - lo) * 255, 0, 255).astype(np.uint8)
+        q = np.concatenate([q[:, ::-1], q], axis=1)  # mirror the half model about x = 0
+        data["fieldmap"] = {"nx": int(q.shape[1]), "ny": int(q.shape[0]),
+                            "x0": float(-z["x"][-1]), "x1": float(z["x"][-1]),
+                            "y0": float(z["y"][0]), "y1": float(z["y"][-1]),
+                            "b64": base64.b64encode(q.tobytes()).decode()}
     data["validation"] = json.load(open(os.path.join(V, "validation_wang2015.json")))
     devices = json.load(open(os.path.join(R, "device_snapshots.json")))
     for d in devices:

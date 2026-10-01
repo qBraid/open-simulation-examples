@@ -127,6 +127,19 @@ lifetime under assumed loss tangents**, never a measurement. Say so every time.
 - **Conventions:** t = 3 nm and ε = 10 for MA, MS and SA. They are the same
   as Wang 2015 and Ganjam 2024, so their loss tangents can be reused directly.
 
+
+**Run it (all on a CPU instance, never on a shared pod)**
+```bash
+python loss/pipeline.py table 0.2 10.34 4.0 table.json            # 2D edge integrals, ~2 min
+python loss/pipeline.py point runs/final '{"W":160,"G":100,"L":310}' table.json --fieldmap
+python loss/export_gds.py '{"W":160,"G":100,"L":310}' final_qubit.gds  # analysed geometry as a mask
+```
+One electrostatic point is 420-460k tets at order 2, about 5 min on 2 ranks, with an
+8.5 GB peak. **A shared subscription pod (25 GB cgroup for every agent on it) was
+OOM-killed during this study** while two such runs and other agents' jobs overlapped,
+and `/tmp` (envs, runs) went with it. Run Palace on an on-demand instance, and copy
+the small outputs (CSV, participation JSON) back after every point.
+
 **Gotchas**
 - **Palace terminal excitations are not 1 V.** The terminal voltage is in
   `terminal-V.csv` (we saw 19.41 V). Normalise the fields by it, or every
