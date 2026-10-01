@@ -53,7 +53,7 @@ td.mono{font-family:"IBM Plex Mono",monospace}
 .stamp{font:11px "IBM Plex Mono",monospace;color:var(--muted)}
 @media (max-width:760px){.info{width:auto;right:16px;top:auto;bottom:120px;max-height:30%}.legend{display:none}header .sub{display:none}}
 </style>
-<script>{const t=new URLSearchParams(location.search).get("theme");if(t)document.documentElement.dataset.theme=t;}</script>
+<script>try{const t=new URLSearchParams(location.search).get("theme");if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
 </head>
 <body>
@@ -373,7 +373,7 @@ function sceneBg(){const c=new THREE.Color(css('--scene'));[vsStage,fanStage,frS
 function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);labels.setSize(w,h);[vsStage,fanStage,frStage].forEach(s=>{s.cam.aspect=w/h;s.cam.updateProjectionMatrix();});}
 addEventListener('resize',()=>{resize(); if(cur&&cur.page) setTab(cur.id); else drawSpark();});
 sceneBg(); resize();
-const [hash,arg]=location.hash.slice(1).split('@'); setTab(TABS.some(t=>t.id===hash)?hash:'vol');
+let hash='',arg='';try{[hash='',arg='']=(location.hash||'').slice(1).split('@');}catch(e){} setTab(TABS.some(t=>t.id===hash)?hash:'vol');
 if(arg&&hash==='vol'){const i=VS.frames.findIndex(f=>f.date===arg); if(i>=0){vsSet(i); vsStage.cam.position.set(-14,13,19); vsStage.ctl.target.set(-0.5,4.6,0);}}
 if(arg&&hash==='frontier'){frPlay=false; frSet(+arg);}
 let last=performance.now();
