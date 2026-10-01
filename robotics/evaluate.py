@@ -19,6 +19,7 @@ import time
 
 import jax
 import jax_compat  # noqa: F401  (Brax 0.14 on JAX >= 0.11)
+import warp_quiet  # noqa: F401  (no per-world line-search printf)
 import jax.numpy as jp
 import numpy as np
 from brax.training.acme import running_statistics

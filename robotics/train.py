@@ -17,6 +17,7 @@ import time
 
 import jax
 import jax_compat  # noqa: F401  (Brax 0.14 on JAX >= 0.11)
+import warp_quiet  # noqa: F401  (no per-world line-search printf)
 from brax.training.agents.ppo import networks as ppo_networks
 from brax.training.agents.ppo import train as ppo
 from mujoco_playground import registry, wrapper

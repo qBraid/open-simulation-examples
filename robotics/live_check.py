@@ -61,6 +61,7 @@ def obs_of(last_act, cmd):
 # 1. MLP vs Brax inference on random-ish observations
 import jax  # noqa: E402
 import jax_compat  # noqa: E402,F401
+import warp_quiet  # noqa: E402,F401
 from brax.training.acme import running_statistics  # noqa: E402
 from brax.training.agents.ppo import networks as ppo_networks  # noqa: E402
 from mujoco_playground import registry  # noqa: E402
