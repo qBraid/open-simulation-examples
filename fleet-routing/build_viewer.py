@@ -30,7 +30,7 @@ def load(name, default=None):
 
 def main():
     city = load("city.json")
-    cbound = load("city_bound.json", {})
+    cbound = load("city_bound_900.json") or load("city_bound.json", {})
     scen = load("scenery.json")
     qaoa = load("qaoa.json")
     anchors = [load(f) for f in ("e-n22-k4.json", "a-n32-k5.json", "x-n101-k25.json")]
@@ -93,8 +93,11 @@ def main():
         c = cu.get(b["instance"])
         if c and c.get("cost"):
             sol["cuopt"] = {"cost": c["cost"], "gap": c["gap_pct"], "trace": [], "mode": c.get("mode", "default")}
+        winner, best, gap = b["winner"], b["best"], b["gap_pct"]
+        if "cuopt" in sol and sol["cuopt"]["gap"] is not None and sol["cuopt"]["gap"] < gap:
+            winner, best, gap = "cuopt", sol["cuopt"]["cost"], sol["cuopt"]["gap"]
         xs.append({"name": b["instance"], "n": b["n"], "bks": b["bks"], "tl": b["time_limit_s"],
-                   "winner": b["winner"], "best": b["best"], "gap": b["gap_pct"], "solvers": sol,
+                   "winner": winner, "best": best, "gap": gap, "solvers": sol,
                    "coords": coords, "routes": b.get("best_routes")})
     xs.sort(key=lambda r: r["n"])
     full = [json.load(open(p)) for p in sorted(glob.glob(os.path.join(R, "xbench_full", "*.json")))]

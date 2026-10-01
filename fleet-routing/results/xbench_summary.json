@@ -1,18 +1,40 @@
 {
- "instances": 21,
- "race_mean_gap_pct": 0.5177619047619048,
- "pyvrp_mean_gap_pct": 0.5177619047619048,
- "ortools_mean_gap_pct": 8.329326315789475,
- "ortools_no_solution": 2,
- "cuopt_mean_gap_pct": 0.7393263157894737,
- "cuopt_instances": 19,
+ "instances": 30,
+ "race_mean_gap_pct": 0.4944266666666667,
+ "race_cpu_only_mean_gap_pct": 0.6007433333333334,
+ "cuopt_wins": 10,
+ "by_size": {
+  "100-299": {
+   "instances": 13,
+   "race": 0.34773846153846155,
+   "pyvrp": 0.47194615384615385,
+   "cuopt": 0.6308692307692307
+  },
+  "300-599": {
+   "instances": 10,
+   "race": 0.42173999999999995,
+   "pyvrp": 0.54389,
+   "cuopt": 0.9074199999999999
+  },
+  "600-1000": {
+   "instances": 7,
+   "race": 0.8706857142857142,
+   "pyvrp": 0.9211571428571429,
+   "cuopt": 1.7802714285714285
+  }
+ },
+ "pyvrp_mean_gap_pct": 0.6007433333333334,
+ "ortools_mean_gap_pct": 7.962861538461539,
+ "ortools_no_solution": 4,
+ "cuopt_mean_gap_pct": 0.9912466666666667,
+ "cuopt_instances": 30,
  "cuopt_mode": "default+k1",
  "at_bks": 2,
- "within_0_5pct": 9,
+ "within_0_5pct": 18,
  "full_budget": {
-  "instances": 0,
-  "pyvrp_mean_gap_pct": null,
-  "same_at_10pct": null
+  "instances": 6,
+  "pyvrp_mean_gap_pct": 0.04508333333333333,
+  "same_at_10pct": 0.31321666666666664
  },
  "published": {
   "PyVRP": 0.22,
@@ -20,7 +42,7 @@
   "protocol": "Tmax = 2.4 n s, 10 seeds, all 100 X instances"
  },
  "verdict": "CLOSE",
- "note": "21 of the 100 X instances (every ~3rd by size, n = 100 to 1000), one seed, at <b>10% of the published time budget</b> (0.24\u00b7n s instead of 2.4\u00b7n s), because the shared CPU allows ~5 cores across ten projects. Racing PyVRP and OR-Tools gives a mean gap to best-known of <b>0.52%</b>; 2 instances hit the best-known solution exactly and 9 are within 0.5%. OR-Tools alone averages 8.33% and found no feasible plan within budget on 2 tight-capacity instance(s). NVIDIA cuOpt on one L4 GPU, same budget, averages 0.74% over 19 instances (objective setting chosen on X-n101 only: default+k1; cuOpt minimises fleet size before distance by default). Verdict rule: reached = within the published PyVRP gap; close = within about 2x of it or matching it at full budget on a subset; otherwise not reached.",
- "short": "21 CVRPLIB X instances at 10% of the published time: the open-source race averages 0.52% from best-known (published state of the art at full time: 0.11\u20130.22%).",
- "stamp": "2026-10-01 \u00b7 CPU solvers on the qBraid subscription pod (1 core, solvers one after another) \u00b7 cuOpt on the qBraid pool L4 \u00b7 0.1 \u00d7 2.4\u00b7n s per solver"
+ "note": "30 of the 100 X instances (every ~3rd by size, n = 100 to 1000), one seed, at <b>10% of the published time budget</b> (0.24\u00b7n s instead of 2.4\u00b7n s), because the shared CPU allows ~5 cores across ten projects. The full race (PyVRP and OR-Tools on CPU, cuOpt on one L4 GPU) gives a mean gap to best-known of <b>0.49%</b> (CPU racers alone 0.60%; cuOpt wins 10 of 30 instances); 2 instances hit the best-known solution exactly and 18 are within 0.5%. OR-Tools alone averages 7.96% and found no feasible plan within budget on 4 tight-capacity instance(s). NVIDIA cuOpt on one L4 GPU, same budget, averages 0.99% over 30 instances (objective setting chosen on X-n101 only: default+k1; cuOpt minimises fleet size before distance by default). At the <b>full published budget</b> on the 6 smallest instances PyVRP averages 0.05% (the same instances at 10% budget: 0.31%), against the published 0.22% (PyVRP) and 0.11% (HGS-CVRP) over all 100 instances and 10 seeds. Verdict rule: reached = within the published PyVRP gap; close = within about 2x of it or matching it at full budget on a subset; otherwise not reached.",
+ "short": "30 CVRPLIB X instances at 10% of the published time: the open-source race (CPU + GPU) averages 0.49% from best-known (published state of the art at full time: 0.11\u20130.22%).",
+ "stamp": "2026-10-01 \u00b7 CPU solvers 1 thread each (21 instances on the qBraid subscription pod, 9 largest on the shared qBraid L4 pool box after a pod restart) \u00b7 cuOpt on the pool L4 \u00b7 0.1 \u00d7 2.4\u00b7n s per solver; full-budget check 2.4\u00b7n s, PyVRP, 6 smallest instances"
 }

@@ -2,10 +2,10 @@
 name: solver-racing
 description: Race several optimization solvers on the same problem under one time budget (as local processes, or one per qBraid instance), keep the best answer, and certify it with a lower bound. Use when a routing/MIP/scheduling answer must be good and on time, when no single open-source solver is reliably best, or when a user asks how open-source can compete with Gurobi.
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
   layer: "2"
   status: "draft"
-  verified: "2026-09-30"
+  verified: "2026-10-01"
 ---
 
 # Solver racing
@@ -43,6 +43,23 @@ Reference implementation: `fleet-routing/race.py` in
 - Share incumbents through files that come back to the coordinator; do not stream
   solutions between instances mid-race unless the solver accepts warm starts.
 
+## Does racing pay? (measured 2026-10-01)
+
+On 30 CVRPLIB X instances at 10% of the published budget, PyVRP alone averages
+0.60% from best-known. Adding cuOpt on one L4 as a GPU racer brings the race to
+**0.49%**: cuOpt wins 10 of 30 instances, mostly under n = 500. OR-Tools never won.
+GPU and CPU racers don't compete for cores, so this costs nothing extra in wall time.
+
+## Long runs on shared machines
+
+- Checkpoint one JSON per instance and skip finished ones on restart (`bench.py`).
+  A pod restart killed a run halfway; it resumed on another box with nothing lost.
+- On a shared box, queue heavy jobs (`cpu-run` / `gpu-run` on the qBraid pool) in
+  chunks of 60 minutes or less, and keep pod processes small. An out-of-memory kill
+  takes down every agent on the pod.
+- `pkill -f <pattern>` and `pgrep -f` over `ssh host '...'` match the ssh command line
+  itself and kill your own session. Use bracketed patterns (`[b]ench.py`) or PIDs.
+
 ## Traps (measured)
 
 - `highspy` and `ortools` in one process: undefined-symbol import errors. Keep
@@ -55,6 +72,9 @@ Reference implementation: `fleet-routing/race.py` in
   orient each route in its cheaper direction.
 
 ## Verified
+
+2026-10-01: racing PyVRP, OR-Tools and cuOpt (L4) on 30 X instances (0.1 × 2.4·n s) gives a 0.49% mean gap; the directed Chicago bound certifies 5.15%. See `fleet-routing/README.md`.
+
 
 2026-09-30, qBraid subscription pod, 0 credits. On X-n101-k25: PyVRP reached the
 best-known 27591 at 30 s and OR-Tools was at 29159 (+5.7%) at 60 s. HiGHS

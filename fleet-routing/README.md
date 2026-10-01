@@ -26,25 +26,33 @@ open stack means: **within the published PyVRP gap at the published budget**.
 
 | Verdict | Measured |
 |---|---|
-| **⟨VERDICT⟩** | ⟨VERDICT_TEXT⟩ |
+| **CLOSE** | At **10% of the published time budget**, on 30 stratified instances, the open-source race averages **0.49%** from best-known: about 2x the published PyVRP number (0.22%) and 4.5x HGS-CVRP (0.11%), both of which had 10x the time and 10 seeds. At the **full budget** on the 6 smallest instances PyVRP averages **0.05%** (the same 6 at 10%: 0.31%), so the gap is time, not code. Closing the claim to REACHED needs all 100 instances at full budget: ~$4 on a `cpu-32v-128g` (below). |
 
 ## Results
 
 Verification stamp, **2026-10-01**:
-- CPU solvers ran on the qBraid subscription pod: one core, solvers one after another, each with the same budget.
+- CPU solvers ran one thread each with the same per-solver budget: 21 instances on the qBraid subscription pod, and the 9 largest on the shared qBraid L4 pool box after a pod restart.
+- The full-budget check and the 900 s Chicago bound ran on the pool box.
 - cuOpt ran on the shared qBraid L4 pool box.
 - Envs: `requirements.txt` and `requirements-gpu.txt`.
 - Total compute charged to this example: **~0 credits** (the pool box is shared by ten projects).
 
-### 1. CVRPLIB X benchmark (⟨N⟩ of 100 instances, stratified by size)
+### 1. CVRPLIB X benchmark (30 of 100 instances, stratified by size)
 
 The subset is every ~3rd instance by size (`data/X/xsub.txt`). Each solver gets
 **10% of the published budget** (0.24·n s), because the shared box allows about
 5 CPUs across ten projects. That handicaps every solver equally.
 
-⟨BENCH_TABLE⟩
+| Size group | Instances | **Race (best of all)** | PyVRP | cuOpt (L4) | OR-Tools |
+|---|---|---|---|---|---|
+| n 100-299 | 13 | **0.35%** | 0.47% | 0.63% | 9.74% (1 no plan) |
+| n 300-599 | 10 | **0.42%** | 0.54% | 0.91% | 5.56% (2 no plan) |
+| n 600-1000 | 7 | **0.87%** | 0.92% | 1.78% | 7.61% (1 no plan) |
+| **all** | 30 | **0.49%** | 0.60% | 0.99% | 7.96% (4 no plan) |
 
-**Full published budget, ⟨NFULL⟩ smallest instances (PyVRP):** ⟨FULL_TEXT⟩
+2 instances hit the best-known solution exactly; 18 of 30 are within 0.5%. cuOpt beats PyVRP on 10 of 30 instances (mostly n < 500), which is why racing the GPU solver is worth it: race 0.49% vs PyVRP alone 0.60%.
+
+**Full published budget, 6 smallest instances (PyVRP):** mean gap **0.05%** vs 0.31% at 10% budget on the same instances (X-n101 to X-n181, one seed). Small instances are the easiest, so this is evidence that the 10% budget explains the gap, not a claim about the whole set.
 
 Read it this way:
 - **PyVRP:** at a tenth of the time it is already within about half a percent of
@@ -57,7 +65,7 @@ Racing them costs nothing extra and guarantees the best of all three.
 
 **cuOpt note.** cuOpt minimises **fleet size first**, then distance; that is its
 documented objective. CVRPLIB scores distance only. The objective setting used here
-(⟨CUOPT_MODE⟩) was chosen on X-n101 alone, with no best-known information, from:
+(minimum fleet = k_min + 1; on X-n101 the default gave 31,271 (+13%), an explicit zero fleet cost 27,653, and k_min + 1 the best-known 27,591; `results/cuopt_objective_choice.json`) was chosen on X-n101 alone, with no best-known information, from:
 - the default;
 - an explicit zero fleet cost;
 - one vehicle above the minimum.
@@ -70,8 +78,8 @@ fleet-cost problems its default is the right one.
 | | v1 | v2 |
 |---|---|---|
 | Best plan (PyVRP, 60 s race) | 145.7 km | 145.7 km |
-| Lower bound | 133.4 km (symmetric relaxation) | **⟨BOUND⟩ km (directed ACVRP)** |
-| Certified gap | 8.44% | **⟨GAP⟩%** |
+| Lower bound | 133.4 km (symmetric relaxation) | **138.2 km (directed ACVRP)** |
+| Certified gap | 8.44% | **5.15%** |
 
 Version 1 bounded the problem with `min(d_ij, d_ji)` on every street. That is a
 valid relaxation, but it throws away the one-way information: 20% of the arcs are
@@ -83,7 +91,7 @@ come from three separators:
 - **exact fractional-capacity separation**: one max-flow per customer seed,
   Harche–Rinaldi style.
 
-That gives ⟨CUTS⟩ cuts, then a MIP phase seeded with PyVRP's routes. Capacity is
+That gives 2,804 cuts, then a MIP phase seeded with PyVRP's routes (900 s, 2 threads on the pool box; a 300 s single-thread run gives 137.9 km / 5.33%). Capacity is
 95% utilised (1,240 units of demand on 13 vehicles of 100), which keeps
 bin-packing tight.
 
@@ -183,9 +191,9 @@ python summarize.py && python build_viewer.py
 
 ## Honest positioning
 
-- **Routing.** The open race is at the published state of the art for CVRP within
-  the budget it was given. It is not "Gurobi-class MIP"; it is better than a
-  general MIP at routing.
+- **Routing.** The open race is close to the published state of the art for CVRP:
+  0.49% at a tenth of the time, against 0.11–0.22% at full time. It is not
+  "Gurobi-class MIP"; it is better than a general MIP at routing.
 - **General MIP.** Not Gurobi-class. On Mittelmann MIPLIB2017 (Apr 2026) HiGHS is
   7.4x slower than the fastest commercial solver and solves 68% vs 91%.
 - **Certification.** Open tools prove optimality to about 30 customers and give

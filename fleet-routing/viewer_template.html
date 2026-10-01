@@ -612,7 +612,7 @@ Object.entries(B.refs).forEach(([name,g],j)=>{
 { const l=document.createElement('div'); l.className='lbl big'; l.textContent='gap to best-known solution'; const o=new CSS2DObject(l); o.position.set(-1.25, 3.75, -0.8); bench.add(o); }
 BX.forEach((r,i)=>{ if(i%3 && i!==BX.length-1) return; const l=document.createElement('div'); l.className='lbl'; l.textContent='n='+r.n; const o=new CSS2DObject(l); o.position.set(i*SP, -0.05, 1.05); bench.add(o); });
 
-camB.position.set(-7.5, 8.2, 22); ctlB.target.set(BX.length*SP*0.47, 1.0, 0); ctlB.update();
+{ const L=Math.max(BX.length*SP,10); camB.position.set(-0.3*L, 0.36*L, 0.92*L); ctlB.target.set(L*0.44, 0.9, 0); ctlB.update(); }
 const coinGeo = new THREE.CylinderGeometry(0.2,0.2,0.05,24), coinMat = new THREE.MeshStandardMaterial({color:0xf2c14e, metalness:.8, roughness:.25, emissive:0x553300, emissiveIntensity:.3});
 const coins = new THREE.InstancedMesh(coinGeo, coinMat, Math.max(1,barIdx.length)); coins.castShadow = true; bench.add(coins);
 const _bm = new THREE.Matrix4();
