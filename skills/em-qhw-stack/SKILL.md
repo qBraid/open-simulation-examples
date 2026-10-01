@@ -3,6 +3,7 @@ name: em-qhw-stack
 description: Design and simulate superconducting quantum hardware (transmons, resonators, CPW, filters) with open-source electromagnetics on qBraid, including surface-loss (TLS) participation and predicted T1. AWS Palace for 3D finite-element eigenmode/driven runs, energy-participation quantization into a circuit Hamiltonian, and numerical simulation of that Hamiltonian, set against real IBM device parameters. Use when asked to design a qubit or resonator, compute mode frequencies, Q or participation ratios, replace HFSS or Sonnet with open tools, or turn a chip layout into a Hamiltonian.
 metadata:
   version: "0.2.0-draft"
+  verified: "2026-10-01 v2 surface-loss pipeline, shared qBraid pool box"
   layer: "1"
   status: "draft - verified on the subscription pod only"
 ---
@@ -157,6 +158,13 @@ the small outputs (CSV, participation JSON) back after every point.
   `palace-x86_64.bin` plus OpenMPI's plugin directories (79 MB compressed) to
   the same absolute prefix; the RPATH is absolute. Use `tar -C <prefix>` with
   relative paths, because `./` segments in library paths break naive tarballs.
+
+**Verified result (stamp 2026-10-01).** Island 240 × 190 µm in a 150 µm trench, Ta on
+sapphire: f01 4.80 GHz, alpha -290 MHz, chi/kappa 0.5. Surface participation is 4.7e-4,
+against 8.5e-4 for Palace's example. Predicted T1 is 146-245 µs (raw to calibrated),
+against IBM medians of 145-287 µs. Total cost was about 37 CPU-minutes on a shared pool
+box. Planar edge participation, not the solver, is what keeps this below the tantalum
+records (above 0.5 ms).
 
 **Validation, and the honest gap.** Wang 2015 Design A (Table S1) is the
 reference. Our pad p_MS is about 2× theirs, so our raw T1 predictions are

@@ -1,0 +1,350 @@
+[
+ {
+  "name": "v1 (Palace example)",
+  "kind": "v1",
+  "kw": {
+   "W": 24.0,
+   "L": 620.0,
+   "G": 30.0
+  },
+  "participation": "v1_participation.json",
+  "ham": {
+   "C_sigma_fF": 82.04043947784001,
+   "C_g_fF": 5.32949762977,
+   "C_J_fF": 2.0,
+   "EC_GHz": 0.23610586983619494,
+   "EJ_GHz": 13.495168121620164,
+   "EJ_over_EC": 57.15727495882595,
+   "f01_GHz": 4.799999999999998,
+   "alpha_MHz": -268.2343999204093,
+   "levels_GHz": [
+    0.0,
+    4.799999999999998,
+    9.331765600079587,
+    13.565704777504966
+   ],
+   "LJ_nH": 12.112595510752094,
+   "Ic_nA": 27.170557968629673,
+   "Rn_kOhm_AB": 10.406239693330132,
+   "fr_GHz": 7.0,
+   "Zr_Ohm": 50.0,
+   "g_MHz": 90.22026337060909,
+   "Delta_GHz": -2.2043385583188533,
+   "chi_MHz": 0.5655087734104391,
+   "pull_2chi_MHz": 1.1310175468208783,
+   "kappa_MHz": 1.1310175468208783,
+   "chi_over_kappa": 0.5,
+   "Q_ext": 6189.117065138341,
+   "C_kappa_fF": 7.244320853995239,
+   "T1_purcell_unfiltered_us": 84.00385229468014,
+   "T1_purcell_filtered_us": 2314.661633256065,
+   "Q_filter": 30.0,
+   "p": {
+    "MS": 0.0003926718885036285,
+    "MA": 8.04102604853908e-06,
+    "SA": 0.00044850071951325747
+   },
+   "p_sub": 0.9116396977388,
+   "k_cal": 0.505173463177115,
+   "T1_budget": {
+    "wang2015_raw": {
+     "label": "Al on sapphire, lift-off (Wang 2015)",
+     "p_used": 0.00042632369573254416,
+     "T1_surface_us": 29.913420377261247,
+     "T1_bulk_us": null,
+     "T1_purcell_filtered_us": 2314.661633256065,
+     "T1_total_us": 29.5317679676785
+    },
+    "wang2015_calibrated": {
+     "label": "Al on sapphire, lift-off (Wang 2015)",
+     "p_used": 0.000215367417807676,
+     "T1_surface_us": 59.21415624077135,
+     "T1_bulk_us": null,
+     "T1_purcell_filtered_us": 2314.661633256065,
+     "T1_total_us": 57.73711337491456
+    },
+    "ganjam2024_raw": {
+     "label": "Ta on annealed sapphire (Ganjam 2024)",
+     "p_used": 0.0009264148388847021,
+     "T1_surface_us": 105.26754010727407,
+     "T1_bulk_us": 1398.8859808175112,
+     "T1_purcell_filtered_us": 2314.661633256065,
+     "T1_total_us": 93.92769074621047
+    },
+    "ganjam2024_calibrated": {
+     "label": "Ta on annealed sapphire (Ganjam 2024)",
+     "p_used": 0.000468000192498054,
+     "T1_surface_us": 208.37899806777267,
+     "T1_bulk_us": 1398.8859808175112,
+     "T1_purcell_filtered_us": 2314.661633256065,
+     "T1_total_us": 168.1850624792034
+    }
+   }
+  },
+  "summary": {
+   "p_sum": 0.0008492136340654251,
+   "T1_raw": 93.92769074621047,
+   "T1_cal": 168.1850624792034
+  }
+ },
+ {
+  "name": "sweep W24 G30",
+  "kind": "sweep",
+  "kw": {
+   "W": 24,
+   "L": 487.545177014674,
+   "G": 30
+  },
+  "participation": "sweep_sw_W24_G30_participation.json",
+  "summary": {
+   "p_sum": 0.0009213353787827748,
+   "T1_raw": 98.40181934181417,
+   "T1_cal": 182.23132822460894
+  }
+ },
+ {
+  "name": "sweep W80 G30",
+  "kind": "sweep",
+  "kw": {
+   "W": 80,
+   "L": 313.12385799165673,
+   "G": 30
+  },
+  "participation": "sweep_sw_W80_G30_participation.json",
+  "summary": {
+   "p_sum": 0.0006241046788894193,
+   "T1_raw": 140.55994101715947,
+   "T1_cal": 253.31354035800138
+  }
+ },
+ {
+  "name": "sweep W160 G30",
+  "kind": "sweep",
+  "kw": {
+   "W": 160,
+   "L": 229.82603733957,
+   "G": 30
+  },
+  "participation": "sweep_sw_W160_G30_participation.json",
+  "summary": {
+   "p_sum": 0.0005587495761583437,
+   "T1_raw": 155.18485274681908,
+   "T1_cal": 277.0991971541488
+  }
+ },
+ {
+  "name": "sweep W80 G60",
+  "kind": "sweep",
+  "kw": {
+   "W": 80,
+   "L": 361.0099950677837,
+   "G": 60
+  },
+  "participation": "sweep_sw_W80_G60_participation.json",
+  "summary": {
+   "p_sum": 0.00047935943663623086,
+   "T1_raw": 177.6206961847612,
+   "T1_cal": 312.7256963911268
+  }
+ },
+ {
+  "name": "sweep W160 G60",
+  "kind": "sweep",
+  "kw": {
+   "W": 160,
+   "L": 261.12907821275104,
+   "G": 60
+  },
+  "participation": "sweep_sw_W160_G60_participation.json",
+  "summary": {
+   "p_sum": 0.0004299639156473736,
+   "T1_raw": 195.19593297572078,
+   "T1_cal": 339.9732509859302
+  }
+ },
+ {
+  "name": "sweep W240 G60",
+  "kind": "sweep",
+  "kw": {
+   "W": 240,
+   "L": 209.84648642259796,
+   "G": 60
+  },
+  "participation": "sweep_sw_W240_G60_participation.json",
+  "summary": {
+   "p_sum": 0.0004163284465994402,
+   "T1_raw": 200.6902210222732,
+   "T1_cal": 348.39067162170727
+  }
+ },
+ {
+  "name": "sweep W160 G100",
+  "kind": "sweep",
+  "kw": {
+   "W": 160,
+   "L": 282.9238375763892,
+   "G": 100
+  },
+  "participation": "sweep_sw_W160_G100_participation.json",
+  "summary": {
+   "p_sum": 0.0003799876052021769,
+   "T1_raw": 216.90921995890417,
+   "T1_cal": 372.834504996802
+  }
+ },
+ {
+  "name": "sweep W240 G100",
+  "kind": "sweep",
+  "kw": {
+   "W": 240,
+   "L": 226.30569031955037,
+   "G": 100
+  },
+  "participation": "sweep_sw_W240_G100_participation.json",
+  "summary": {
+   "p_sum": 0.0003720472787980204,
+   "T1_raw": 220.83454075236256,
+   "T1_cal": 378.71641243608565
+  }
+ },
+ {
+  "name": "sweep W320 G100",
+  "kind": "sweep",
+  "kw": {
+   "W": 320,
+   "L": 190.2253805418335,
+   "G": 100
+  },
+  "participation": "sweep_sw_W320_G100_participation.json",
+  "summary": {
+   "p_sum": 0.0003715621487530986,
+   "T1_raw": 221.10279002580936,
+   "T1_cal": 379.15182239820945
+  }
+ },
+ {
+  "name": "sweep W160 G150",
+  "kind": "sweep",
+  "kw": {
+   "W": 160,
+   "L": 297.8121879061765,
+   "G": 150
+  },
+  "participation": "sweep_sw_W160_G150_participation.json",
+  "summary": {
+   "p_sum": 0.0003662058832744683,
+   "T1_raw": 223.79185331185394,
+   "T1_cal": 383.0979665277654
+  }
+ },
+ {
+  "name": "sweep W240 G150",
+  "kind": "sweep",
+  "kw": {
+   "W": 240,
+   "L": 237.77620821022578,
+   "G": 150
+  },
+  "participation": "sweep_sw_W240_G150_participation.json",
+  "summary": {
+   "p_sum": 0.00035285456174533687,
+   "T1_raw": 230.89796322578698,
+   "T1_cal": 393.6197628439402
+  }
+ },
+ {
+  "name": "final",
+  "kind": "final",
+  "kw": {
+   "W": 240,
+   "L": 190,
+   "G": 150
+  },
+  "kw_full": {
+   "W": 240,
+   "G": 150,
+   "L": 190,
+   "eps_sub": 10.34,
+   "t_sub": 500
+  },
+  "participation": "final_participation.json",
+  "ham": {
+   "C_sigma_fF": 76.79206838228001,
+   "C_g_fF": 5.319865408318,
+   "C_J_fF": 2.0,
+   "EC_GHz": 0.25224257833806263,
+   "EJ_GHz": 12.722204796371816,
+   "EJ_over_EC": 50.436388972051965,
+   "f01_GHz": 4.800000000000001,
+   "alpha_MHz": -289.6520420881803,
+   "levels_GHz": [
+    0.0,
+    4.800000000000001,
+    9.310347957911821,
+    13.497154059741518
+   ],
+   "LJ_nH": 12.84852078889643,
+   "Ic_nA": 25.614308750612256,
+   "Rn_kOhm_AB": 11.03849186702425,
+   "fr_GHz": 7.0,
+   "Zr_Ohm": 50.0,
+   "g_MHz": 93.08069609310208,
+   "Delta_GHz": -2.2046137889217725,
+   "chi_MHz": 0.6447271427143519,
+   "pull_2chi_MHz": 1.2894542854287039,
+   "kappa_MHz": 1.2894542854287039,
+   "chi_over_kappa": 0.5,
+   "Q_ext": 5428.65309697483,
+   "C_kappa_fF": 7.735100856018065,
+   "T1_purcell_unfiltered_us": 69.24046498427995,
+   "T1_purcell_filtered_us": 1908.106048196234,
+   "Q_filter": 30.0,
+   "p": {
+    "MS": 0.00022684084278226733,
+    "MA": 4.445829143282839e-06,
+    "SA": 0.00024000093034338976
+   },
+   "p_sub": 0.9106062506891,
+   "k_cal": 0.505173463177115,
+   "T1_budget": {
+    "wang2015_raw": {
+     "label": "Al on sapphire, lift-off (Wang 2015)",
+     "p_used": 0.000260492650011183,
+     "T1_surface_us": 48.95646739624985,
+     "T1_bulk_us": null,
+     "T1_purcell_filtered_us": 1908.106048196234,
+     "T1_total_us": 47.73180764173277
+    },
+    "wang2015_calibrated": {
+     "label": "Al on sapphire, lift-off (Wang 2015)",
+     "p_used": 0.00013159397413833345,
+     "T1_surface_us": 96.91021196631146,
+     "T1_bulk_us": null,
+     "T1_purcell_filtered_us": 1908.106048196234,
+     "T1_total_us": 92.22616557229665
+    },
+    "ganjam2024_raw": {
+     "label": "Ta on annealed sapphire (Ganjam 2024)",
+     "p_used": 0.000548488807088217,
+     "T1_surface_us": 177.80018470383152,
+     "T1_bulk_us": 1400.4735765414018,
+     "T1_purcell_filtered_us": 1908.106048196234,
+     "T1_total_us": 145.72129105668623
+    },
+    "ganjam2024_calibrated": {
+     "label": "Ta on annealed sapphire (Ganjam 2024)",
+     "p_used": 0.0002770819901906391,
+     "T1_surface_us": 351.9586788775846,
+     "T1_bulk_us": 1400.4735765414018,
+     "T1_purcell_filtered_us": 1908.106048196234,
+     "T1_total_us": 245.13609032695916
+    }
+   }
+  },
+  "summary": {
+   "p_sum": 0.00047128760226893994,
+   "T1_raw": 145.72129105668623,
+   "T1_cal": 245.13609032695916
+  }
+ }
+]

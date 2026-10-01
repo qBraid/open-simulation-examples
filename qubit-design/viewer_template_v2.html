@@ -152,7 +152,7 @@ function validation(){
 }
 function compareChart(){
   const svg = $("cmp"), W=360, H=250, m={l:92,r:14,t:10,b:28};
-  const devs = D.devices.filter(d=>d.T1_us&&d.T1_us.median).map(d=>({name:`IBM ${d.device} (${d.qubits}q)`, med:d.T1_us.median, lo:d.T1_us.p10, hi:d.T1_us.p90}));
+  const devs = D.devices.filter(d=>d.T1_us&&d.T1_us.median).map(d=>({name:`IBM ${d.device}`, med:d.T1_us.median, lo:d.T1_us.p10, hi:d.T1_us.p90}));
   const b = FINAL.ham.T1_budget, b1 = V1.ham.T1_budget;
   const ours = [{name:"this design (Ta)", lo:b.ganjam2024_raw.T1_total_us, hi:b.ganjam2024_calibrated.T1_total_us, ours:1},
                 {name:"v1 design (Ta)", lo:b1.ganjam2024_raw.T1_total_us, hi:b1.ganjam2024_calibrated.T1_total_us, ours:2}];
