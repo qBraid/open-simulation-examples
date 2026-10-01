@@ -28,7 +28,7 @@ def measure(name, pos):
     return out
 
 
-calcs = {m: mace_mp(model={"mp0": "medium", "mpa0": "medium-mpa-0"}[m], device="cpu", default_dtype="float64") for m in ("mp0", "mpa0")}
+calcs = {m: mace_mp(model={"mp0": "medium", "mpa0": "medium-mpa-0", "mp0b3": "medium-0b3"}[m], device="cpu", default_dtype="float64") for m in ("mp0", "mpa0", "mp0b3")}
 res = {}
 for name in EXP:
     at = molecule(name)

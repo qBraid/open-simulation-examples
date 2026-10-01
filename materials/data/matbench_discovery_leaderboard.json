@@ -1,0 +1,587 @@
+[
+ {
+  "model": "EquiformerV3+DeNS-OAM",
+  "F1": 0.931,
+  "MAE": 0.018,
+  "DAF": 6.074,
+  "lic": "MIT",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "TECE-OAM-RRA-1.0",
+  "F1": 0.929,
+  "MAE": 0.018,
+  "DAF": 6.073,
+  "lic": "CC-BY-4.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "EquFlashV2",
+  "F1": 0.929,
+  "MAE": 0.018,
+  "DAF": 6.069,
+  "lic": "CC-BY-4.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "Prophet-OAME-MBD",
+  "F1": 0.928,
+  "MAE": 0.018,
+  "DAF": 6.065,
+  "lic": "CC-BY-4.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "TACE-OAM-RRA-Preview",
+  "F1": 0.928,
+  "MAE": 0.018,
+  "DAF": 6.07,
+  "lic": "CC-BY-4.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "GRACE-3L-OAM-L",
+  "F1": 0.925,
+  "MAE": 0.018,
+  "DAF": 6.041,
+  "lic": "ASL",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "eSEN-30M-OAM",
+  "F1": 0.925,
+  "MAE": 0.018,
+  "DAF": 6.069,
+  "lic": "Meta Research",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "PET-OAM-XL",
+  "F1": 0.924,
+  "MAE": 0.019,
+  "DAF": 6.075,
+  "lic": "BSD-3-Clause",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "MatRIS-10M-OAM",
+  "F1": 0.921,
+  "MAE": 0.019,
+  "DAF": 6.039,
+  "lic": "BSD-3-Clause",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "EquFlash",
+  "F1": 0.919,
+  "MAE": 0.019,
+  "DAF": 5.983,
+  "lic": "CC-BY-4.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "eqV2 M",
+  "F1": 0.917,
+  "MAE": 0.02,
+  "DAF": 6.047,
+  "lic": "Meta Research",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "TACE-OAM-L",
+  "F1": 0.91,
+  "MAE": 0.02,
+  "DAF": 5.898,
+  "lic": "CC-BY-4.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "SevenNet-Omni-i12",
+  "F1": 0.906,
+  "MAE": 0.021,
+  "DAF": 5.954,
+  "lic": "MIT",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "Nequip-OAM-XL",
+  "F1": 0.906,
+  "MAE": 0.02,
+  "DAF": 5.869,
+  "lic": "CC-BY-4.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "ORB v3",
+  "F1": 0.905,
+  "MAE": 0.024,
+  "DAF": 5.912,
+  "lic": "Apache-2.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "SevenNet-MF-ompa",
+  "F1": 0.901,
+  "MAE": 0.021,
+  "DAF": 5.825,
+  "lic": "GPL-3.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "AlphaNet-v1-OAM",
+  "F1": 0.901,
+  "MAE": 0.024,
+  "DAF": 5.747,
+  "lic": "GPL-3.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "Allegro-OAM-L",
+  "F1": 0.895,
+  "MAE": 0.022,
+  "DAF": 5.674,
+  "lic": "CC-BY-4.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "Nequip-OAM-L",
+  "F1": 0.893,
+  "MAE": 0.022,
+  "DAF": 5.823,
+  "lic": "CC-BY-4.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "DPA3-v2-OpenLAM",
+  "F1": 0.89,
+  "MAE": 0.022,
+  "DAF": 5.747,
+  "lic": "LGPL-3.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "TACE-v1-OAM-M",
+  "F1": 0.889,
+  "MAE": 0.022,
+  "DAF": 5.749,
+  "lic": "CC-BY-4.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "DPA-3.1-3M-FT",
+  "F1": 0.884,
+  "MAE": 0.023,
+  "DAF": 5.667,
+  "lic": "LGPL-3.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "DPA3-v1-OpenLAM",
+  "F1": 0.883,
+  "MAE": 0.023,
+  "DAF": 5.754,
+  "lic": "LGPL-3.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "GRACE-2L-OAM-L",
+  "F1": 0.883,
+  "MAE": 0.022,
+  "DAF": 5.84,
+  "lic": "ASL",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "GRACE-2L-OAM",
+  "F1": 0.88,
+  "MAE": 0.023,
+  "DAF": 5.774,
+  "lic": "ASL",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "ORB v2 MPA",
+  "F1": 0.88,
+  "MAE": 0.028,
+  "DAF": 6.041,
+  "lic": "Apache-2.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "EquiformerV3+DeNS-MP",
+  "F1": 0.863,
+  "MAE": 0.029,
+  "DAF": 5.479,
+  "lic": "MIT",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "MatterSim v1 5M",
+  "F1": 0.862,
+  "MAE": 0.024,
+  "DAF": 5.852,
+  "lic": "MIT",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "DPA-4.0.1-Pro-MPtrj",
+  "F1": 0.857,
+  "MAE": 0.029,
+  "DAF": 5.609,
+  "lic": "CC-BY-4.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "MACE-MPA-0",
+  "F1": 0.852,
+  "MAE": 0.028,
+  "DAF": 5.582,
+  "lic": "MIT",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "DPA-4.0-Pro-MPtrj",
+  "F1": 0.85,
+  "MAE": 0.03,
+  "DAF": 5.628,
+  "lic": "CC-BY-4.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "MatRIS-10M-MP",
+  "F1": 0.847,
+  "MAE": 0.031,
+  "DAF": 5.422,
+  "lic": "BSD-3-Clause",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "eSEN-30M-MP",
+  "F1": 0.831,
+  "MAE": 0.033,
+  "DAF": 5.26,
+  "lic": "Meta Research",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "NequIP-GNoME",
+  "F1": 0.829,
+  "MAE": 0.035,
+  "DAF": 5.523,
+  "lic": "unreleased",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "GRACE-1L-OAM",
+  "F1": 0.824,
+  "MAE": 0.031,
+  "DAF": 5.255,
+  "lic": "ASL",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "eqV2 S DeNS",
+  "F1": 0.815,
+  "MAE": 0.036,
+  "DAF": 5.042,
+  "lic": "Meta Research",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "MatRIS v0.5.0 MPtrj",
+  "F1": 0.809,
+  "MAE": 0.037,
+  "DAF": 5.049,
+  "lic": "BSD-3-Clause",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "DPA-3.1-MPtrj",
+  "F1": 0.803,
+  "MAE": 0.037,
+  "DAF": 5.024,
+  "lic": "LGPL-3.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "AlphaNet-v1-MPtrj",
+  "F1": 0.799,
+  "MAE": 0.041,
+  "DAF": 4.863,
+  "lic": "CC-BY-4.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "DPA3-v2-MPtrj",
+  "F1": 0.786,
+  "MAE": 0.039,
+  "DAF": 4.822,
+  "lic": "LGPL-3.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "Eqnorm MPtrj",
+  "F1": 0.786,
+  "MAE": 0.04,
+  "DAF": 4.844,
+  "lic": "MIT",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "HIENet",
+  "F1": 0.777,
+  "MAE": 0.041,
+  "DAF": 4.932,
+  "lic": "GPL-3.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "DPA3-v1-MPtrj",
+  "F1": 0.765,
+  "MAE": 0.042,
+  "DAF": 4.654,
+  "lic": "LGPL-3.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "ORB v2 MPtrj",
+  "F1": 0.765,
+  "MAE": 0.045,
+  "DAF": 4.702,
+  "lic": "Apache-2.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "Nequip-MP-L",
+  "F1": 0.761,
+  "MAE": 0.043,
+  "DAF": 4.704,
+  "lic": "CC-BY-4.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "SevenNet-l3i5",
+  "F1": 0.76,
+  "MAE": 0.044,
+  "DAF": 4.629,
+  "lic": "GPL-3.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "Allegro-MP-L",
+  "F1": 0.751,
+  "MAE": 0.044,
+  "DAF": 4.516,
+  "lic": "CC-BY-4.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "Nequix MP",
+  "F1": 0.751,
+  "MAE": 0.044,
+  "DAF": 4.455,
+  "lic": "CC-BY-4.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "Nequix MP PFT",
+  "F1": 0.748,
+  "MAE": 0.044,
+  "DAF": 4.479,
+  "lic": "CC-BY-4.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "SevenNet-0",
+  "F1": 0.724,
+  "MAE": 0.048,
+  "DAF": 4.252,
+  "lic": "GPL-3.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "GRACE-2L-MPtrj",
+  "F1": 0.691,
+  "MAE": 0.052,
+  "DAF": 4.163,
+  "lic": "ASL",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "MACE-MP-0",
+  "F1": 0.669,
+  "MAE": 0.057,
+  "DAF": 3.777,
+  "lic": "MIT",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "BAM-MP-core",
+  "F1": 0.623,
+  "MAE": 0.06,
+  "DAF": 3.682,
+  "lic": "MIT",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "CHGNet",
+  "F1": 0.613,
+  "MAE": 0.063,
+  "DAF": 3.361,
+  "lic": "BSD-3-Clause",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "ESNet",
+  "F1": 0.572,
+  "MAE": 0.109,
+  "DAF": 3.498,
+  "lic": "CC-BY-4.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "M3GNet",
+  "F1": 0.569,
+  "MAE": 0.075,
+  "DAF": 2.882,
+  "lic": "MIT",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "ALIGNN",
+  "F1": 0.567,
+  "MAE": 0.093,
+  "DAF": 3.206,
+  "lic": "CC-BY-4.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "EMA-GNN",
+  "F1": 0.558,
+  "MAE": 0.086,
+  "DAF": 2.753,
+  "lic": "CC-BY-4.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "MEGNet",
+  "F1": 0.51,
+  "MAE": 0.13,
+  "DAF": 2.959,
+  "lic": "BSD-3-Clause",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "CGCNN",
+  "F1": 0.507,
+  "MAE": 0.138,
+  "DAF": 2.855,
+  "lic": "MIT",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "CGCNN+P",
+  "F1": 0.5,
+  "MAE": 0.113,
+  "DAF": 2.563,
+  "lic": "MIT",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "Wrenformer",
+  "F1": 0.466,
+  "MAE": 0.11,
+  "DAF": 2.256,
+  "lic": "MIT",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "BOWSR",
+  "F1": 0.423,
+  "MAE": 0.118,
+  "DAF": 1.964,
+  "lic": "BSD-3-Clause",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "AlchemBERT",
+  "F1": 0.421,
+  "MAE": 0.117,
+  "DAF": 2.001,
+  "lic": "CC-BY-4.0",
+  "training": null,
+  "date": ""
+ },
+ {
+  "model": "Voronoi RF",
+  "F1": 0.333,
+  "MAE": 0.148,
+  "DAF": 1.579,
+  "lic": "MIT",
+  "training": null,
+  "date": ""
+ }
+]

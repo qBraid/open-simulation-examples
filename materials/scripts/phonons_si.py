@@ -15,7 +15,7 @@ from phonopy.structure.atoms import PhonopyAtoms
 from mace.calculators import mace_mp
 
 model, out = sys.argv[1], sys.argv[2]
-calc = mace_mp(model={"mp0": "medium", "mpa0": "medium-mpa-0"}[model], device=os.environ.get("DEVICE", "cuda"), default_dtype="float64")
+calc = mace_mp(model={"mp0": "medium", "mpa0": "medium-mpa-0", "mp0b3": "medium-0b3"}[model], device=os.environ.get("DEVICE", "cuda"), default_dtype="float64")
 si = bulk("Si", "diamond", a=5.43); si.calc = calc
 BFGS(FrechetCellFilter(si), logfile=None).run(fmax=1e-4)
 a = float(np.linalg.norm(si.cell[0]) * np.sqrt(2))
@@ -38,11 +38,18 @@ bands = []
 for p, q in path:
     seg = [np.array(pts[p]) + (np.array(pts[q]) - np.array(pts[p])) * t for t in np.linspace(0, 1, 41)]
     bands.append(dict(path=f"{p}-{q}", freqs=[ph.get_frequencies(k).tolist() for k in seg]))
+# Animated modes: phonopy's own modulations on a 3x3x3 conventional supercell (216 atoms),
+# so the inter-atomic phases are exactly phonopy's convention.
+dim = (np.array([[-1, 1, 1], [1, -1, 1], [1, 1, -1]]) * 3).tolist()
 modes = {}
-for k in ("G", "X"):
-    ph.run_qpoints([pts[k]], with_eigenvectors=True)
-    q = ph.get_qpoints_dict()
-    modes[k] = dict(freqs=q["frequencies"][0].tolist(), eig_re=np.real(q["eigenvectors"][0]).tolist(), eig_im=np.imag(q["eigenvectors"][0]).tolist())
+for label, q, band in [("G-LTO", pts["G"], 5), ("X-TA", pts["X"], 0), ("X-LA", pts["X"], 2), ("X-TO", pts["X"], 5),
+                       ("L-TA", pts["L"], 0), ("L-TO", pts["L"], 5)]:
+    ph.run_modulations(dim, [[q, band, 1.0, 0.0]])
+    mods, sc = ph.get_modulations_and_supercell()
+    m = np.array(mods[0])
+    modes[label] = dict(freq=float(ph.get_frequencies(q)[band]), re=np.real(m).round(5).tolist(), im=np.imag(m).round(5).tolist())
+modes["supercell_positions"] = np.array(sc.positions).round(4).tolist()
+modes["supercell_cell"] = np.array(sc.cell).round(4).tolist()
 neutron = {"G_LTO": 15.53, "X_TA": 4.49, "X_LA": 12.32, "X_TO": 13.90, "L_TA": 3.43, "L_LA": 11.35, "L_TO": 14.68}
 model_hs = {"G_LTO": freqs["G"][-1], "X_TA": freqs["X"][0], "X_LA": freqs["X"][2], "X_TO": freqs["X"][-1],
             "L_TA": freqs["L"][0], "L_LA": freqs["L"][2], "L_TO": freqs["L"][-1]}

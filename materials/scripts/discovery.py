@@ -6,7 +6,7 @@ to an MP2020-corrected formation energy. The MP2020 correction is additive per a
 so e_form_pred = e_form_dft + (E_model - E_dft_uncorrected) / n_atoms, exactly as the
 leaderboard pipeline does it. Hull distance: e_hull_pred = e_hull_dft + (e_form_pred - e_form_dft).
 
-usage: discovery.py <model: mp0|mpa0> <n_sample> <shard> <n_shards> <out.csv> [dtype]
+usage: discovery.py <model: mp0|mpa0|orb3> <n_sample> <shard> <n_shards> <out.csv> [dtype]
 """
 import sys, time, zipfile, io
 import numpy as np, pandas as pd
@@ -21,7 +21,13 @@ SEED = 20261001
 s = pd.read_csv("data/wbm-summary.csv.gz")
 ids = s[s.unique_prototype].material_id.sample(n=n_sample, random_state=SEED).tolist()
 ids = ids[shard::n_shards]
-calc = mace_mp(model={"mp0": "medium", "mpa0": "medium-mpa-0"}[model], device="cuda", default_dtype=dtype)
+if model == "orb3":  # ORB v3 conservative-inf-mpa (Apache-2.0); leaderboard used fmax 0.02
+    from orb_models.forcefield import pretrained
+    from orb_models.forcefield.calculator import ORBCalculator
+    calc = ORBCalculator(pretrained.orb_v3_conservative_inf_mpa(device="cuda", precision="float32-high"), device="cuda")
+else:
+    calc = mace_mp(model={"mp0": "medium", "mpa0": "medium-mpa-0"}[model], device="cuda", default_dtype=dtype)
+FMAX = 0.02 if model == "orb3" else 0.05
 zf = zipfile.ZipFile("data/wbm-initial-atoms.extxyz.zip")
 rows = []
 for i, mid in enumerate(ids):
@@ -30,7 +36,7 @@ for i, mid in enumerate(ids):
         atoms = read(io.StringIO(zf.read(f"{mid}.extxyz").decode()), format="extxyz")
         atoms.calc = calc
         opt = FIRE(FrechetCellFilter(atoms), logfile=None)
-        opt.run(fmax=0.05, steps=500)
+        opt.run(fmax=FMAX, steps=500)
         rows.append(dict(material_id=mid, energy=atoms.get_potential_energy(), n=len(atoms),
                          steps=opt.nsteps, sec=time.time() - t0))
     except Exception as e:

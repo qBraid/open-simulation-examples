@@ -12,7 +12,7 @@ from ase.units import GPa
 from mace.calculators import mace_mp
 
 model, out = sys.argv[1], sys.argv[2]
-calc = mace_mp(model={"mp0": "medium", "mpa0": "medium-mpa-0"}[model], device=__import__("os").environ.get("DEVICE", "cuda"), default_dtype="float64")
+calc = mace_mp(model={"mp0": "medium", "mpa0": "medium-mpa-0", "mp0b3": "medium-0b3"}[model], device=__import__("os").environ.get("DEVICE", "cuda"), default_dtype="float64")
 ref = pd.read_csv("data/csonka2009_sol24.csv")
 rows = []
 for r in ref.itertuples():
