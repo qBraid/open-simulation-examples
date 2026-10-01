@@ -362,6 +362,7 @@ function applyAhmed() {
   for (const o of Object.values(slants)) { o.body.material.clippingPlanes = planes; for (const m of Object.values(o.iso)) m.material.clippingPlanes = planes; }
   updateTag();
   const S = D.ahmed.slants[curSlant], L = S.levels[curLevel];
+  if (active !== 'ahmed') return;
   $('#info').textContent = `simpleFoam k-ω SST · U∞ 40 m/s · Re_L 2.8e6 · ${curSlant}° slant · surface & vortices from ${S.best} mesh${L ? '' : ''}`;
   colorbar(layers.slice ? 'speed |U| / U∞ (slice)' : 'pressure coefficient Cp (surface)', layers.slice ? VIR : CW, layers.slice ? ['0', '0.65', '1.3'] : ['-1.2', '-0.6', '0', '0.5', '1']);
   for (const b of document.querySelectorAll('#seg-slant button')) b.setAttribute('aria-pressed', b.dataset.s === curSlant);
@@ -409,7 +410,7 @@ async function buildCyl() {
   const [x0, x1] = C.x, [y0, y1] = C.y; CY.box = [x0, x1, y0, y1];
   const g = new THREE.PlaneGeometry(x1 - x0, y1 - y0, CY.nx - 1, CY.ny - 1); g.translate((x0 + x1) / 2, (y0 + y1) / 2, 0);
   CY.col = new Float32Array(3 * CY.nx * CY.ny); g.setAttribute('color', new THREE.BufferAttribute(CY.col, 3));
-  CY.geo = g; CY.mesh = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55, metalness: 0, side: THREE.DoubleSide }));
+  CY.geo = g; CY.mesh = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.42, metalness: 0.05, side: THREE.DoubleSide, envMapIntensity: 0.6 }));
   CY.mesh.receiveShadow = true; sceneC.add(CY.mesh);
   const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1.6, 96), new THREE.MeshPhysicalMaterial({ color: 0xc9ced3, metalness: 0.85, roughness: 0.22, clearcoat: 1 }));
   cyl.rotation.x = Math.PI / 2; cyl.castShadow = true; sceneC.add(cyl);
@@ -419,7 +420,7 @@ async function buildCyl() {
   const dg = new THREE.BufferGeometry(); dg.setAttribute('position', new THREE.BufferAttribute(CY.dp, 3)); dg.setAttribute('alpha', new THREE.BufferAttribute(new Float32Array(CY.ND), 1));
   CY.dg = dg;
   dyeMat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { ink: { value: new THREE.Color(0xf3f7f6) } },
-    vertexShader: `attribute float alpha; varying float vA; void main(){ vA=alpha; vec4 mv=modelViewMatrix*vec4(position,1.); gl_PointSize=56.0/(-mv.z); gl_Position=projectionMatrix*mv; }`,
+    vertexShader: `attribute float alpha; varying float vA; void main(){ vA=alpha; vec4 mv=modelViewMatrix*vec4(position,1.); gl_PointSize=30.0/(-mv.z); gl_Position=projectionMatrix*mv; }`,
     fragmentShader: `uniform vec3 ink; varying float vA; void main(){ vec2 d=gl_PointCoord-.5; float r=dot(d,d); if(r>.25) discard; gl_FragColor=vec4(ink, vA*(1.-r*4.)); }` });
   CY.dye = new THREE.Points(dg, dyeMat); CY.dye.frustumCulled = false; sceneC.add(CY.dye);
   for (let i = 0; i < CY.ND; i++) dyeSeed(i, true);
@@ -429,8 +430,8 @@ async function buildCyl() {
   tagC.innerHTML = `<div style="opacity:.7;font-size:11px">${B.label}</div>
     <div class="big">St ${B.St.toFixed(4)} · C<sub>d</sub> ${B.Cd.toFixed(3)}</div>
     <div>reference St ${R.St[0]}–${R.St[1]} <span class="${inb(B.St, R.St) ? 'ok' : 'warn'}">${inb(B.St, R.St) ? 'in band' : (pc(B.St, R.St) > 0 ? '+' : '') + pc(B.St, R.St).toFixed(1) + '%'}</span> · C<sub>d</sub> ${R.Cd[0]}–${R.Cd[1]} <span class="${inb(B.Cd, R.Cd) ? 'ok' : 'warn'}">${inb(B.Cd, R.Cd) ? 'in band' : (pc(B.Cd, R.Cd) > 0 ? '+' : '') + pc(B.Cd, R.Cd).toFixed(1) + '%'}</span></div>`;
-  const to = new CSS2DObject(tagC); to.position.set(0, 0, 1.6); sceneC.add(to); CY.tag = to; CY.tagEl = tagC;
-  camC.position.set(-3.6, -7.4, 5.2); ctlC.target.set(4.2, 0, 0);
+  const to = new CSS2DObject(tagC); to.position.set(7.5, 2.9, 1.1); sceneC.add(to); CY.tag = to; CY.tagEl = tagC;
+  camC.position.set(-2.2, -9.6, 6.6); ctlC.target.set(5.2, 0.4, 0);
   drawCl();
 }
 let cylRelief = true, cylDye = true, cylPlay = true, cylT = 0;
@@ -452,8 +453,8 @@ function cylFrame(dt) {
     const w0 = CY.w[i0 * N + src], w1 = CY.w[i1 * N + src];
     const masked = w0 === 0 && w1 === 0; const wr = masked ? 0 : ((w0 * (1 - a) + w1 * a) - 128) / 127;   // -1..1 maps -4..4
     const w = 0.5 + 0.5 * Math.sign(wr) * Math.abs(wr) ** 0.55;
-    lut(CW, w, CY.col, 3 * v);
-    if (masked) { CY.col[3 * v] = CY.col[3 * v + 1] = CY.col[3 * v + 2] = 0.08; }
+    lut(DV, w, CY.col, 3 * v);
+    if (masked) { CY.col[3 * v] = CY.col[3 * v + 1] = CY.col[3 * v + 2] = 0.02; }
     pos[3 * v + 2] = cylRelief ? wr * 0.9 : 0;
   }
   CY.geo.attributes.position.needsUpdate = CY.geo.attributes.color.needsUpdate = true; if (cylRelief) CY.geo.computeVertexNormals();
@@ -472,7 +473,7 @@ function cylFrame(dt) {
     x += vx * h; y += vy * h; CY.da[i] += h;
     if (Math.hypot(x, y) < 0.5 || x > x1 - 0.05 || CY.da[i] > 30) { dyeSeed(i, false); continue; }
     CY.dp[3 * i] = x; CY.dp[3 * i + 1] = y; CY.dp[3 * i + 2] = cylRelief ? 0.95 : 0.06;
-    al[i] = Math.min(1, CY.da[i] * 0.8) * 0.5;
+    al[i] = Math.min(1, CY.da[i] * 0.8) * 0.6;
   }
   CY.dg.attributes.position.needsUpdate = CY.dg.attributes.alpha.needsUpdate = true;
   drawCl(cylT / period);
@@ -549,7 +550,7 @@ function setTab(t) {
   $('#clchart').style.display = t === 'cyl' ? 'block' : 'none';
   ctlA.enabled = t === 'ahmed' && !tour; ctlC.enabled = t === 'cyl';
   updateTag();
-  if (t === 'cyl') { stopTour(); $('#info').textContent = `pimpleFoam laminar · Re = 100 · ${D.cyl.best.label} · vorticity ω_z (colour and height) with dye advected by the solver velocity`; colorbar('vorticity ω_z D / U∞', CW, ['-4', '0', '4']); CY.tag && (CY.tag.visible = true); }
+  if (t === 'cyl') { stopTour(); $('#info').textContent = `pimpleFoam laminar · Re = 100 · ${D.cyl.best.label} · vorticity ω_z (colour and height) with dye advected by the solver velocity`; colorbar('vorticity ω_z D / U∞', DV, ['-4', '0', '4']); CY.tag && (CY.tag.visible = true); }
   else { CY.tag && (CY.tag.visible = false); applyAhmed(); }
   for (const o of [...document.querySelectorAll('.pin')]) o.style.display = t === 'ahmed' ? '' : 'none';
   if (CY.tagEl) CY.tagEl.style.display = t === 'cyl' ? '' : 'none';

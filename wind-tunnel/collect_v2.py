@@ -103,7 +103,8 @@ def score(r):
     return abs(r["St"] - 0.165) / 0.165 + abs(r["Cd"] - 1.34) / 1.34
 
 
-best = min(v2, key=score) if v2 else runs[-1]
+anim = [r for r in v2 if r.get("case") == "cyl_x20_frames"]   # the viewer animates this run, so it is the headline
+best = anim[0] if anim else (min(v2, key=score) if v2 else runs[-1])
 (R / "validation_v2.json").write_text(json.dumps({"runs": runs, "reference": ref, "best": best}, indent=1))
 print(json.dumps({"slants": {k: {l: v["Cd"] for l, v in S["levels"].items()} for k, S in slants.items()},
                   "cyl": [(r["label"], r["St"], r["Cd"]) for r in runs]}, indent=1))
