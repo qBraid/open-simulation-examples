@@ -6,14 +6,13 @@ to an MP2020-corrected formation energy. The MP2020 correction is additive per a
 so e_form_pred = e_form_dft + (E_model - E_dft_uncorrected) / n_atoms, exactly as the
 leaderboard pipeline does it. Hull distance: e_hull_pred = e_hull_dft + (e_form_pred - e_form_dft).
 
-usage: discovery.py <model: mp0|mpa0|orb3> <n_sample> <shard> <n_shards> <out.csv> [dtype]
+usage: discovery.py <model: mp0|mpa0|orb3|eqv3> <n_sample> <shard> <n_shards> <out.csv> [dtype] [eqv3_checkpoint]
 """
 import sys, time, zipfile, io
 import numpy as np, pandas as pd
 from ase.io import read
 from ase.optimize import FIRE
 from ase.filters import FrechetCellFilter
-from mace.calculators import mace_mp
 
 model, n_sample, shard, n_shards, out = sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4]), sys.argv[5]
 dtype = sys.argv[6] if len(sys.argv) > 6 else "float32"
@@ -21,14 +20,19 @@ SEED = 20261001
 s = pd.read_csv("data/wbm-summary.csv.gz")
 ids = s[s.unique_prototype].material_id.sample(n=n_sample, random_state=SEED).tolist()
 ids = ids[shard::n_shards]
-if model == "orb3":  # ORB v3 conservative-inf-mpa (Apache-2.0); leaderboard used fmax 0.02
+if model == "eqv3":  # EquiformerV3+DeNS-OAM (MIT), run in its own fairchem env; leaderboard used fmax 0.02
+    from fairchem.core import OCPCalculator
+    calc = OCPCalculator(checkpoint_path=sys.argv[7], cpu=False, seed=0)
+    calc.trainer.scaler = None  # as in the authors' test_discovery.py (no AMP)
+elif model == "orb3":  # ORB v3 conservative-inf-mpa (Apache-2.0); leaderboard used fmax 0.02
     from orb_models.forcefield import pretrained
     from orb_models.forcefield.inference.calculator import ORBCalculator
     orbff, adapter = pretrained.orb_v3_conservative_inf_mpa(device="cuda", precision="float32-high", compile=False)
     calc = ORBCalculator(orbff, adapter, device="cuda")  # same 2025-04-04 checkpoint as the leaderboard run
 else:
+    from mace.calculators import mace_mp
     calc = mace_mp(model={"mp0": "medium", "mpa0": "medium-mpa-0"}[model], device="cuda", default_dtype=dtype)
-FMAX = 0.02 if model == "orb3" else 0.05
+FMAX = 0.02 if model in ("orb3", "eqv3") else 0.05
 zf = zipfile.ZipFile("data/wbm-initial-atoms.extxyz.zip")
 rows = []
 for i, mid in enumerate(ids):

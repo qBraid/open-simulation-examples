@@ -7,7 +7,7 @@ import numpy as np, pandas as pd
 
 model, out, files = sys.argv[1], sys.argv[2], sys.argv[3:]
 s = pd.read_csv("data/wbm-summary.csv.gz").set_index("material_id")
-pub = pd.read_csv(f"data/{ {'mp0': 'mace-mp-0', 'mpa0': 'mace-mpa-0', 'orb3': 'orb-v3'}[model] }-discovery.csv.gz").set_index("material_id").e_form_per_atom
+pub = pd.read_csv(f"data/{ {'mp0': 'mace-mp-0', 'mpa0': 'mace-mpa-0', 'orb3': 'orb-v3', 'eqv3': 'equiformer-v3-oam'}[model] }-discovery.csv.gz").set_index("material_id").e_form_per_atom
 p = pd.concat([pd.read_csv(f) for f in files]).dropna(subset=["energy"]).set_index("material_id")
 d = s.loc[p.index]
 e_form_true = d.e_form_per_atom_mp2020_corrected

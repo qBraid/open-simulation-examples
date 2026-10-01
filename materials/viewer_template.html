@@ -298,7 +298,9 @@ function makeCrystals() {
     const e = label('', 'small'); e.position.set(0, -.6, 1.7); g.add(e);
     items.push({ s, g, pm, xtal, e, sc });
   });
-  function recolor() { const r = E.models[cur]; items.forEach((it, k) => { const err = (r[k].a0 - it.s.a0_exp) / it.s.a0_exp * 100; it.pm.material.color = ramp(BALANCE, (err + 3) / 6).multiplyScalar(.75); it.e.element.textContent = `${err >= 0 ? '+' : ''}${err.toFixed(2)}%`; }); }
+  function recolor() { const r = E.models[cur]; items.forEach((it, k) => { const err = (r[k].a0 - it.s.a0_exp) / it.s.a0_exp * 100;
+    if (it.s.solid === 'Cs') { it.pm.material.color.set(0x55606b); it.e.element.textContent = `${err >= 0 ? '+' : ''}${err.toFixed(1)}% · cutoff artefact, not scored`; return; }
+    it.pm.material.color = ramp(BALANCE, (err + 3) / 6).multiplyScalar(.75); it.e.element.textContent = `${err >= 0 ? '+' : ''}${err.toFixed(2)}%`; }); }
   let focus = -1;
   const ray = new THREE.Raycaster(), ptr = new THREE.Vector2();
   renderer.domElement.addEventListener('click', ev => { if (!G.visible) return; ptr.set(ev.clientX / innerWidth * 2 - 1, -ev.clientY / innerHeight * 2 + 1); ray.setFromCamera(ptr, camera);
