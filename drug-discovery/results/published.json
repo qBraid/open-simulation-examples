@@ -1,0 +1,7 @@
+{
+ "cofolding": [
+  {"method": "AlphaFold3 (Abramson et al., Nature 2024)", "set": "PoseBusters V1, 428", "rmsd_le_2": 0.764},
+  {"method": "Chai-1 (Chai Discovery tech report, 2024)", "set": "PoseBusters V1, 428", "rmsd_le_2": 0.77}
+ ],
+ "note": "Published numbers are on the full sets and count RMSD only. AlphaFold3's figure is for pocket-unconditioned prediction. Our 32-complex subset carries about ±8 percentage points of sampling error (binomial, 1 sigma), so read the comparison with that in mind. Vina and GOLD rows use the PoseBusters paper's released per-complex results on exactly our 32 complexes, with the crystal protein and pocket given to them, which is an easier task than co-folding."
+}

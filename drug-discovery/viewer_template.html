@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Co-folding and Affinity</title>
+<style>
+:root{--bg:#f4f5f2;--panel:#ffffff;--panel2:#eceee9;--ink:#1a1f22;--muted:#5b656a;--line:#d5dad5;--accent:#0f6e66;--good:#1d7f56;--bad:#b3372b;--warn:#b26a06;--scene:#e9ecef}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1113;--panel:#151a1d;--panel2:#1d2427;--ink:#e6ebe9;--muted:#97a3a0;--line:#2a3431;--accent:#45c2b3;--good:#4cc38a;--bad:#f07a6c;--warn:#e7a640;--scene:#0b0f12}}
+:root[data-theme="dark"]{--bg:#0d1113;--panel:#151a1d;--panel2:#1d2427;--ink:#e6ebe9;--muted:#97a3a0;--line:#2a3431;--accent:#45c2b3;--good:#4cc38a;--bad:#f07a6c;--warn:#e7a640;--scene:#0b0f12}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:14px/1.5 "Inter","Helvetica Neue",Arial,sans-serif}
+body{display:flex;flex-direction:column}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;padding:12px 16px;border-bottom:1px solid var(--line)}
+header h1{margin:0;font-size:18px;font-weight:650;letter-spacing:-.01em}
+header .sub{color:var(--muted);font-size:13px}
+.tabs{display:flex;gap:6px;margin-left:auto}
+button{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:5px 11px;border-radius:7px;cursor:pointer}
+button[aria-pressed="true"],button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+main{display:grid;grid-template-columns:1fr 340px;flex:1;min-height:0}
+#stage{position:relative;background:var(--scene);min-height:340px}
+#stage canvas{display:block;width:100%;height:100%}
+aside{border-left:1px solid var(--line);background:var(--panel);overflow:auto;padding:14px 16px}
+aside h2{font-size:14px;margin:14px 0 6px;font-weight:650}
+aside h2:first-child{margin-top:0}
+.hud{position:absolute;left:12px;top:12px;display:flex;flex-direction:column;gap:6px;pointer-events:none;max-width:60%}
+.hud .card{pointer-events:auto;background:color-mix(in srgb,var(--panel) 86%,transparent);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:12.5px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{display:inline-block;font:600 11.5px ui-monospace,Menlo,monospace;padding:2px 8px;border-radius:999px}
+.chip.good{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+.chip.bad{background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad)}
+.chip.warn{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+.caption{position:absolute;left:50%;bottom:58px;transform:translateX(-50%);background:color-mix(in srgb,var(--panel) 90%,transparent);border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-size:13.5px;max-width:min(560px,90%);text-align:center;opacity:0;transition:opacity .5s;pointer-events:none}
+.caption.show{opacity:1}
+.controls{position:absolute;left:12px;right:12px;bottom:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.controls .card{background:color-mix(in srgb,var(--panel) 86%,transparent);border:1px solid var(--line);border-radius:9px;padding:6px 10px;display:flex;gap:8px;align-items:center;font-size:12.5px}
+input[type=range]{accent-color:var(--accent);width:140px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+td,th{padding:4px 6px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--muted);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em}
+td.n{font-family:ui-monospace,Menlo,monospace;text-align:right}
+.legend{display:flex;flex-wrap:wrap;gap:8px 12px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.cbar{height:10px;border-radius:3px;margin:4px 0 2px}
+.cbar-l{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+#tip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:12px;display:none;max-width:260px;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+svg text{fill:var(--muted);font-size:10.5px}
+.note{color:var(--muted);font-size:12px}
+.stamp{font:11.5px ui-monospace,Menlo,monospace;color:var(--muted);white-space:pre-wrap}
+@media (max-width:820px){main{grid-template-columns:1fr;height:auto}#stage{height:62vh}aside{border-left:0;border-top:1px solid var(--line)}.tabs{margin-left:0}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Co-folding and affinity ranking with open models</h1>
+  <span class="sub">Boltz-2 on a PoseBusters subset and on the FEP+ TYK2 and CDK2 series, scored against crystal structures, experiment, docking and FEP+</span>
+  <div class="tabs" role="tablist">
+    <button data-tab="pose" aria-pressed="true">Poses</button>
+    <button data-tab="aff" aria-pressed="false">Affinity</button>
+    <button data-tab="bench" aria-pressed="false">Benchmark</button>
+    <button id="theme" title="Toggle light and dark">Theme</button>
+  </div>
+</header>
+<main>
+  <div id="stage">
+    <div class="hud" id="hud"></div>
+    <div class="caption" id="caption"></div>
+    <div class="controls" id="controls"></div>
+    <div id="tip"></div>
+  </div>
+  <aside id="side"></aside>
+</main>
+<script>window.DATA = /*__DATA__*/null;</script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const D = window.DATA;
+const STILL = new URLSearchParams(location.search).has('still');  // final state for screenshots
+{ const th = new URLSearchParams(location.search).get('theme'); if (th) document.documentElement.dataset.theme = th; }
+const $ = s => document.querySelector(s);
+const stage = $('#stage'), hud = $('#hud'), side = $('#side'), controlsEl = $('#controls'), cap = $('#caption'), tip = $('#tip');
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmt = (v, d = 2) => (v == null || Number.isNaN(v)) ? '–' : (+v).toFixed(d);
+
+// ---------- renderer ----------
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+stage.prepend(renderer.domElement);
+const pmrem = new THREE.PMREMGenerator(renderer);
+const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 2000);
+const orbit = new OrbitControls(camera, renderer.domElement);
+orbit.enableDamping = true; orbit.dampingFactor = 0.08; orbit.autoRotate = true; orbit.autoRotateSpeed = 0.6;
+function resize() { const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(stage);
+
+function lights(scene) {
+  scene.environment = envTex;
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 0.55));
+  const key = new THREE.DirectionalLight(0xffffff, 1.6); key.position.set(30, 40, 25); scene.add(key);
+  const rim = new THREE.DirectionalLight(0x9fd6ff, 0.6); rim.position.set(-30, -10, -30); scene.add(rim);
+}
+function sceneBg(scene) { scene.background = new THREE.Color(css('--scene')); }
+
+// ---------- palettes ----------
+const SS = { H: 0xe4572e, E: 0xf3a712, C: 0x8d99ae };
+const CPK = { C: 0x9aa3ab, N: 0x3b6fe0, O: 0xe03b3b, S: 0xe8c547, P: 0xf08a24, F: 0x5bd16d, Cl: 0x3fbf5a, Br: 0xa33a2a, I: 0x8a3fbf, B: 0xf2a3a3 };
+const SURF = [0xd9c27a, 0x4c7bd9, 0xd9534f, 0x9fb7c9]; // hydrophobic, positive, negative, polar
+const VIR = ['#440154', '#482878', '#3e4a89', '#31688e', '#26828e', '#1f9e89', '#35b779', '#6ece58', '#b5de2b', '#fde725'];
+function viridis(t) { t = Math.min(1, Math.max(0, t)); const x = t * (VIR.length - 1), i = Math.floor(x), f = x - i; const a = new THREE.Color(VIR[i]), b = new THREE.Color(VIR[Math.min(i + 1, VIR.length - 1)]); return a.lerp(b, f); }
+const vGrad = 'linear-gradient(90deg,' + VIR.join(',') + ')';
+
+// ---------- POSE SCENE ----------
+const pose = { scene: new THREE.Scene(), root: new THREE.Group(), cur: 0, morph: 0, playing: false };
+lights(pose.scene); pose.scene.add(pose.root);
+const sphereG = new THREE.SphereGeometry(1, 20, 14), cylG = new THREE.CylinderGeometry(1, 1, 1, 12, 1);
+
+function ribbon(chains) {
+  const g = new THREE.Group();
+  for (const segs of chains) for (const s of segs) {
+    const pts = s.p.map(p => new THREE.Vector3(...p));
+    if (pts.length < 2) continue;
+    const curve = new THREE.CatmullRomCurve3(pts, false, 'centripetal');
+    const r = s.t === 'H' ? 0.6 : s.t === 'E' ? 0.46 : 0.2;
+    const geo = new THREE.TubeGeometry(curve, Math.max(6, pts.length * 7), r, s.t === 'C' ? 8 : 12, false);
+    if (s.t === 'E') geo.scale(1, 1, 1);
+    const m = new THREE.MeshStandardMaterial({ color: SS[s.t], roughness: 0.42, metalness: 0.05, envMapIntensity: 0.6 });
+    g.add(new THREE.Mesh(geo, m));
+  }
+  return g;
+}
+function ballStick(mol, carbon, opacity = 1) {
+  const n = mol.a.length, g = new THREE.Group();
+  const matA = new THREE.MeshPhysicalMaterial({ roughness: 0.25, metalness: 0.0, clearcoat: 0.6, emissive: new THREE.Color(carbon), emissiveIntensity: 0.18, transparent: opacity < 1, opacity, depthWrite: opacity >= 1 });
+  const atoms = new THREE.InstancedMesh(sphereG, matA, n);
+  const col = new THREE.Color();
+  mol.a.forEach((a, i) => { col.setHex(a[0] === 'C' ? carbon : (CPK[a[0]] ?? 0xcccccc)); atoms.setColorAt(i, col); });
+  const bonds = new THREE.InstancedMesh(cylG, new THREE.MeshStandardMaterial({ color: 0xbfc6cc, roughness: 0.4, transparent: opacity < 1, opacity, depthWrite: opacity >= 1 }), Math.max(1, mol.b.length));
+  g.add(atoms, bonds); g.userData = { atoms, bonds, mol };
+  return g;
+}
+const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _v = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0), _s = new THREE.Vector3();
+function placeBallStick(g, pos) {
+  const { atoms, bonds, mol } = g.userData;
+  pos.forEach((p, i) => { const r = mol.a[i][0] === 'H' ? 0.22 : 0.46; _m.compose(_v.set(...p), _q.identity(), _s.set(r, r, r)); atoms.setMatrixAt(i, _m); });
+  mol.b.forEach((b, k) => {
+    const a = new THREE.Vector3(...pos[b[0]]), c = new THREE.Vector3(...pos[b[1]]);
+    const mid = a.clone().add(c).multiplyScalar(0.5), dir = c.clone().sub(a), len = dir.length();
+    _q.setFromUnitVectors(_up, dir.normalize()); const w = b[2] >= 2 ? 0.17 : 0.13;
+    _m.compose(mid, _q, _s.set(w, len, w)); bonds.setMatrixAt(k, _m);
+  });
+  atoms.instanceMatrix.needsUpdate = true; bonds.instanceMatrix.needsUpdate = true;
+}
+function pocketSurface(s) {
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(s.v, 3));
+  const cols = new Float32Array(s.c.length * 3), c = new THREE.Color();
+  s.c.forEach((k, i) => { c.setHex(SURF[k]); cols.set([c.r, c.g, c.b], i * 3); });
+  geo.setAttribute('color', new THREE.BufferAttribute(cols, 3)); geo.setIndex(s.f); geo.computeVertexNormals();
+  const m = new THREE.MeshPhysicalMaterial({ vertexColors: true, transparent: true, opacity: 0.2, roughness: 0.35, clearcoat: 0.4, side: THREE.DoubleSide, depthWrite: false });
+  return new THREE.Mesh(geo, m);
+}
+function label(text) {
+  const c = document.createElement('canvas'), x = c.getContext('2d'); const fs = 44;
+  x.font = `600 ${fs}px Inter,Arial`; const w = x.measureText(text).width + 24; c.width = w; c.height = fs + 18;
+  x.fillStyle = 'rgba(20,26,30,.72)'; x.beginPath(); x.roundRect(0, 0, w, fs + 18, 14); x.fill();
+  x.fillStyle = '#fff'; x.font = `600 ${fs}px Inter,Arial`; x.fillText(text, 12, fs - 2);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true }));
+  sp.scale.set(w / 58, (fs + 18) / 58, 1); sp.renderOrder = 10; return sp;
+}
+function lerpPos(a, b, t) { return a.map((p, i) => [p[0] + (b[i][0] - p[0]) * t, p[1] + (b[i][1] - p[1]) * t, p[2] + (b[i][2] - p[2]) * t]); }
+function rmsdOf(a, b) { let s = 0; a.forEach((p, i) => { s += (p[0] - b[i][0]) ** 2 + (p[1] - b[i][1]) ** 2 + (p[2] - b[i][2]) ** 2; }); return Math.sqrt(s / a.length); }
+
+function loadComplex(k) {
+  pose.cur = k; pose.root.clear(); const c = D.complexes[k];
+  pose.prot = ribbon(c.chains); pose.root.add(pose.prot);
+  pose.surf = pocketSurface(c.surf); pose.root.add(pose.surf);
+  const xt = c.xtal.a.map(a => a.slice(1));
+  pose.xt = xt;
+  pose.ghost = ballStick(c.xtal, 0x3ddc84, 0.42); placeBallStick(pose.ghost, xt); pose.root.add(pose.ghost);
+  if (c.pred) { pose.pred = ballStick(c.xtal, 0x22b8cf, 1); pose.root.add(pose.pred); pose.morph = 0; placeBallStick(pose.pred, c.pred); } else pose.pred = null;
+  pose.labels = new THREE.Group(); [...c.pocket].sort((a, b) => a.d - b.d).slice(0, 4).forEach(r => { const s = label(r.n); s.position.set(r.p[0], r.p[1] + 1.6, r.p[2]); pose.labels.add(s); });
+  pose.root.add(pose.labels);
+  setXray(pose.xray !== false);
+  // look into the pocket from outside the protein: from the protein centroid through the ligand
+  const cen = new THREE.Vector3(); let n = 0; c.chains.flat().forEach(sg => sg.p.forEach(p => { cen.add(new THREE.Vector3(...p)); n++; })); cen.multiplyScalar(1 / n);
+  pose.view = cen.clone().negate().normalize(); if (pose.view.lengthSq() < 0.5) pose.view.set(0, 0.3, 1).normalize();
+  camera.position.copy(pose.view.clone().multiplyScalar(56).add(new THREE.Vector3(0, 8, 0))); orbit.target.set(0, 0, 0); orbit.update();
+  poseHud(); poseSide();
+}
+function poseHud() {
+  const c = D.complexes[pose.cur];
+  const live = c.pred ? rmsdOf(lerpPos(c.pred, pose.xt, pose.morph), pose.xt) : null;
+  hud.innerHTML = `<div class="card"><b>${c.id}</b> &nbsp;<span class="chip ${c.success ? 'good' : 'bad'}">${c.success ? 'success' : 'miss'}</span>
+   <span class="chip ${c.pb_valid ? 'good' : 'warn'}">${c.pb_valid ? 'PB-valid' : 'PB checks failed'}</span><br>
+   ligand RMSD <b>${fmt(c.rmsd)} Å</b> (pocket-aligned) · confidence ${fmt(c.confidence)} · ligand ipTM ${fmt(c.ligand_iptm)}<br>
+   <span class="note">morph: predicted → crystal, current offset ${live == null ? '–' : fmt(live) + ' Å'}</span></div>`;
+}
+function poseSide() {
+  const c = D.complexes[pose.cur];
+  side.innerHTML = `<h2>What you are looking at</h2>
+  <p class="note">The protein is drawn from the crystal structure as a ribbon. The <b style="color:#22b8cf">cyan</b> ligand is the Boltz-2 prediction, superposed on the crystal by pocket Cα atoms. The translucent <b style="color:#3ddc84">green</b> ligand is the crystal pose. Press <i>morph</i> to watch the prediction slide onto the crystal pose. The distance it travels is the RMSD.</p>
+  <div class="legend"><span><i style="background:#e4572e"></i>helix</span><span><i style="background:#f3a712"></i>strand</span><span><i style="background:#8d99ae"></i>coil</span></div>
+  <h2>Pocket surface</h2><div class="legend"><span><i style="background:#d9c27a"></i>hydrophobic</span><span><i style="background:#4c7bd9"></i>basic</span><span><i style="background:#d9534f"></i>acidic</span><span><i style="background:#9fb7c9"></i>polar</span></div>
+  <h2>This complex</h2>
+  <table><tr><td>Ligand RMSD</td><td class="n">${fmt(c.rmsd)} Å</td></tr><tr><td>Pocket Cα RMSD</td><td class="n">${fmt(c.pocket_ca_rmsd)} Å</td></tr>
+  <tr><td>PoseBusters checks</td><td class="n">${c.pb_valid ? 'all pass' : (c.pb_failed || []).join(', ') || '–'}</td></tr>
+  <tr><td>Boltz confidence</td><td class="n">${fmt(c.confidence)}</td></tr></table>
+  <p class="note" style="word-break:break-all">${c.smiles}</p>
+  <h2>Pick a complex</h2><div class="row">${D.complexes.map((x, i) => `<button class="${i === pose.cur ? 'on' : ''}" data-cx="${i}">${x.id} · ${x.success ? 'success' : 'miss'}</button>`).join('')}</div>
+  <p class="note">Two confident successes and the worst miss in the subset are shown, so the failure mode is visible too.</p>`;
+  side.querySelectorAll('[data-cx]').forEach(b => b.onclick = () => { loadComplex(+b.dataset.cx); });
+}
+function poseControls() {
+  controlsEl.innerHTML = `<div class="card"><button id="play">▶ morph</button><input id="mslider" type="range" min="0" max="1" step="0.01" value="0"></div>
+  <div class="card"><label><input type="checkbox" id="tsurf" checked> pocket</label><label><input type="checkbox" id="tlab" checked> residues</label><label><input type="checkbox" id="trot" checked> rotate</label><label><input type="checkbox" id="txray" checked> ligand on top</label></div>
+  <div class="card"><button id="tour">✦ guided tour</button></div>`;
+  $('#play').onclick = () => { pose.playing = !pose.playing; pose.dir = pose.morph >= 1 ? -1 : 1; };
+  $('#mslider').oninput = e => { pose.playing = false; setMorph(+e.target.value); };
+  $('#tsurf').onchange = e => pose.surf.visible = e.target.checked;
+  $('#tlab').onchange = e => pose.labels.visible = e.target.checked;
+  $('#trot').onchange = e => orbit.autoRotate = e.target.checked;
+  $('#tour').onclick = runTour;
+  $('#txray').checked = pose.xray !== false; $('#txray').onchange = e => setXray(e.target.checked);
+}
+function setXray(on) {
+  pose.xray = on;
+  for (const g of [pose.ghost, pose.pred]) if (g) for (const m of [g.userData.atoms, g.userData.bonds]) { m.material.depthTest = !on; m.renderOrder = on ? 5 : 0; m.material.needsUpdate = true; }
+}
+function setMorph(t) { pose.morph = t; const c = D.complexes[pose.cur]; if (c.pred) placeBallStick(pose.pred, lerpPos(c.pred, pose.xt, t)); const s = $('#mslider'); if (s) s.value = t; poseHud(); }
+
+// guided tour
+const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+let tour = null;
+function runTour() {
+  orbit.autoRotate = false; const t = $('#trot'); if (t) t.checked = false;
+  const v = pose.view || new THREE.Vector3(0, 0.3, 1), side_ = new THREE.Vector3().crossVectors(v, new THREE.Vector3(0, 1, 0)).normalize();
+  const at = (d, s_, u) => v.clone().multiplyScalar(d).add(side_.clone().multiplyScalar(s_)).add(new THREE.Vector3(0, u, 0)).toArray();
+  const steps = [
+    { p: at(70, 0, 20), c: 'The whole protein, coloured by secondary structure. The ligand sits in the pocket at the centre.', morph: 0 },
+    { p: at(26, 10, 8), c: 'The pocket surface, coloured by residue class. Labels mark the residues within 4 Å of the crystal ligand.', morph: 0 },
+    { p: at(14, -6, 4), c: 'The cyan prediction against the green crystal pose. Boltz-2 never saw this pose; it predicted the protein and the ligand together.', morph: 0 },
+    { p: at(12, 5, -3), c: 'Morphing the prediction onto the crystal. The distance travelled is the ligand RMSD; under 2 Å counts as a success.', morph: 1 },
+    { p: at(42, 0, 12), c: 'Next: the Affinity tab ranks a congeneric series against experiment and FEP+.', morph: 1 }];
+  tour = { steps, i: 0, t0: performance.now(), from: camera.position.clone() };
+}
+function tourStep(now) {
+  if (!tour) return;
+  const s = tour.steps[tour.i], dur = 4200, k = Math.min(1, (now - tour.t0) / dur), e = ease(k);
+  camera.position.lerpVectors(tour.from, new THREE.Vector3(...s.p), e); orbit.target.set(0, 0, 0);
+  cap.textContent = s.c; cap.classList.add('show');
+  if (s.morph !== undefined) setMorph(pose.morph + (s.morph - pose.morph) * Math.min(1, k * 1.5));
+  if (k >= 1) { tour.i++; tour.from = camera.position.clone(); tour.t0 = now + 900; if (tour.i >= tour.steps.length) { tour = null; setTimeout(() => cap.classList.remove('show'), 1800); } }
+}
+
+// ---------- AFFINITY SCENE ----------
+const aff = { scene: new THREE.Scene(), mode: 'exp', group: new THREE.Group() };
+lights(aff.scene); aff.scene.add(aff.group);
+const L = D.affinity.ligands;
+const allDG = L.flatMap(l => [l.exp, l.boltz, l.fep]); const dgMin = Math.min(...allDG), dgMax = Math.max(...allDG);
+const ptMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 24, 16), new THREE.MeshPhysicalMaterial({ roughness: 0.25, clearcoat: 0.7 }), L.length);
+aff.group.add(ptMesh);
+// target halos
+['tyk2', 'cdk2'].forEach(t => {
+  const pts = L.filter(l => l.t === t).map(l => new THREE.Vector3(...l.xyz)); if (!pts.length) return;
+  const c = pts.reduce((a, b) => a.add(b), new THREE.Vector3()).multiplyScalar(1 / pts.length);
+  const s = label(t.toUpperCase()); s.position.copy(c).add(new THREE.Vector3(0, 4.2, 0)); aff.group.add(s);
+});
+const grid = new THREE.GridHelper(30, 15, 0x6b7a80, 0x6b7a80); grid.position.y = -11; grid.material.opacity = 0.25; grid.material.transparent = true; aff.group.add(grid);
+function paintAff(t = 1) {
+  const col = new THREE.Color();
+  L.forEach((l, i) => {
+    const v = aff.mode === 'exp' ? l.exp : aff.mode === 'boltz' ? l.boltz : aff.mode === 'fep' ? l.fep : null;
+    let r = 0.62;
+    if (aff.mode === 'err') { const e = Math.abs((l.boltz - meanOf(l.t, 'boltz')) - (l.exp - meanOf(l.t, 'exp'))); r = 0.45 + e * 0.55; col.copy(viridis(1 - Math.min(1, e / 2.5))); }
+    else col.copy(viridis((dgMax - v) / (dgMax - dgMin)));
+    _m.compose(_v.set(...l.xyz), _q.identity(), _s.set(r, r, r)); ptMesh.setMatrixAt(i, _m); ptMesh.setColorAt(i, col);
+  });
+  ptMesh.instanceMatrix.needsUpdate = true; ptMesh.instanceColor.needsUpdate = true;
+}
+const means = {}; function meanOf(t, k) { const key = t + k; if (means[key] == null) { const a = L.filter(l => l.t === t).map(l => l[k]); means[key] = a.reduce((x, y) => x + y, 0) / a.length; } return means[key]; }
+function scatter(t, key, label_) {
+  const pts = L.filter(l => l.t === t); if (!pts.length) return '';
+  const xs = pts.map(p => p.exp), ys = pts.map(p => p[key] - meanOf(t, key) + meanOf(t, 'exp'));
+  const lo = Math.min(...xs, ...ys) - .4, hi = Math.max(...xs, ...ys) + .4, W = 140, H = 140, P = 22;
+  const sx = v => P + (v - lo) / (hi - lo) * (W - P - 6), sy = v => H - P - (v - lo) / (hi - lo) * (H - P - 6);
+  const m = D.affinity.metrics[t][key === 'boltz' ? 'boltz2' : 'fep_plus'];
+  return `<figure style="margin:0"><svg viewBox="0 0 ${W} ${H}" width="100%"><line x1="${sx(lo)}" y1="${sy(lo)}" x2="${sx(hi)}" y2="${sy(hi)}" stroke="currentColor" opacity=".25"/>
+   ${pts.map((p, i) => `<circle cx="${sx(xs[i])}" cy="${sy(ys[i])}" r="3.4" fill="${'#' + viridis((dgMax - p.exp) / (dgMax - dgMin)).getHexString()}" stroke="var(--panel)" stroke-width=".8"><title>${p.name}: exp ${fmt(p.exp)}, ${label_} ${fmt(p[key])}</title></circle>`).join('')}
+   <text x="${W / 2}" y="${H - 4}" text-anchor="middle">experiment ΔG</text><text x="8" y="${H / 2}" transform="rotate(-90 8 ${H / 2})" text-anchor="middle">${label_} ΔG (shifted)</text></svg>
+   <figcaption class="note">${label_}: Spearman ${fmt(m.spearman)} [${fmt(m.spearman_ci95[0])}, ${fmt(m.spearman_ci95[1])}] · Kendall ${fmt(m.kendall)} · RMSE ${fmt(m.rmse_centered)} kcal/mol</figcaption></figure>`;
+}
+function affSide() {
+  const T = Object.keys(D.affinity.metrics);
+  side.innerHTML = `<h2>Chemical space of the two series</h2>
+  <p class="note">Each sphere is a ligand from the public FEP+ benchmark. Positions are a PCA of Morgan fingerprints, so neighbours are chemically similar. Colour shows binding free energy: brighter means tighter binding.</p>
+  <div class="cbar" style="background:${vGrad}"></div><div class="cbar-l"><span>${fmt(dgMax, 1)}</span><span>ΔG kcal/mol</span><span>${fmt(dgMin, 1)}</span></div>
+  ${T.map(t => `<h2>${t.toUpperCase()} · ${D.affinity.metrics[t].n} ligands · range ${fmt(D.affinity.metrics[t].exp_range_kcal, 1)} kcal/mol</h2>
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${scatter(t, 'boltz', 'Boltz-2')}${scatter(t, 'fep', 'FEP+')}</div>`).join('')}
+  <p class="note">Boltz-2 takes a few minutes per ligand on one L4. FEP+ is a physics method taking hours of GPU time per ligand pair, and its numbers come from Schrödinger's public benchmark. The experimental values are the same in both columns.</p>`;
+}
+function affControls() {
+  controlsEl.innerHTML = `<div class="card">colour by <button data-m="exp" class="on">experiment</button><button data-m="boltz">Boltz-2</button><button data-m="fep">FEP+</button><button data-m="err">Boltz-2 error</button></div>
+  <div class="card"><label><input type="checkbox" id="trot2" checked> rotate</label></div>`;
+  controlsEl.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { aff.mode = b.dataset.m; controlsEl.querySelectorAll('[data-m]').forEach(x => x.classList.toggle('on', x === b)); paintAff(); affHud(); });
+  $('#trot2').onchange = e => orbit.autoRotate = e.target.checked;
+}
+function affHud() {
+  const txt = { exp: 'Experimental ΔG', boltz: 'Boltz-2 predicted ΔG', fep: 'FEP+ predicted ΔG', err: 'Boltz-2 error after removing the per-series offset: bigger and darker spheres are worse' }[aff.mode];
+  hud.innerHTML = `<div class="card"><b>${txt}</b><br><span class="note">Hover a sphere for the ligand and its three numbers</span></div>`;
+}
+const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
+renderer.domElement.addEventListener('pointermove', e => {
+  if (tab !== 'aff') { tip.style.display = 'none'; return; }
+  const r = renderer.domElement.getBoundingClientRect(); mouse.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(mouse, camera); const h = ray.intersectObject(ptMesh)[0];
+  if (h) { const l = L[h.instanceId]; tip.style.display = 'block'; tip.style.left = (e.clientX - r.left + 14) + 'px'; tip.style.top = (e.clientY - r.top + 10) + 'px';
+    tip.innerHTML = `<b>${l.t.toUpperCase()} · ${l.name}</b><br>experiment ${fmt(l.exp)} · Boltz-2 ${fmt(l.boltz)} · FEP+ ${fmt(l.fep)} kcal/mol<br><span class="note" style="word-break:break-all">${l.smiles}</span>`; }
+  else tip.style.display = 'none';
+});
+
+// ---------- BENCHMARK (2D) ----------
+function benchSide() {
+  const B = D.bench, P = D.published, rows = [];
+  rows.push(['Boltz-2 (this run, open weights)', B.boltz2.rmsd_le_2, B.boltz2.success_pb_valid, B.n, true]);
+  for (const [k, v] of Object.entries(B)) if (k === 'vina' || k === 'gold') rows.push([k.toUpperCase() + ' (docking, crystal pocket given)', v.rmsd_le_2, v.success_pb_valid, v.n, false]);
+  const bar = (v, c) => `<div style="height:9px;border-radius:3px;background:var(--panel2)"><div style="height:100%;width:${(v * 100).toFixed(1)}%;background:${c};border-radius:3px"></div></div>`;
+  side.innerHTML = `<h2>Pose prediction on ${B.n} PoseBusters complexes</h2>
+  <p class="note">Success means ligand RMSD under 2 Å and all PoseBusters physical-validity checks passed. The same complexes are used for every row.</p>
+  <table><tr><th>Method</th><th>RMSD ≤ 2 Å</th><th>+ PB-valid</th></tr>
+  ${rows.map(r => `<tr><td>${r[4] ? '<b>' + r[0] + '</b>' : r[0]}</td><td class="n">${fmt(r[1] * 100, 0)}%${bar(r[1], 'var(--accent)')}</td><td class="n">${fmt(r[2] * 100, 0)}%${bar(r[2], 'var(--good)')}</td></tr>`).join('')}</table>
+  <h2>Published reference points (full sets)</h2>
+  <table><tr><th>Method</th><th>Set</th><th>RMSD ≤ 2 Å</th></tr>${P.cofolding.map(p => `<tr><td>${p.method}</td><td>${p.set}</td><td class="n">${fmt(p.rmsd_le_2 * 100, 1)}%</td></tr>`).join('')}</table>
+  <p class="note">${P.note}</p>
+  <h2>Affinity ranking (Spearman ρ vs experiment)</h2>
+  <table><tr><th>Target</th><th>Boltz-2</th><th>FEP+</th></tr>${Object.entries(D.affinity.metrics).map(([t, m]) => `<tr><td>${t.toUpperCase()}</td><td class="n">${fmt(m.boltz2.spearman)}</td><td class="n">${fmt(m.fep_plus.spearman)}</td></tr>`).join('')}</table>
+  <h2>Verification stamp</h2><div class="stamp">${Object.entries(D.stamp).map(([k, v]) => k + ': ' + v).join('\n')}</div>`;
+  hud.innerHTML = ''; controlsEl.innerHTML = '';
+}
+
+
+// ---------- BENCHMARK SCENE (3D bars) ----------
+const bench = { scene: new THREE.Scene(), group: new THREE.Group() };
+lights(bench.scene); bench.scene.add(bench.group);
+function buildBench() {
+  bench.group.clear();
+  const B = D.bench, rows = [['Boltz-2', B.boltz2, 0x22b8cf]];
+  for (const [k, v] of Object.entries(B)) if (k === 'vina' || k === 'gold') rows.push([k.toUpperCase(), v, k === 'vina' ? 0x9aa3ab : 0xc9a227]);
+  const H = 16, gap = 5.2, x0 = -(rows.length - 1) * gap / 2;
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(rows.length * gap + 8, 12), new THREE.MeshStandardMaterial({ color: new THREE.Color(css('--panel2')), roughness: 0.9 }));
+  floor.rotation.x = -Math.PI / 2; bench.group.add(floor);
+  rows.forEach(([name, v, col], i) => {
+    [[v.rmsd_le_2, 1, 'RMSD ≤ 2 Å'], [v.success_pb_valid, 0.55, '+ PB-valid']].forEach(([val, op, lab], j) => {
+      const h = Math.max(0.05, val * H), geo = new THREE.BoxGeometry(1.8, h, 1.8);
+      const m = new THREE.Mesh(geo, new THREE.MeshPhysicalMaterial({ color: col, roughness: 0.3, clearcoat: 0.6, transparent: op < 1, opacity: op < 1 ? 0.75 : 1 }));
+      m.position.set(x0 + i * gap + (j ? 1.1 : -1.1), h / 2, 0); m.userData.h = h; m.scale.y = 0.001; bench.group.add(m);
+      const t = label(`${Math.round(val * 100)}%`); t.position.set(m.position.x, h + 1.1, 0); t.scale.multiplyScalar(0.8); bench.group.add(t);
+    });
+    const n = label(name); n.position.set(x0 + i * gap, -1.3, 3.2); bench.group.add(n);
+  });
+  for (const ref of D.published.cofolding) {
+    const y = ref.rmsd_le_2 * H, plane = new THREE.Mesh(new THREE.PlaneGeometry(rows.length * gap + 4, 0.06), new THREE.MeshBasicMaterial({ color: 0xe4572e, transparent: true, opacity: 0.8 }));
+    plane.position.set(0, y, -1.2); bench.group.add(plane);
+  }
+  const r = label(`published co-folding ≈ ${Math.round(D.published.cofolding[0].rmsd_le_2 * 100)}–${Math.round(D.published.cofolding.at(-1).rmsd_le_2 * 100)}% (full PoseBusters V1)`);
+  r.position.set(0, D.published.cofolding.at(-1).rmsd_le_2 * H + 1.2, -1.2); r.scale.multiplyScalar(0.75); bench.group.add(r);
+  const lg = label('solid: RMSD ≤ 2 Å   ·   pale: and PB-valid'); lg.position.set(0, -3.2, 3.2); lg.scale.multiplyScalar(0.8); bench.group.add(lg);
+  bench.t0 = performance.now();
+}
+function growBench(now) {
+  const k = STILL ? 1 : Math.min(1, (now - (bench.t0 || now)) / 1400), e = 1 - Math.pow(1 - k, 3);
+  bench.group.children.forEach(o => { if (o.userData.h) { o.scale.y = Math.max(0.001, e); o.position.y = o.userData.h * e / 2; } });
+}
+
+// ---------- tabs and loop ----------
+let tab = 'pose';
+function setTab(t) {
+  tab = t; document.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-pressed', b.dataset.tab === t)); tip.style.display = 'none'; cap.classList.remove('show'); tour = null;
+  orbit.autoRotate = true;
+  if (t === 'pose') { loadComplex(pose.cur); poseControls(); }
+  if (t === 'aff') { camera.position.set(0, 8, 34); orbit.target.set(0, 0, 0); paintAff(); affSide(); affControls(); affHud(); }
+  if (t === 'bench') { camera.position.set(0, 13, 36); orbit.target.set(0, 6, 0); buildBench(); benchSide(); sceneBg(bench.scene); }
+}
+document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => setTab(b.dataset.tab));
+$('#theme').onclick = () => { const r = document.documentElement; const dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; r.dataset.theme = dark ? 'light' : 'dark'; sceneBg(pose.scene); sceneBg(aff.scene); sceneBg(bench.scene); if (tab === 'bench') buildBench(); };
+sceneBg(pose.scene); sceneBg(aff.scene);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { sceneBg(pose.scene); sceneBg(aff.scene); });
+
+let last = performance.now(), running = true;
+document.addEventListener('visibilitychange', () => { running = !document.hidden; if (running) { last = performance.now(); requestAnimationFrame(loop); } });
+function loop(now) {
+  if (!running) return;
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (tab === 'pose' && pose.playing) { let t = pose.morph + (pose.dir || 1) * dt * 0.45; if (t >= 1 || t <= 0) { t = Math.min(1, Math.max(0, t)); pose.playing = false; } setMorph(t); }
+  tourStep(now);
+  orbit.update();
+  if (tab === 'bench') growBench(now);
+  renderer.render(tab === 'aff' ? aff.scene : tab === 'bench' ? bench.scene : pose.scene, camera);
+  requestAnimationFrame(loop);
+}
+resize(); setTab(location.hash === '#aff' ? 'aff' : location.hash === '#bench' ? 'bench' : 'pose'); requestAnimationFrame(loop);
+</script>
+</body>
+</html>
