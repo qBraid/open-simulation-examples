@@ -1,0 +1,6 @@
+energy-grid · verified 2026-10-01 (UTC)
+machine: qBraid gpu-l4 pool box (shared; cgroup ~5 CPUs, 62 GB), CPU only, jobs via /tmp/ose/cpu-run (1 thread per solve)
+env: conda-forge python 3.12, ipopt 3.14.20 (MUMPS), pyomo 6.10.1, gridx-egret, pypsa 1.2.4, highspy, pandapower 3.5.5, numpy 2.4.6
+AC-OPF: PGLib-OPF v23.07 (commit dc6be4b), 16 cases (TYP 10, API 3, SAD 3), 3 formulations raced + SOC relaxation each: ~25 min wall in total
+expansion: PyPSA SciGrid-DE (2011-01-01, 24 h), 4 scenarios, HiGHS simplex vs IPM raced: 58-124 s per scenario (IPM won all 4)
+cost: ~0.8 slot-hours on the shared pool box (≈ $0.20 of its $0.49/h); $0 on the subscription pod

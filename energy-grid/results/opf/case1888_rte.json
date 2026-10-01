@@ -1,0 +1,43 @@
+{
+ "case": "case1888_rte",
+ "buses": 1888,
+ "branches": 2531,
+ "race": [
+  {
+   "formulation": "polar",
+   "objective": 1402530.8662058727,
+   "status": "optimal",
+   "seconds": 49.91
+  },
+  {
+   "formulation": "rectangular",
+   "objective": 1402530.8661996636,
+   "status": "optimal",
+   "seconds": 141.83
+  },
+  {
+   "formulation": "current-voltage",
+   "objective": 1402530.8661996345,
+   "status": "optimal",
+   "seconds": 29.15
+  }
+ ],
+ "best": {
+  "formulation": "current-voltage",
+  "objective": 1402530.8661996345,
+  "status": "optimal",
+  "seconds": 29.15
+ },
+ "soc": {
+  "objective": 1373879.2171512432,
+  "status": "optimal",
+  "seconds": 136.4
+ },
+ "reference": {
+  "ac": 1402500.0,
+  "dc": 1352900.0,
+  "soc_gap_pct": 2.05
+ },
+ "rel_diff_vs_reference": 2.2007985479146934e-05,
+ "certified_gap_pct": 2.0428533687837587
+}

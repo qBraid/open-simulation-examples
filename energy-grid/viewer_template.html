@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Power Grid Studio</title>
+<style>
+:root{
+  --bg:#eef1f0;--stage:#e6ebea;--panel:rgba(255,255,255,.86);--panel-solid:#fff;--ink:#16201f;--muted:#5b6866;--line:#cfd8d6;
+  --accent:#0f766e;--accent-2:#b45309;--hot:#d9483b;--good:#1d7f56;
+  --shadow:0 1px 2px rgba(10,20,20,.06),0 12px 32px -18px rgba(10,20,20,.35);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0b0f12;--stage:#070a0c;--panel:rgba(16,22,26,.78);--panel-solid:#11171b;--ink:#e6ecea;--muted:#93a19e;--line:#25313a;
+  --accent:#4fd1c5;--accent-2:#f6ad55;--hot:#ff6b5e;--good:#5ad19a;
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 12px 32px -18px rgba(0,0,0,.8);
+}}
+:root[data-theme="dark"]{
+  --bg:#0b0f12;--stage:#070a0c;--panel:rgba(16,22,26,.78);--panel-solid:#11171b;--ink:#e6ecea;--muted:#93a19e;--line:#25313a;
+  --accent:#4fd1c5;--accent-2:#f6ad55;--hot:#ff6b5e;--good:#5ad19a;
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 12px 32px -18px rgba(0,0,0,.8);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:14px/1.45 "Inter","Segoe UI",system-ui,-apple-system,sans-serif;overflow:hidden}
+header{height:52px;display:flex;align-items:center;gap:14px;padding:0 16px;border-bottom:1px solid var(--line);background:var(--panel-solid)}
+header h1{font-size:15px;margin:0;font-weight:650;letter-spacing:.01em;white-space:nowrap}
+header .sub{color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tabs{display:flex;gap:4px;margin-left:auto}
+.tabs button,.seg button,.btn{font:inherit;font-size:12.5px;border:1px solid var(--line);background:transparent;color:var(--ink);padding:5px 11px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"],.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel-solid);border-color:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+main{position:relative;height:calc(100% - 52px)}
+#c{position:absolute;inset:0;width:100%;height:100%;display:block;background:var(--stage)}
+#labels{position:absolute;inset:0;pointer-events:none}
+.lbl{font-size:12px;color:var(--ink);background:var(--panel);border:1px solid var(--line);padding:3px 8px;border-radius:6px;white-space:nowrap;box-shadow:var(--shadow);backdrop-filter:blur(6px)}
+.lbl b{color:var(--accent)}
+.panel{position:absolute;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);backdrop-filter:blur(10px);padding:12px 14px}
+.panel h2{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;font-weight:600}
+.left{left:14px;top:14px;width:290px;max-height:calc(100% - 120px);overflow:auto}
+.right{right:14px;top:14px;width:330px;max-height:calc(100% - 120px);overflow:auto}
+.bottom{left:14px;right:14px;bottom:14px;display:flex;align-items:center;gap:12px;padding:9px 14px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin:8px 0 10px}
+.kpi .v{font-size:18px;font-weight:650;font-variant-numeric:tabular-nums}
+.kpi .k{font-size:11.5px;color:var(--muted)}
+.kpi .d{font-size:11px;font-variant-numeric:tabular-nums}
+.kpi .d.up{color:var(--hot)}.kpi .d.down{color:var(--good)}
+.cbar{height:10px;border-radius:3px;margin:4px 0 2px}
+.cbar-l{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.legend-row{display:flex;align-items:center;gap:8px;font-size:12px;margin:5px 0}
+.sw{width:12px;height:12px;border-radius:3px;flex:none}
+.dot{width:9px;height:9px;border-radius:50%;flex:none}
+.seg{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0}
+#hour{flex:1;accent-color:var(--accent)}
+#clock{font-variant-numeric:tabular-nums;font-weight:650;min-width:92px}
+#mix{width:100%;height:150px;display:block}
+.mixlist{display:grid;grid-template-columns:auto 1fr auto;gap:2px 8px;font-size:12px;margin-top:6px;font-variant-numeric:tabular-nums}
+.mixlist .bar{height:8px;border-radius:2px;align-self:center}
+.note{font-size:11.5px;color:var(--muted);margin:6px 0 0}
+#tourCard{left:50%;transform:translateX(-50%);top:14px;max-width:min(520px,calc(100% - 28px));display:none;border-color:var(--accent)}
+#tourCard h3{margin:0 0 4px;font-size:15px}
+#tourCard p{margin:0;font-size:13px;color:var(--muted)}
+#bench svg{width:100%;height:auto;display:block}
+table{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:tabular-nums}
+th,td{text-align:right;padding:3px 4px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:600;color:var(--muted);font-size:11px}
+.pass{color:var(--good);font-weight:650}.fail{color:var(--hot);font-weight:650}
+.stamp{font-size:11px;color:var(--muted);font-family:ui-monospace,Menlo,monospace;white-space:pre-wrap}
+[hidden]{display:none!important}
+@media (max-width:860px){
+  html,body{overflow:auto}
+  main{height:auto}
+  #c{position:relative;height:62vh}
+  .panel{position:relative;left:auto;right:auto;top:auto;bottom:auto;width:auto;margin:10px 16px;max-height:none;transform:none}
+  #tourCard{left:auto;transform:none}
+  .bottom{flex-wrap:wrap}
+  header .sub{display:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Power Grid Studio</h1>
+  <span class="sub" id="sub"></span>
+  <div class="tabs" role="tablist">
+    <button role="tab" data-tab="grid" aria-selected="true">Germany · 24 h</button>
+    <button role="tab" data-tab="opf" aria-selected="false">AC-OPF benchmark</button>
+    <button class="btn" id="themeBtn" title="Toggle light/dark">◐</button>
+  </div>
+</header>
+<main>
+  <canvas id="c"></canvas>
+  <div id="labels"></div>
+
+  <div class="panel" id="tourCard"><h3 id="tourT"></h3><p id="tourP"></p></div>
+
+  <!-- GRID TAB -->
+  <section class="panel left" data-for="grid">
+    <h2>SciGrid-DE · capacity expansion</h2>
+    <div class="seg" id="scnSeg"></div>
+    <div class="kpis" id="kpis"></div>
+    <h2>Line loading (of N-1 limit)</h2>
+    <div class="cbar" id="cbarLoad"></div>
+    <div class="cbar-l"><span>0%</span><span>50%</span><span>100%</span></div>
+    <div class="legend-row"><span class="sw" style="background:var(--hot)"></span>congested (≥ 98%), pulsing</div>
+    <h2 style="margin-top:12px">Bus voltage (p.u.)</h2>
+    <div class="cbar" id="cbarV"></div>
+    <div class="cbar-l"><span id="vlo">0.95</span><span>1.00</span><span id="vhi">1.05</span></div>
+    <div class="legend-row"><span class="dot" style="background:var(--accent-2)"></span>particles: power flow, density and speed ∝ MW</div>
+    <div class="legend-row"><span class="sw" style="background:var(--accent)"></span>new line capacity (toggle)</div>
+    <div class="legend-row"><span class="sw" style="background:#2ec4b6;clip-path:polygon(25% 5%,75% 5%,100% 50%,75% 95%,25% 95%,0 50%)"></span>new 4 h batteries, height ∝ MW</div>
+    <div class="seg"><button id="tglExp" aria-pressed="true">new capacity</button><button id="tglV" aria-pressed="true">voltages</button><button id="tglP" aria-pressed="true">flows</button></div>
+    <p class="note" id="pfNote"></p>
+  </section>
+  <section class="panel right" data-for="grid">
+    <h2>Generation mix · <span id="mixHour"></span></h2>
+    <canvas id="mix"></canvas>
+    <div class="mixlist" id="mixList"></div>
+  </section>
+  <section class="panel bottom" data-for="grid">
+    <button class="btn primary" id="play">▶ Play</button>
+    <span id="clock">00:00</span>
+    <input id="hour" type="range" min="0" max="23" step="0.01" value="12" aria-label="Hour of day">
+    <button class="btn" id="tourBtn">✦ Guided tour</button>
+  </section>
+
+  <!-- OPF TAB -->
+  <section class="panel left" data-for="opf" hidden>
+    <h2>PGLib-OPF v23.07 · AC optimal power flow</h2>
+    <div class="seg" id="caseSeg"></div>
+    <div class="kpis" id="caseKpis"></div>
+    <h2>Branch loading</h2>
+    <div class="cbar" id="cbarLoad2"></div>
+    <div class="cbar-l"><span>0%</span><span>50%</span><span>100%</span></div>
+    <div class="legend-row"><span class="sw" style="background:rgba(127,140,141,.35);border:1px solid var(--muted)"></span>glass planes: voltage limits V<sub>min</sub>, V<sub>max</sub></div>
+    <div class="legend-row"><span class="dot" style="background:var(--hot)"></span>bus pinned at a voltage limit (binding)</div>
+    <div class="legend-row"><span class="dot" style="background:var(--accent-2)"></span>generator, size ∝ MW</div>
+    <p class="note">Bus height = solved voltage magnitude. Layout is a force-directed embedding (the PGLib cases carry no coordinates).</p>
+  </section>
+  <section class="panel right" data-for="opf" id="bench" hidden>
+    <h2>Gap to PGLib reference (PowerModels.jl + Ipopt)</h2>
+    <div id="benchSvg"></div>
+    <h2 style="margin-top:10px">Certified optimality gap (vs SOC relaxation)</h2>
+    <div id="gapSvg"></div>
+    <p class="note" id="benchNote"></p>
+    <h2 style="margin-top:10px">Formulation race (Ipopt, seconds)</h2>
+    <div id="raceTbl"></div>
+  </section>
+  <section class="panel bottom" data-for="opf" hidden>
+    <span class="stamp" id="stamp"></span>
+    <button class="btn" id="tourBtn2" style="margin-left:auto">✦ Guided tour</button>
+  </section>
+</main>
+
+<script>window.DATA = __DATA__;</script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const D = window.DATA;
+const $ = (s) => document.querySelector(s);
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const isDark = () => {
+  const t = document.documentElement.dataset.theme;
+  return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+};
+
+/* ---------- colour maps ---------- */
+const VIRIDIS = ['#440154','#482878','#3e4989','#31688e','#26828e','#1f9e89','#35b779','#6ece58','#fde725'].map(c => new THREE.Color(c));
+function viridis(t, out = new THREE.Color()) {
+  t = Math.min(1, Math.max(0, t)) * (VIRIDIS.length - 1);
+  const i = Math.min(VIRIDIS.length - 2, Math.floor(t));
+  return out.copy(VIRIDIS[i]).lerp(VIRIDIS[i + 1], t - i);
+}
+const BLU = new THREE.Color('#2f6db5'), MID = new THREE.Color('#d5d9d8'), RED = new THREE.Color('#c8372d');
+function diverge(t, out = new THREE.Color()) {           // t in [-1, 1]
+  t = Math.max(-1, Math.min(1, t));
+  return t < 0 ? out.copy(MID).lerp(BLU, -t) : out.copy(MID).lerp(RED, t);
+}
+function gradientCSS(fn, n = 12) {
+  const c = new THREE.Color(); const stops = [];
+  for (let i = 0; i <= n; i++) { fn(i / n * (fn === diverge ? 2 : 1) - (fn === diverge ? 1 : 0), c); stops.push('#' + c.getHexString()); }
+  return `linear-gradient(90deg,${stops.join(',')})`;
+}
+$('#cbarLoad').style.background = gradientCSS(viridis);
+$('#cbarLoad2').style.background = gradientCSS(viridis);
+$('#cbarV').style.background = gradientCSS(diverge);
+
+const CARRIER_COLORS = {
+  'Nuclear':'#8e6bbf','Brown Coal':'#7a5230','Hard Coal':'#4b4f54','Gas':'#e07b39','Oil':'#a33b3b',
+  'Run of River':'#3a7fc1','Storage Hydro':'#2b5d9a','Wind Offshore':'#127f8c','Wind Onshore':'#3fb6a8',
+  'Solar':'#f2c230','Waste':'#9a8f6a','Geothermal':'#c0587e','Other':'#9aa5a3','Multiple':'#b7c0bf',
+  'Pumped Hydro':'#5aa0e6','battery':'#2ec4b6'
+};
+
+/* ---------- renderer, post-processing ---------- */
+const canvas = $('#c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const labelR = new CSS2DRenderer({ element: $('#labels') });
+const pmrem = new THREE.PMREMGenerator(renderer);
+const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+function makeStage() {
+  const scene = new THREE.Scene();
+  scene.environment = envTex;
+  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 2000);
+  const controls = new OrbitControls(camera, canvas);
+  controls.enableDamping = true; controls.dampingFactor = 0.08;
+  controls.maxPolarAngle = Math.PI * 0.47;
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x223030, 0.7); scene.add(hemi);
+  const key = new THREE.DirectionalLight(0xffffff, 1.6);
+  key.position.set(-40, 80, 30); key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048);
+  Object.assign(key.shadow.camera, { left: -70, right: 70, top: 70, bottom: -70, near: 1, far: 250 });
+  scene.add(key);
+  const composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.45, 0.5, 0.82);
+  composer.addPass(bloom);
+  composer.addPass(new OutputPass());
+  return { scene, camera, controls, composer, bloom, hemi, key, labels: new THREE.Group() };
+}
+
+/* ---------- shared geometry helpers ---------- */
+const UP = new THREE.Vector3(0, 1, 0), _m = new THREE.Matrix4(), _q = new THREE.Quaternion(),
+      _s = new THREE.Vector3(), _p = new THREE.Vector3(), _d = new THREE.Vector3(), _c = new THREE.Color();
+function segMatrix(a, b, r, out) {
+  _d.subVectors(b, a); const len = _d.length();
+  _q.setFromUnitVectors(UP, _d.normalize());
+  _p.addVectors(a, b).multiplyScalar(0.5); _s.set(r, Math.max(len, 1e-3), r);
+  return out.compose(_p, _q, _s);
+}
+const HIDE = new THREE.Matrix4().makeScale(0, 0, 0);
+
+/* Flow particles along segments: count and speed follow |P|. */
+class FlowParticles {
+  constructor(scene, maxPer, segs, size) {
+    this.maxPer = maxPer; this.segs = segs;
+    const n = segs.length * maxPer;
+    this.mat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, depthWrite: false, toneMapped: false });
+    this.mesh = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(size, 1), this.mat, n);
+    this.mesh.frustumCulled = false;
+    this.phase = new Float32Array(n).map(() => Math.random());
+    this.count = new Uint8Array(segs.length); this.speed = new Float32Array(segs.length); this.sign = new Int8Array(segs.length);
+    scene.add(this.mesh);
+  }
+  set(i, mw, scaleMW) {
+    const a = Math.abs(mw);
+    this.count[i] = a < scaleMW * 0.04 ? 0 : Math.min(this.maxPer, Math.ceil(a / scaleMW * this.maxPer));
+    this.speed[i] = 1.2 + 6.0 * Math.min(1.5, a / scaleMW);
+    this.sign[i] = mw >= 0 ? 1 : -1;
+  }
+  tick(dt) {
+    const { segs, maxPer } = this;
+    for (let i = 0; i < segs.length; i++) {
+      const s = segs[i], len = s.len || 1;
+      for (let k = 0; k < maxPer; k++) {
+        const j = i * maxPer + k;
+        if (k >= this.count[i]) { this.mesh.setMatrixAt(j, HIDE); continue; }
+        let f = (this.phase[j] + dt * this.speed[i] / len) % 1; this.phase[j] = f;
+        const u = this.sign[i] > 0 ? f : 1 - f;
+        _p.lerpVectors(s.a, s.b, (u + k / this.count[i]) % 1);
+        _m.makeTranslation(_p.x, _p.y + s.lift, _p.z);
+        this.mesh.setMatrixAt(j, _m);
+      }
+    }
+    this.mesh.instanceMatrix.needsUpdate = true;
+  }
+}
+
+/* ======================================================================
+   TAB 1 · SciGrid-DE on the map
+   ====================================================================== */
+const G = makeStage();
+const LON0 = 10.4, LAT0 = 51.2, K = 9, COSL = Math.cos(LAT0 * Math.PI / 180);
+const proj = (lon, lat, y = 0) => new THREE.Vector3((lon - LON0) * COSL * K, y, -(lat - LAT0) * K);
+G.camera.position.set(-14, 58, 54); G.controls.target.set(0, 0, 3);
+
+const grid = D.grid;
+const scnNames = Object.keys(grid.scenarios);
+let S = grid.scenarios[grid.default || scnNames[0]];
+const LAND_H = 0.35, LINE_Y = LAND_H + 0.35;
+
+// ground + land
+const ground = new THREE.Mesh(new THREE.CircleGeometry(140, 96), new THREE.MeshStandardMaterial({ roughness: 1, metalness: 0 }));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; G.scene.add(ground);
+const landMat = new THREE.MeshStandardMaterial({ roughness: 0.9, metalness: 0.0 });
+const borderMat = new THREE.LineBasicMaterial({ transparent: true, opacity: 0.55 });
+for (const [country, rings] of Object.entries(grid.borders)) {
+  for (const ring of rings) {
+    const pts = ring.map(([x, y]) => proj(x, y, 0.02));
+    const line = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), borderMat);
+    G.scene.add(line);
+    if (country === 'Germany' && ring.length > 20) {
+      const shape = new THREE.Shape(ring.map(([x, y]) => new THREE.Vector2((x - LON0) * COSL * K, (y - LAT0) * K)));
+      const geo = new THREE.ExtrudeGeometry(shape, { depth: LAND_H, bevelEnabled: true, bevelThickness: 0.08, bevelSize: 0.08, bevelSegments: 2 });
+      geo.rotateX(-Math.PI / 2);
+      const land = new THREE.Mesh(geo, landMat); land.receiveShadow = true; land.castShadow = true;
+      G.scene.add(land);
+    }
+  }
+}
+
+// buses
+const B = S.buses;
+const busPos = B.x.map((x, i) => proj(x, B.y[i], LINE_Y));
+const nBus = busPos.length;
+const pillarMat = new THREE.MeshStandardMaterial({ roughness: 0.35, metalness: 0.1 });
+const pillars = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.16, 0.16, 1, 12).translate(0, 0.5, 0), pillarMat, nBus);
+pillars.castShadow = true; G.scene.add(pillars);
+const haloMat = new THREE.MeshBasicMaterial({ transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+const halos = new THREE.InstancedMesh(new THREE.RingGeometry(0.55, 0.8, 40).rotateX(-Math.PI / 2), haloMat, nBus);
+G.scene.add(halos);
+
+// lines (instanced cylinders)
+const L = S.lines;
+const segs = L.b0.map((a, i) => {
+  const pa = busPos[a].clone(), pb = busPos[L.b1[i]].clone();
+  return { a: pa, b: pb, len: pa.distanceTo(pb), lift: 0.0 };
+});
+const nLine = segs.length;
+const lineMat = new THREE.MeshStandardMaterial({ roughness: 0.5, metalness: 0.05 });
+const lines = new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 1, 8, 1, true), lineMat, nLine);
+lines.castShadow = true; G.scene.add(lines);
+const glowMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.32, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+const expGlow = new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 1, 8, 1, true), glowMat, nLine);
+G.scene.add(expGlow);
+const hotMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+const hot = new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 1, 8, 1, true), hotMat, nLine);
+G.scene.add(hot);
+const flows = new FlowParticles(G.scene, 7, segs, 0.24);
+
+// batteries
+const batMat = new THREE.MeshStandardMaterial({ color: '#2ec4b6', emissive: '#0c5c55', roughness: 0.3, metalness: 0.2 });
+const bats = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.42, 0.42, 1, 6).translate(0, 0.5, 0), batMat, nBus);
+bats.castShadow = true; G.scene.add(bats);
+
+function lineRadius(mva) { return 0.08 + 0.04 * Math.sqrt(Math.max(mva, 1) / 100); }
+
+function bindScenario(name) {
+  S = grid.scenarios[name];
+  const Ls = S.lines;
+  for (let i = 0; i < nLine; i++) {
+    const r = lineRadius(Ls.s_nom_opt[i]);
+    lines.setMatrixAt(i, segMatrix(segs[i].a, segs[i].b, r, _m));
+    const added = Ls.s_nom_opt[i] - Ls.s_nom_min[i];
+    expGlow.setMatrixAt(i, added > 1 ? segMatrix(segs[i].a, segs[i].b, r * 2.6, _m) : HIDE);
+  }
+  lines.instanceMatrix.needsUpdate = true; expGlow.instanceMatrix.needsUpdate = true;
+  bats.count = nBus;
+  for (let i = 0; i < nBus; i++) bats.setMatrixAt(i, HIDE);
+  S.battery.bus.forEach((b, k) => {
+    const mw = S.battery.p_nom[k];
+    if (mw < 5) return;
+    const p = busPos[b];
+    _m.compose(_p.set(p.x + 0.55, LAND_H, p.z + 0.55), _q.identity(), _s.set(1, 0.3 + mw / 350, 1));
+    bats.setMatrixAt(b, _m);
+  });
+  bats.instanceMatrix.needsUpdate = true;
+  document.querySelectorAll('#scnSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.s === name));
+  renderKpis(); drawMix();
+  $('#pfNote').textContent = S.pf_note || '';
+  $('#vlo').textContent = (1 - S.v_span).toFixed(3); $('#vhi').textContent = (1 + S.v_span).toFixed(3);
+}
+
+const lerpArr = (arr, h) => {                       // arr: per-element hourly arrays
+  const i0 = Math.floor(h), i1 = Math.min(23, i0 + 1), f = h - i0;
+  return (j) => arr[j][i0] * (1 - f) + arr[j][i1] * f;
+};
+let hour = 12, pulse = 0;
+function applyHour() {
+  const loadAt = lerpArr(S.line_loading, hour), pAt = lerpArr(S.line_p, hour), vAt = lerpArr(S.v_mag, hour);
+  const scaleMW = 1500;
+  for (let i = 0; i < nLine; i++) {
+    const ld = loadAt(i);
+    viridis(ld, _c); lines.setColorAt(i, _c);
+    flows.set(i, pAt(i), scaleMW);
+    if (ld >= 0.98) {
+      const r = lineRadius(S.lines.s_nom_opt[i]) * 2.1;
+      hot.setMatrixAt(i, segMatrix(segs[i].a, segs[i].b, r, _m));
+    } else hot.setMatrixAt(i, HIDE);
+  }
+  lines.instanceColor.needsUpdate = true; hot.instanceMatrix.needsUpdate = true;
+  const showV = $('#tglV').getAttribute('aria-pressed') === 'true';
+  for (let b = 0; b < nBus; b++) {
+    const v = vAt(b), dv = v - 1, p = busPos[b], vs = S.v_span;
+    const kk = Math.min(1, Math.abs(dv) / vs);
+    _m.compose(_p.set(p.x, LAND_H, p.z), _q.identity(), kk < 0.12 || !showV ? _s.set(0, 0, 0) : _s.set(1, 0.2 + 3.4 * kk, 1));
+    pillars.setMatrixAt(b, _m);
+    diverge(dv / vs, _c); pillars.setColorAt(b, _c);
+    const k = Math.min(1, Math.abs(dv) / vs);
+    _m.compose(_p.set(p.x, LAND_H + 0.04, p.z), _q.identity(), _s.setScalar(showV ? 0.6 + 3.2 * k : 0));
+    halos.setMatrixAt(b, _m);
+    diverge(dv / vs, _c).multiplyScalar(0.25 + 0.9 * k); halos.setColorAt(b, _c);
+  }
+  pillars.instanceMatrix.needsUpdate = true; pillars.instanceColor.needsUpdate = true;
+  halos.instanceMatrix.needsUpdate = true; halos.instanceColor.needsUpdate = true;
+  const hh = Math.floor(hour), mm = Math.floor((hour - hh) * 60);
+  $('#clock').textContent = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')} · ${S.date}`;
+  $('#mixHour').textContent = `${String(hh).padStart(2, '0')}:00`;
+  drawMix();
+}
+
+/* KPIs with deltas vs the base scenario */
+function renderKpis() {
+  const base = grid.scenarios[grid.default || scnNames[0]].summary, s = S.summary;
+  const items = [
+    ['objective_eur', 'System cost (day)', v => '€' + (v / 1e6).toFixed(2) + ' M'],
+    ['line_expansion_gw_km', 'Line upgrades', v => v.toFixed(0) + ' GW·km'],
+    ['battery_gw', 'New batteries', v => v.toFixed(2) + ' GW'],
+    ['curtailment_gwh', 'Curtailed renewables', v => v.toFixed(1) + ' GWh'],
+    ['co2_kt', 'CO₂ (day)', v => v.toFixed(0) + ' kt'],
+    ['solve_seconds', 'LP solve (race winner)', v => v.toFixed(0) + ' s'],
+  ];
+  $('#kpis').innerHTML = items.map(([k, label, f]) => {
+    const v = s[k]; if (v === undefined) return '';
+    const d = base[k] ? (v - base[k]) / Math.abs(base[k]) * 100 : 0;
+    const dd = (s === base || Math.abs(d) < 0.05 || k === 'solve_seconds') ? '' :
+      `<div class="d ${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'} ${Math.abs(d).toFixed(0)}% vs base</div>`;
+    return `<div class="kpi"><div class="v">${f(v)}</div><div class="k">${label}</div>${dd}</div>`;
+  }).join('');
+}
+
+/* Generation-mix stacked area (2D canvas) with playhead */
+const mixC = $('#mix'), mctx = mixC.getContext('2d');
+function drawMix() {
+  const dpr = Math.min(devicePixelRatio, 2), W = mixC.clientWidth, H = mixC.clientHeight;
+  if (!W) return;
+  mixC.width = W * dpr; mixC.height = H * dpr; mctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  mctx.clearRect(0, 0, W, H);
+  const order = Object.keys(S.mix);
+  const T = S.load.length, pad = { l: 30, r: 6, t: 6, b: 16 };
+  const stackTop = new Array(T).fill(0);
+  const series = order.map(c => S.mix[c].map(v => Math.max(0, v)));
+  const tot = series.reduce((a, s) => a.map((x, i) => x + s[i]), new Array(T).fill(0));
+  const ymax = Math.max(...tot, ...S.load) * 1.08 / 1000;
+  const X = i => pad.l + (W - pad.l - pad.r) * i / (T - 1), Y = v => H - pad.b - (H - pad.t - pad.b) * v / ymax;
+  mctx.font = '10px system-ui'; mctx.fillStyle = css('--muted'); mctx.strokeStyle = css('--line'); mctx.lineWidth = 1;
+  for (let g = 0; g <= ymax; g += Math.ceil(ymax / 4 / 10) * 10) {
+    mctx.beginPath(); mctx.moveTo(pad.l, Y(g)); mctx.lineTo(W - pad.r, Y(g)); mctx.stroke();
+    mctx.fillText(g + ' GW', 0, Y(g) + 3);
+  }
+  series.forEach((s, k) => {
+    mctx.beginPath();
+    for (let i = 0; i < T; i++) mctx.lineTo(X(i), Y((stackTop[i] + s[i]) / 1000));
+    for (let i = T - 1; i >= 0; i--) mctx.lineTo(X(i), Y(stackTop[i] / 1000));
+    mctx.closePath(); mctx.fillStyle = CARRIER_COLORS[order[k]] || '#999'; mctx.globalAlpha = 0.92; mctx.fill();
+    for (let i = 0; i < T; i++) stackTop[i] += s[i];
+  });
+  mctx.globalAlpha = 1; mctx.strokeStyle = css('--ink'); mctx.setLineDash([4, 3]); mctx.lineWidth = 1.5;
+  mctx.beginPath(); S.load.forEach((v, i) => mctx.lineTo(X(i), Y(v / 1000))); mctx.stroke(); mctx.setLineDash([]);
+  mctx.fillStyle = css('--ink'); mctx.fillText('load', X(1), Y(S.load[1] / 1000) - 4);
+  const hx = X(hour); mctx.strokeStyle = css('--accent'); mctx.lineWidth = 2;
+  mctx.beginPath(); mctx.moveTo(hx, pad.t); mctx.lineTo(hx, H - pad.b); mctx.stroke();
+  [0, 6, 12, 18, 23].forEach(i => { mctx.fillStyle = css('--muted'); mctx.fillText(String(i).padStart(2, '0'), X(i) - 6, H - 3); });
+  // current-hour breakdown
+  const i0 = Math.floor(hour), i1 = Math.min(T - 1, i0 + 1), f = hour - i0;
+  const now = order.map((c, k) => [c, series[k][i0] * (1 - f) + series[k][i1] * f]).filter(r => r[1] > 50).sort((a, b) => b[1] - a[1]);
+  const mx = Math.max(...now.map(r => r[1]));
+  $('#mixList').innerHTML = now.slice(0, 8).map(([c, v]) =>
+    `<span>${c}</span><span class="bar" style="background:${CARRIER_COLORS[c] || '#999'};width:${(v / mx * 100).toFixed(1)}%"></span><span>${(v / 1000).toFixed(1)} GW</span>`).join('');
+}
+
+/* scenario buttons + toggles */
+$('#scnSeg').innerHTML = scnNames.map(n => `<button data-s="${n}" title="${grid.scenarios[n].title}">${grid.scenarios[n].label}</button>`).join('');
+document.querySelectorAll('#scnSeg button').forEach(b => b.onclick = () => { bindScenario(b.dataset.s); applyHour(); });
+for (const id of ['tglExp', 'tglV', 'tglP']) $('#' + id).onclick = (e) => {
+  const on = e.target.getAttribute('aria-pressed') !== 'true'; e.target.setAttribute('aria-pressed', on);
+  expGlow.visible = $('#tglExp').getAttribute('aria-pressed') === 'true';
+  flows.mesh.visible = $('#tglP').getAttribute('aria-pressed') === 'true';
+  applyHour();
+};
+
+/* city labels used by the tour */
+const CITIES = { Hamburg: [9.99, 53.55], Berlin: [13.40, 52.52], Munich: [11.58, 48.14], Essen: [7.01, 51.46], Frankfurt: [8.68, 50.11], 'North Sea coast': [8.1, 53.75] };
+const cityLbl = {};
+for (const [name, [lon, lat]] of Object.entries(CITIES)) {
+  const el = document.createElement('div'); el.className = 'lbl'; el.textContent = name;
+  const o = new CSS2DObject(el); o.position.copy(proj(lon, lat, 2.4)); o.visible = false;
+  G.scene.add(o); cityLbl[name] = o;
+}
+
+/* ======================================================================
+   TAB 2 · PGLib AC-OPF networks
+   ====================================================================== */
+const O = makeStage();
+O.camera.position.set(14, 66, 78); O.controls.target.set(0, 16, 0);
+const opf = D.opf;
+const caseNames = Object.keys(opf.nets);
+let net = null;
+let vLo = 0.94, vHi = 1.06;                       // set per case from its voltage limits
+const yOfV = v => 6 + (v - vLo) / (vHi - vLo) * 26;
+const glassMat = new THREE.MeshPhysicalMaterial({ transparent: true, opacity: 0.16, roughness: 0.15, metalness: 0, transmission: 0, side: THREE.DoubleSide, depthWrite: false });
+const glassEdgeMat = new THREE.LineBasicMaterial({ transparent: true, opacity: 0.8 });
+const oGroup = new THREE.Group(); O.scene.add(oGroup);
+const oFloor = new THREE.Mesh(new THREE.CircleGeometry(120, 80), new THREE.MeshStandardMaterial({ roughness: 1 }));
+oFloor.rotation.x = -Math.PI / 2; oFloor.receiveShadow = true; O.scene.add(oFloor);
+let oFlows = null, oLines = null, oHot = null;
+
+function bindCase(name) {
+  oGroup.clear(); if (oFlows) O.scene.remove(oFlows.mesh);
+  net = opf.nets[name];
+  const N = net.nodes, E = net.edges;
+  const span = N.x.length > 1000 ? 46 : 34;
+  vLo = Math.min(...N.vmin); vHi = Math.max(...N.vmax);
+  const pos = N.x.map((x, i) => new THREE.Vector3(x * span, yOfV(N.vm[i]), N.y[i] * span));
+  // voltage-limit planes
+  const vmin = vLo, vmax = vHi;
+  for (const v of [vmin, vmax]) {
+    const pl = new THREE.Mesh(new THREE.PlaneGeometry(2 * span + 8, 2 * span + 8).rotateX(-Math.PI / 2), glassMat);
+    pl.position.y = yOfV(v); oGroup.add(pl);
+    const edge = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(2 * span + 8, 2 * span + 8).rotateX(-Math.PI / 2)), glassEdgeMat);
+    edge.position.y = yOfV(v); oGroup.add(edge);
+    const el = document.createElement('div'); el.className = 'lbl'; el.innerHTML = `V = <b>${v.toFixed(2)}</b> p.u.`;
+    const lb = new CSS2DObject(el); lb.position.set(span + 4, yOfV(v), span + 4); oGroup.add(lb);
+  }
+  // drop lines (bus "stems") to the floor
+  const stemPts = [];
+  pos.forEach(p => { stemPts.push(p.x, 0, p.z, p.x, p.y, p.z); });
+  const stemGeo = new THREE.BufferGeometry(); stemGeo.setAttribute('position', new THREE.Float32BufferAttribute(stemPts, 3));
+  oGroup.add(new THREE.LineSegments(stemGeo, new THREE.LineBasicMaterial({ transparent: true, opacity: N.x.length > 1000 ? 0.035 : 0.12, color: isDark() ? 0x9fb3b0 : 0x55625f })));
+  // branches
+  const segs2 = E.a.map((a, i) => ({ a: pos[a], b: pos[E.b[i]], len: pos[a].distanceTo(pos[E.b[i]]), lift: 0 }));
+  oLines = new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 1, 6, 1, true), new THREE.MeshStandardMaterial({ roughness: 0.4, metalness: 0.1 }), segs2.length);
+  oHot = new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 1, 6, 1, true), hotMat, segs2.length);
+  const rr = Math.max(0.04, 0.16 * Math.sqrt(118 / N.x.length));
+  segs2.forEach((s, i) => {
+    oLines.setMatrixAt(i, segMatrix(s.a, s.b, rr, _m));
+    viridis(E.loading[i] ?? 0, _c); oLines.setColorAt(i, _c);
+    oHot.setMatrixAt(i, (E.loading[i] ?? 0) >= 0.99 ? segMatrix(s.a, s.b, rr * 2.4, _m) : HIDE);
+  });
+  oGroup.add(oLines); oGroup.add(oHot);
+  oFlows = new FlowParticles(O.scene, N.x.length > 1000 ? 2 : 5, segs2, Math.max(0.07, rr * 1.4));
+  const pmax = Math.max(...E.p.map(Math.abs));
+  E.p.forEach((p, i) => oFlows.set(i, p, pmax * 0.6));
+  oFlows.mat.color.set(isDark() ? '#ffd27a' : '#7a4a00');
+  // buses: spheres; generators bigger and warm; binding-limit buses red
+  const nodeMat = new THREE.MeshStandardMaterial({ roughness: 0.3, metalness: 0.2 });
+  const nodes = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 16, 12), nodeMat, N.x.length);
+  const gmax = Math.max(1, ...N.gen);
+  let binding = 0;
+  pos.forEach((p, i) => {
+    const isGen = N.gen[i] > 0.01;
+    const atLim = (N.vmax[i] - N.vm[i] < 1e-3) || (N.vm[i] - N.vmin[i] < 1e-3);
+    if (atLim) binding++;
+    const r = isGen ? rr * 2.2 + rr * 4 * Math.sqrt(N.gen[i] / gmax) : rr * 1.7;
+    _m.compose(p, _q.identity(), _s.setScalar(r)); nodes.setMatrixAt(i, _m);
+    _c.set(atLim ? css('--hot') : isGen ? (isDark() ? '#f6ad55' : '#e8740c') : (isDark() ? '#9fb3b0' : '#4f5d5a'));
+    nodes.setColorAt(i, _c);
+  });
+  nodes.castShadow = true; oGroup.add(nodes);
+  net._binding = binding; net._pos = pos;
+  document.querySelectorAll('#caseSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.c === name));
+  if (!tour) { const big = N.x.length > 1000; O.camera.position.set(14, big ? 84 : 66, big ? 100 : 78); O.controls.target.set(0, 16, 0); }
+  const rec = opf.cases.find(c => c.case === name);
+  const ref = rec.reference?.ac, obj = rec.best?.objective;
+  const rel = rec.rel_diff_vs_reference;
+  $('#caseKpis').innerHTML = `
+    <div class="kpi"><div class="v">$${obj?.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div><div class="k">AC objective ($/h)</div></div>
+    <div class="kpi"><div class="v">$${ref?.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div><div class="k">PGLib reference</div></div>
+    <div class="kpi"><div class="v ${Math.abs(rel) < 1e-3 ? 'pass' : 'fail'}">${(rel * 100).toFixed(4)}%</div><div class="k">gap to reference (bar: 0.1%)</div></div>
+    <div class="kpi"><div class="v">${rec.certified_gap_pct?.toFixed(2)}%</div><div class="k">certified gap (SOC)</div></div>
+    <div class="kpi"><div class="v">${N.x.length.toLocaleString()}</div><div class="k">buses · ${E.a.length.toLocaleString()} branches</div></div>
+    <div class="kpi"><div class="v">${binding}</div><div class="k">buses at a voltage limit</div></div>`;
+}
+$('#caseSeg').innerHTML = caseNames.map(n => `<button data-c="${n}">${opf.nets[n].label}</button>`).join('');
+document.querySelectorAll('#caseSeg button').forEach(b => b.onclick = () => bindCase(b.dataset.c));
+
+/* benchmark charts (SVG) */
+function benchCharts() {
+  const cs = opf.cases.filter(c => c.best);
+  const W = 300, rowH = 15, H = cs.length * rowH + 30, x0 = 112;
+  const lx = v => x0 + (W - x0 - 8) * (Math.log10(Math.max(v, 1e-8)) + 8) / 6;   // 1e-8 .. 1e-2
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Relative gap to the PGLib reference per case, log scale">`;
+  [-8, -6, -4, -2].forEach(e => { s += `<line x1="${lx(10 ** e)}" x2="${lx(10 ** e)}" y1="4" y2="${H - 18}" stroke="var(--line)"/><text x="${lx(10 ** e)}" y="${H - 6}" font-size="9" text-anchor="middle" fill="var(--muted)">1e${e}</text>`; });
+  s += `<line x1="${lx(1e-3)}" x2="${lx(1e-3)}" y1="2" y2="${H - 18}" stroke="var(--hot)" stroke-dasharray="3 2"/><text x="${lx(1e-3) + 3}" y="10" font-size="9" fill="var(--hot)">0.1% bar</text>`;
+  cs.forEach((c, i) => {
+    const y = 8 + i * rowH, v = Math.abs(c.rel_diff_vs_reference);
+    s += `<text x="0" y="${y + 9}" font-size="10" fill="var(--ink)">${c.case.replace('_', ' ').replace('__', ' · ')}</text>`;
+    s += `<rect x="${x0}" y="${y + 2}" width="${Math.max(1, lx(v) - x0)}" height="9" rx="2" fill="${v < 1e-3 ? 'var(--good)' : 'var(--hot)'}"/>`;
+  });
+  $('#benchSvg').innerHTML = s + '</svg>';
+  const gx = v => x0 + (W - x0 - 8) * Math.min(v, 6) / 6;
+  let g = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Certified optimality gap versus PGLib published SOC gap">`;
+  [0, 2, 4, 6].forEach(v => { g += `<line x1="${gx(v)}" x2="${gx(v)}" y1="4" y2="${H - 18}" stroke="var(--line)"/><text x="${gx(v)}" y="${H - 6}" font-size="9" text-anchor="middle" fill="var(--muted)">${v}%</text>`; });
+  cs.forEach((c, i) => {
+    const y = 8 + i * rowH;
+    g += `<text x="0" y="${y + 9}" font-size="10" fill="var(--ink)">${c.case.replace('_', ' ').replace('__', ' · ')}</text>`;
+    if (c.certified_gap_pct != null) g += `<rect x="${x0}" y="${y + 2}" width="${Math.max(1, gx(c.certified_gap_pct) - x0)}" height="9" rx="2" fill="var(--accent)"/>`;
+    if (c.reference?.soc_gap_pct != null) g += `<line x1="${gx(c.reference.soc_gap_pct)}" x2="${gx(c.reference.soc_gap_pct)}" y1="${y}" y2="${y + 13}" stroke="var(--ink)" stroke-width="2"/>`;
+  });
+  $('#gapSvg').innerHTML = g + '</svg>';
+  const pass = cs.filter(c => Math.abs(c.rel_diff_vs_reference) < 1e-3).length;
+  const rows = cs.map(c => {
+    const t = Object.fromEntries(c.race.map(r => [r.formulation, r.status === 'optimal' ? r.seconds : null]));
+    const best = Math.min(...Object.values(t).filter(v => v != null));
+    const cell = k => t[k] == null ? '<td class="fail">–</td>' : `<td${t[k] === best ? ' class="pass"' : ''}>${t[k].toFixed(1)}</td>`;
+    return `<tr><td>${c.case.replace('_', ' ').replace('__', ' · ')}</td>${cell('polar')}${cell('rectangular')}${cell('current-voltage')}</tr>`;
+  }).join('');
+  $('#raceTbl').innerHTML = `<table><tr><th>case</th><th>polar</th><th>rect.</th><th>I-V</th></tr>${rows}</table>`;
+  $('#benchNote').innerHTML = `<b class="${pass === cs.length ? 'pass' : 'fail'}">${pass}/${cs.length}</b> cases within 0.1% of the published optimum. Bars: our certified gap (AC objective vs our SOC lower bound); black tick: PGLib's published SOC gap. Matching ticks = same relaxation, same optimum.`;
+}
+
+/* ======================================================================
+   Tabs, tour, theme, loop
+   ====================================================================== */
+let tab = 'grid';
+function setTab(t) {
+  tab = t;
+  document.querySelectorAll('.tabs [data-tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === t));
+  document.querySelectorAll('[data-for]').forEach(el => el.hidden = el.dataset.for !== t);
+  for (const o of Object.values(cityLbl)) o.visible = false;
+  $('#labels').innerHTML = ''; labelR.domElement.innerHTML = '';
+  $('#sub').textContent = t === 'grid' ? D.grid.subtitle : D.opf.subtitle;
+  stopTour(); resize();
+}
+document.querySelectorAll('.tabs [data-tab]').forEach(b => b.onclick = () => setTab(b.dataset.tab));
+
+let tour = null;
+function flyTo(st, pos, target, ms = 2200) {
+  const p0 = st.camera.position.clone(), t0 = st.controls.target.clone(), start = performance.now();
+  return new Promise(res => {
+    (function step() {
+      if (!tour) return res();
+      const k = Math.min(1, (performance.now() - start) / ms), e = k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+      st.camera.position.lerpVectors(p0, pos, e); st.controls.target.lerpVectors(t0, target, e);
+      k < 1 ? requestAnimationFrame(step) : res();
+    })();
+  });
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function card(t, p) { $('#tourCard').style.display = 'block'; $('#tourT').textContent = t; $('#tourP').innerHTML = p; }
+function stopTour() { tour = null; $('#tourCard').style.display = 'none'; for (const o of Object.values(cityLbl)) o.visible = false; }
+async function runGridTour() {
+  if (tour) return stopTour(); tour = 'grid';
+  const T = D.grid.tour;
+  for (const w of T) {
+    if (!tour) break;
+    if (w.hour != null) { hour = w.hour; $('#hour').value = hour; applyHour(); }
+    for (const [n, o] of Object.entries(cityLbl)) o.visible = (w.cities || []).includes(n);
+    card(w.title, w.text);
+    const [lon, lat] = w.at, d = w.dist;
+    await flyTo(G, proj(lon, lat, 0).add(new THREE.Vector3(-d * 0.35, d * 0.9, d * 0.75)), proj(lon, lat, 0));
+    await sleep(w.hold || 5200);
+  }
+  stopTour();
+}
+async function runOpfTour() {
+  if (tour) return stopTour(); tour = 'opf';
+  const name = caseNames[caseNames.length - 1]; bindCase(name);
+  card('A real transmission system, solved to proven near-optimality', `${opf.nets[name].label}: ${net.nodes.x.length.toLocaleString()} buses. Height is the solved voltage; the glass planes are the legal limits.`);
+  await flyTo(O, new THREE.Vector3(14, 66, 78), new THREE.Vector3(0, 16, 0)); await sleep(5000);
+  if (!tour) return;
+  card('Binding constraints are visible', `${net._binding} buses sit exactly on a voltage limit (red). These are the constraints that set the price of power. Cheaper dispatch would push them out of bounds.`);
+  await flyTo(O, new THREE.Vector3(55, yOfV(vHi) + 8, 30), new THREE.Vector3(0, yOfV(vHi), 0)); await sleep(5200);
+  if (!tour) return;
+  card('Certified, not just converged', `The AC solution is within ${opf.cases.find(c => c.case === name).certified_gap_pct.toFixed(2)}% of a convex lower bound we solve ourselves: a proof of near-optimality that a local solver alone can't give.`);
+  await flyTo(O, new THREE.Vector3(-70, 30, 55), new THREE.Vector3(0, 14, 0)); await sleep(5200);
+  stopTour();
+}
+$('#tourBtn').onclick = runGridTour; $('#tourBtn2').onclick = runOpfTour;
+
+let playing = false;
+$('#play').onclick = () => { playing = !playing; $('#play').textContent = playing ? '❚❚ Pause' : '▶ Play'; };
+$('#hour').oninput = (e) => { hour = +e.target.value; applyHour(); };
+
+function applyTheme() {
+  const dark = isDark();
+  for (const st of [G, O]) {
+    st.scene.background = new THREE.Color(css('--stage'));
+    st.bloom.strength = dark ? 0.42 : 0.12;
+    st.hemi.intensity = dark ? 0.55 : 0.55; st.key.intensity = dark ? 1.4 : 1.25;
+    st.scene.environmentIntensity = dark ? 0.9 : 0.45;
+    renderer.toneMappingExposure = dark ? 1.0 : 1.05;
+  }
+  ground.material.color.set(dark ? '#0d1316' : '#cdd6d3'); oFloor.material.color.set(dark ? '#0d1316' : '#d6dedb');
+  landMat.color.set(dark ? '#1a2328' : '#fbfcfb'); borderMat.color.set(dark ? '#4c5d64' : '#7d8b88');
+  glowMat.color.set(dark ? '#4fd1c5' : '#0f766e'); glowMat.blending = dark ? THREE.AdditiveBlending : THREE.NormalBlending; glowMat.opacity = dark ? 0.32 : 0.28;
+  hotMat.color.set(dark ? '#ff6b5e' : '#d9483b'); hotMat.blending = dark ? THREE.AdditiveBlending : THREE.NormalBlending;
+  flows.mat.color.set(dark ? '#ffd27a' : '#9a3412'); flows.mat.blending = dark ? THREE.AdditiveBlending : THREE.NormalBlending;
+  haloMat.blending = dark ? THREE.AdditiveBlending : THREE.NormalBlending; haloMat.opacity = dark ? 1 : 0.55;
+  glassMat.color.set(dark ? '#2a6f69' : '#5b6866'); glassMat.opacity = dark ? 0.07 : 0.12; glassEdgeMat.color.set(dark ? '#4fd1c5' : '#0f766e');
+  for (const m of [glowMat, hotMat, flows.mat, haloMat]) m.needsUpdate = true;
+  if (net) bindCase(Object.keys(opf.nets).find(k => opf.nets[k] === net));
+  drawMix();
+}
+$('#themeBtn').onclick = () => { document.documentElement.dataset.theme = isDark() ? 'light' : 'dark'; applyTheme(); };
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+
+function resize() {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  renderer.setSize(w, h, false); labelR.setSize(w, h);
+  for (const st of [G, O]) { st.camera.aspect = w / h; st.camera.updateProjectionMatrix(); st.composer.setSize(w, h); }
+  drawMix();
+}
+new ResizeObserver(resize).observe(canvas);
+
+let last = performance.now(), visible = true;
+document.addEventListener('visibilitychange', () => { visible = !document.hidden; last = performance.now(); if (visible) requestAnimationFrame(loop); });
+function loop(now) {
+  if (!visible) return;
+  const dt = Math.min(0.05, (now - last) / 1000); last = now; pulse += dt;
+  if (tab === 'grid') {
+    if (playing) { hour = (hour + dt * 0.5) % 23.99; $('#hour').value = hour; applyHour(); }
+    flows.tick(dt);
+    hotMat.opacity = 0.35 + 0.35 * (0.5 + 0.5 * Math.sin(pulse * 5));
+    G.controls.update(); G.composer.render(); labelR.render(G.scene, G.camera);
+  } else {
+    if (oFlows) oFlows.tick(dt);
+    hotMat.opacity = 0.35 + 0.35 * (0.5 + 0.5 * Math.sin(pulse * 5));
+    O.controls.update(); O.composer.render(); labelR.render(O.scene, O.camera);
+  }
+  requestAnimationFrame(loop);
+}
+
+/* boot: #dark / #light, #opf, #tour can be combined, e.g. viewer.html#opf-dark */
+if (/dark/.test(location.hash)) document.documentElement.dataset.theme = 'dark';
+if (/light/.test(location.hash)) document.documentElement.dataset.theme = 'light';
+$('#stamp').textContent = D.stamp;
+bindScenario(grid.default || scnNames[0]);
+bindCase(/2869/.test(location.hash) ? caseNames[caseNames.length - 1] : caseNames[0]);
+benchCharts();
+applyTheme();
+setTab(/opf/.test(location.hash) ? 'opf' : 'grid');
+applyHour();
+if (/tour/.test(location.hash)) (/opf/.test(location.hash) ? runOpfTour : runGridTour)();
+requestAnimationFrame(loop);
+window.__ready = true;
+</script>
+</body>
+</html>

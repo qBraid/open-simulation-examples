@@ -1,0 +1,43 @@
+{
+ "case": "case118_ieee__sad",
+ "buses": 118,
+ "branches": 186,
+ "race": [
+  {
+   "formulation": "polar",
+   "objective": 105155.04835449456,
+   "status": "optimal",
+   "seconds": 0.51
+  },
+  {
+   "formulation": "rectangular",
+   "objective": 105155.04835429664,
+   "status": "optimal",
+   "seconds": 0.2
+  },
+  {
+   "formulation": "current-voltage",
+   "objective": 105155.04835429674,
+   "status": "optimal",
+   "seconds": 0.26
+  }
+ ],
+ "best": {
+  "formulation": "rectangular",
+  "objective": 105155.04835429664,
+  "status": "optimal",
+  "seconds": 0.2
+ },
+ "soc": {
+  "objective": 96536.60698128594,
+  "status": "optimal",
+  "seconds": 0.29
+ },
+ "reference": {
+  "ac": 105160.0,
+  "dc": null,
+  "soc_gap_pct": 8.17
+ },
+ "certified_gap_pct": 8.195936864555257,
+ "rel_diff_vs_reference": -4.7086779225566324e-05
+}

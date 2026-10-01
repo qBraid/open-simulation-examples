@@ -1,0 +1,43 @@
+{
+ "case": "case300_ieee",
+ "buses": 300,
+ "branches": 411,
+ "race": [
+  {
+   "formulation": "polar",
+   "objective": 565219.9791227134,
+   "status": "optimal",
+   "seconds": 0.57
+  },
+  {
+   "formulation": "rectangular",
+   "objective": 565219.9791224778,
+   "status": "optimal",
+   "seconds": 0.53
+  },
+  {
+   "formulation": "current-voltage",
+   "objective": 565219.9791224658,
+   "status": "optimal",
+   "seconds": 0.58
+  }
+ ],
+ "best": {
+  "formulation": "current-voltage",
+  "objective": 565219.9791224658,
+  "status": "optimal",
+  "seconds": 0.58
+ },
+ "soc": {
+  "objective": 550393.0718914382,
+  "status": "optimal",
+  "seconds": 2.28
+ },
+ "reference": {
+  "ac": 565220.0,
+  "dc": 517850.0,
+  "soc_gap_pct": 2.63
+ },
+ "rel_diff_vs_reference": -3.693700536845889e-08,
+ "certified_gap_pct": 2.62321003833714
+}
