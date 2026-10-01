@@ -1,4 +1,9 @@
 {
-  "text": "Verified 2026-09-30\nenv: conda-forge openfoam=2412, gmsh 4.15.2, pyvista 0.49.0, mpich 4.3.2\nmachine: qBraid subscription pod, 8vCPU_25GB (shared), <= 3 MPI ranks\ncylinder fine: 27k cells, 2 ranks, 24.0 min\nAhmed: 592k cells, 3 ranks, 21.7 min (+2.7 min snappy)\ncost: $0 on-demand (subscription time only)",
-  "limits": "Coarse meshes; steady RANS with wall functions for the 3D body; no prism layers. The Ahmed Cd agreement is partly fortuitous (see the README)."
+ "text": "Verified 2026-10-01\nenv: conda-forge openfoam=2412, gmsh 4.15.2, pyvista 0.49.0, mpich 4.3.2 (wind-tunnel/env/environment.yml)\nmachines: qBraid subscription pod (serial lane, 1 core) + shared qBraid gpu-l4 pool box (CPU queue, 2 MPI ranks)\nAhmed fine (1.37M cells): 1000 SIMPLE iterations ~38 min on 2 ranks; medium (0.59M): ~49 min serial\ncylinder (35k cells, inlet 20D): 17 min (linearUpwind) and 23 min (central) on 2 ranks\ncost: $0 on-demand; pool-box share ~3 CPU-slot-hours of a $0.49/h instance shared by 10 streams",
+ "limits": [
+  "Steady RANS (k-\u03c9 SST) with wall functions, no prism layers: the 25\u00b0 slant flow stays attached, where the experiment separates and reattaches.",
+  "The model omits the stilts and uses a no-slip stationary floor; the reference drag is Ahmed et al. 1984 at 60 m/s (Re 4.3e6), these runs are at 40 m/s (Re 2.8e6).",
+  "Mesh ladder tops out at 1.37M cells (half model) on the lean budget; workshop-grade entries use 10-50M cells.",
+  "Cylinder frames and particles animate the real solver fields; the in-browser advection is a visual aid, not a solver."
+ ]
 }
