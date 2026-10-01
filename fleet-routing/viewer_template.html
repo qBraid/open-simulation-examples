@@ -79,7 +79,7 @@ select{background:transparent;color:var(--text-primary);border:1px solid var(--h
 #caption p{margin:0;color:var(--text-secondary);font-size:13px}
 #racebox{left:12px;bottom:72px;width:330px;display:none}
 .lb{position:relative;height:118px}
-.lbrow{position:absolute;left:0;right:0;height:34px;transition:transform .35s ease;display:grid;grid-template-columns:76px 1fr 78px;align-items:center;gap:8px;font-size:12.5px}
+.lbrow{position:absolute;left:0;right:0;height:34px;transition:transform .35s ease;display:grid;grid-template-columns:64px 1fr 118px;align-items:center;gap:8px;font-size:12.5px;white-space:nowrap}
 .lbbar{height:12px;border-radius:3px}
 #benchcard{right:12px;top:62px;width:300px;display:none}
 #mini{width:100%;height:190px;border-radius:8px;background:var(--surface-2);display:block;margin-top:6px}
@@ -134,7 +134,7 @@ th{color:var(--text-muted);font-weight:500}
       <canvas id="mini" width="560" height="380"></canvas>
     </div>
     <div class="hud" id="caption"><b id="cap-t"></b><p id="cap-p"></p></div>
-    <div class="hud" id="racebox"><div class="muted" style="font-size:11.5px">Solver race · <span id="race-t">0.0 s</span> of 60 s</div><div class="lb" id="lb"></div></div>
+    <div class="hud" id="racebox"><div class="muted" style="font-size:11.5px">Solver race · <span id="race-t">0.0 s</span> of 60 s · bar = plan length (shorter is better)</div><div class="lb" id="lb"></div></div>
     <div class="hint" id="hint">drag to orbit · right-drag to pan · scroll to zoom · click a route to follow it</div>
     <div class="hud" id="timeline">
       <button id="play" aria-label="pause"></button>
@@ -372,7 +372,7 @@ function setSun(hour){
   sun.position.copy(d.multiplyScalar(8)); sun.target.position.set(0,0,0);
   const dark = isDark();
   sun.color.set(dark? 0x9db4ff : new THREE.Color().setHSL(0.09, 0.6, 0.62+0.3*(hour-8)/2.5));
-  sun.intensity = dark? 0.55 : 1.6 + 0.9*Math.min((hour-8)/2,1);
+  sun.intensity = dark? 0.32 : 1.6 + 0.9*Math.min((hour-8)/2,1);
 }
 
 // ---------------------------------------------------------------- ground, water, shore
@@ -420,6 +420,27 @@ const civ = t => { t=Math.min(Math.max(t,0),1)*(CIV.length-1); const i=Math.floo
 const hT = h => Math.log(h/6)/Math.log(450/6);
 function hbar(){ const n=col('--neutral'), k=isDark()?0.25:0.28; document.getElementById('hbar').style.background = `linear-gradient(90deg, ${[0,.125,.25,.375,.5,.625,.75,.875,1].map(t=>'#'+civ(t).lerp(n,k).getHexString()).join(',')})`; }
 const bMat = new THREE.MeshStandardMaterial({vertexColors:true, roughness:.82, metalness:.05, side:THREE.DoubleSide});
+// night windows: procedural, per floor (3.7 m) and bay (4 m); fades to an average glow when cells get sub-pixel
+const nightU = {value:0};
+bMat.onBeforeCompile = sh => {
+  sh.uniforms.uNight = nightU;
+  sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWPos; varying vec3 vWN;')
+    .replace('#include <fog_vertex>', '#include <fog_vertex>\nvWPos = (modelMatrix*vec4(transformed,1.0)).xyz; vWN = normalize(mat3(modelMatrix)*objectNormal);');
+  sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWPos; varying vec3 vWN; uniform float uNight;')
+    .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+    if(uNight>0.0 && abs(vWN.y)<0.5 && vWPos.y>0.003){
+      float along = abs(vWN.x)>abs(vWN.z)? vWPos.z : vWPos.x;
+      vec2 g = vec2(along/0.004, vWPos.y/0.0037);
+      vec2 f = fract(g), c = floor(g);
+      float win = step(.18,f.x)*step(f.x,.82)*step(.22,f.y)*step(f.y,.78);
+      float h = fract(sin(dot(c + floor(vWPos.xz*7.0), vec2(12.9898,78.233)))*43758.5453);
+      float lit = step(.74,h)*win;
+      float px = max(fwidth(g.x), fwidth(g.y));
+      float k = smoothstep(.25,.7,px);
+      float glow = mix(lit, .26*.41, k);
+      totalEmissiveRadiance += vec3(1.0,.76,.42) * glow * uNight * 1.5;
+    }`);
+};
 let bGeo;
 function buildBuildings(){
   const b = S.buildings, nb = b.h.length, P=[], Cc=[];
@@ -428,7 +449,8 @@ function buildBuildings(){
     const a=b.starts[k], e=(k+1<nb? b.starts[k+1] : b.verts.length/2), m=e-a; if(m<3) continue;
     const h=b.h[k]/1000, est=!b.src[k];
     const base = est? neutral.clone() : civ(hT(b.h[k])).lerp(neutral, isDark()? 0.25:0.28);
-    const lo = base.clone().multiplyScalar(isDark()?0.55:0.72), hi = base;
+    if(isDark()) base.multiplyScalar(0.55);
+    const lo = base.clone().multiplyScalar(isDark()?0.6:0.72), hi = base;
     const ring=[]; for(let i=a;i<e;i++) ring.push([b.verts[2*i]*U, -b.verts[2*i+1]*U]);
     for(let i=0;i<m;i++){ const p=ring[i], q=ring[(i+1)%m];
       P.push(p[0],0,p[1], q[0],0,q[1], q[0],h,q[1],  p[0],0,p[1], q[0],h,q[1], p[0],h,p[1]);
@@ -672,13 +694,15 @@ const lb = document.getElementById('lb');
 const LBK = ["pyvrp","ortools"].filter(k=>C.solvers[k] && C.solvers[k].trace.length);
 LBK.forEach((k,i)=>{ const d=document.createElement('div'); d.className='lbrow'; d.id='lb-'+k;
   d.innerHTML=`<span style="color:var(--s-${k});font-weight:600">${k}</span><span><div class="lbbar" style="background:var(--s-${k});width:0"></div></span><span class="mono" style="text-align:right">—</span>`; lb.appendChild(d); });
-{ const d=document.createElement('div'); d.className='lbrow'; d.style.transform=`translateY(${LBK.length*38}px)`; d.innerHTML=`<span class="muted">bound</span><span><div class="lbbar" style="background:var(--s-highs);opacity:.5;width:100%"></div></span><span class="mono" style="text-align:right">${km(C.bound.best)}</span>`; lb.appendChild(d); }
+{ const d=document.createElement('div'); d.className='lbrow'; d.style.transform=`translateY(${LBK.length*38}px)`; d.innerHTML=`<span class="muted">bound</span><span><div class="lbbar" id="lb-bound" style="background:var(--s-highs);opacity:.5;width:30%"></div></span><span class="mono" style="text-align:right">${km(C.bound.best)}</span>`; lb.appendChild(d); }
 function raceFrame(t){
   document.getElementById('race-t').textContent = (t<1? t.toFixed(2) : t.toFixed(1))+' s';
   const vals = LBK.map(k=>[k, RACE.at(t,k)]).sort((a,b)=>(a[1]??1e12)-(b[1]??1e12));
-  const worst = 1.12*C.bound.best;
+  const lo = 0.9*C.bound.best, hi = 1.14*C.bound.best;   // shared km axis: shorter bar = shorter plan
+  const W = v => Math.max(3, Math.min(100, 100*(v-lo)/(hi-lo)));
+  document.getElementById('lb-bound').style.width = W(C.bound.best)+'%';
   vals.forEach(([k,v],i)=>{ const el=document.getElementById('lb-'+k); el.style.transform=`translateY(${i*38}px)`;
-    const w = v==null? 0 : Math.max(4, 100*(1-(v-C.bound.best)/(worst-C.bound.best)));
+    const w = v==null? 0 : W(v);
     el.children[1].firstChild.style.width = w+'%'; el.children[2].textContent = v==null? 'searching' : `${km(v)} · +${(100*(v-C.bound.best)/v).toFixed(1)}%`; });
   RACE.setCursor(t);
   const lead = vals[0] && vals[0][1]!=null ? vals[0][0] : null;
@@ -715,13 +739,13 @@ function theme(){
   const dark = isDark();
   skyMat.uniforms.top.value = col('--sky-top'); skyMat.uniforms.bottom.value = col('--sky-bottom');
   city.fog = new THREE.Fog(col('--sky-bottom'), 4.5, 16);
-  hemi.color = dark? new THREE.Color(0x8aa0c8) : new THREE.Color(0xdfeaf5); hemi.groundColor = col('--land'); hemi.intensity = dark? .45 : 1.0;
+  hemi.color = dark? new THREE.Color(0x8aa0c8) : new THREE.Color(0xdfeaf5); hemi.groundColor = col('--land'); hemi.intensity = dark? .32 : 1.0; city.environmentIntensity = dark? .06 : .35;
   landMat.color = col('--land'); waterMat.color = col('--water'); waterMat.roughness = dark? .25 : .12;
   roadMats.minor.color = col('--road-minor'); roadMats.mid.color = col('--road-mid'); roadMats.major.color = col('--road-major');
   routeMat.blending = dark? THREE.AdditiveBlending : THREE.NormalBlending; routeMat.uniforms.uGlow.value = dark? .45 : .25; routeMat.uniforms.uDim.value = dark? .10 : .22; routeMat.uniforms.uAlpha.value = dark? .55 : 1.; routeMat.needsUpdate = true;
   vanMat.emissiveIntensity = dark? .3 : .12; headMat.emissiveIntensity = dark? .12 : .08;
   depotG.getObjectByName('ring').material.color = col('--depot');
-  buildings.geometry = buildBuildings(); hbar();
+  buildings.geometry = buildBuildings(); hbar(); nightU.value = dark? 1 : 0;
   ren.toneMappingExposure = dark? 1.05 : 0.95;
   bench.background = col('--surface-1'); floorMat.color = col('--surface-2'); bHemi.intensity = dark? .7 : 1.3;
   refMeshes.forEach((m,j)=>m.material.color = col(j? '--s-highs' : '--s-pyvrp'));
