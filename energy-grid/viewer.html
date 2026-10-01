@@ -494,7 +494,7 @@ for (const [name, [lon, lat]] of Object.entries(CITIES)) {
    TAB 2 · PGLib AC-OPF networks
    ====================================================================== */
 const O = makeStage();
-O.camera.position.set(8, 32, 84); O.controls.target.set(0, 14, 0);
+O.camera.position.set(14, 66, 78); O.controls.target.set(0, 16, 0);
 const opf = D.opf;
 const caseNames = Object.keys(opf.nets);
 let net = null;
@@ -650,7 +650,7 @@ async function runOpfTour() {
   if (tour) return stopTour(); tour = 'opf';
   const name = caseNames[caseNames.length - 1]; bindCase(name);
   card('A real transmission system, solved to proven near-optimality', `${opf.nets[name].label}: ${net.nodes.x.length.toLocaleString()} buses. Height is the solved voltage; the glass planes are the legal limits.`);
-  await flyTo(O, new THREE.Vector3(8, 32, 84), new THREE.Vector3(0, 14, 0)); await sleep(5000);
+  await flyTo(O, new THREE.Vector3(14, 66, 78), new THREE.Vector3(0, 16, 0)); await sleep(5000);
   if (!tour) return;
   card('Binding constraints are visible', `${net._binding} buses sit exactly on a voltage limit (red). These are the constraints that set the price of power. Cheaper dispatch would push them out of bounds.`);
   await flyTo(O, new THREE.Vector3(55, yOfV(1.06) + 6, 30), new THREE.Vector3(0, yOfV(1.06), 0)); await sleep(5200);
@@ -680,7 +680,7 @@ function applyTheme() {
   hotMat.color.set(dark ? '#ff6b5e' : '#d9483b'); hotMat.blending = dark ? THREE.AdditiveBlending : THREE.NormalBlending;
   flows.mat.color.set(dark ? '#ffd27a' : '#9a3412'); flows.mat.blending = dark ? THREE.AdditiveBlending : THREE.NormalBlending;
   haloMat.blending = dark ? THREE.AdditiveBlending : THREE.NormalBlending; haloMat.opacity = dark ? 1 : 0.55;
-  glassMat.color.set(dark ? '#9fd8d2' : '#5b6866'); glassEdgeMat.color.set(dark ? '#4fd1c5' : '#0f766e');
+  glassMat.color.set(dark ? '#2a6f69' : '#5b6866'); glassMat.opacity = dark ? 0.07 : 0.12; glassEdgeMat.color.set(dark ? '#4fd1c5' : '#0f766e');
   for (const m of [glowMat, hotMat, flows.mat, haloMat]) m.needsUpdate = true;
   if (net) bindCase(Object.keys(opf.nets).find(k => opf.nets[k] === net));
   drawMix();

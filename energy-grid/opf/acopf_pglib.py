@@ -70,6 +70,8 @@ def extract(md):
         out["gen"].append({"bus": d["bus"], "pg": round(d["pg"], 4), "qg": round(d["qg"], 4),
                            "pmax": d["p_max"], "pmin": d["p_min"]})
     for k, d in branches.items():
+        if d.get("pf") is None or not d.get("in_service", True):
+            continue                      # out-of-service branch
         rate = d.get("rating_long_term") or 0.0
         s = max(math.hypot(d["pf"], d["qf"]), math.hypot(d["pt"], d["qt"]))
         out["branch"].append({"f": d["from_bus"], "t": d["to_bus"], "pf": round(d["pf"], 4),
@@ -107,7 +109,10 @@ def main():
         print(case, "SUMMARY", {k: rec.get(k) for k in ("rel_diff_vs_reference", "certified_gap_pct")}, flush=True)
         (out / f"{case}.json").write_text(json.dumps(rec, indent=1))
         if best_md is not None:
-            (out / f"{case}_solution.json").write_text(json.dumps(extract(best_md)))
+            try:
+                (out / f"{case}_solution.json").write_text(json.dumps(extract(best_md)))
+            except Exception as e:
+                print(case, "solution export failed:", e, flush=True)
 
 
 if __name__ == "__main__":
