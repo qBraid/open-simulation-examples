@@ -16,16 +16,30 @@ calc = mace_mp(model={"mp0": "medium", "mpa0": "medium-mpa-0", "mp0b3": "medium-
 ref = pd.read_csv("data/csonka2009_sol24.csv")
 rows = []
 for r in ref.itertuples():
-    a_ref = r.a0_pbe
-    vols, ens = [], []
-    for x in np.linspace(0.94, 1.06, 11) ** (1 / 3):
-        at = bulk(r.solid, r.structure, a=a_ref * x)
-        at.calc = calc
-        vols.append(at.get_volume()); ens.append(at.get_potential_energy())
-    eos = EquationOfState(vols, ens, eos="birchmurnaghan")
-    v0, e0, B = eos.fit()
+    def scan(a_c, lo, hi, n):
+        vols, ens = [], []
+        for x in np.linspace(lo, hi, n) ** (1 / 3):
+            at = bulk(r.solid, r.structure, a=a_c * x); at.calc = calc
+            vols.append(at.get_volume()); ens.append(at.get_potential_energy())
+        return np.array(vols), np.array(ens)
+    a_ref, how = r.a0_pbe, "bm"
+    vols, ens = scan(a_ref, 0.94, 1.06, 11)
+    try:
+        v0, e0, B = EquationOfState(vols, ens, eos="birchmurnaghan").fit()
+        if not (vols.min() < v0 < vols.max()):
+            raise RuntimeError("minimum outside window")
+    except Exception:
+        # recentre: coarse scan over -25%..+35% volume, then refit around the minimum
+        cv, ce = scan(a_ref, 0.75, 1.35, 25)
+        vmin = cv[np.argmin(ce)]
+        a_ref = a_ref * (vmin / bulk(r.solid, r.structure, a=a_ref).get_volume()) ** (1 / 3)
+        vols, ens = scan(a_ref, 0.94, 1.06, 11)
+        try:
+            v0, e0, B = EquationOfState(vols, ens, eos="birchmurnaghan").fit(); how = "bm-recentred"
+        except Exception:
+            v0, e0, B = EquationOfState(vols, ens, eos="sj").fit(); how = "sjeos-recentred"
     at0 = bulk(r.solid, r.structure, a=a_ref)
     a0 = a_ref * (v0 / at0.get_volume()) ** (1 / 3)
-    rows.append(dict(solid=r.solid, structure=r.structure, a0_model=a0, B0_model=B / GPa))
+    rows.append(dict(solid=r.solid, structure=r.structure, a0_model=a0, B0_model=B / GPa, fit=how))
     print(r.solid, round(a0, 4), round(B / GPa, 1), flush=True)
 pd.DataFrame(rows).merge(ref, on=["solid", "structure"]).to_csv(out, index=False)

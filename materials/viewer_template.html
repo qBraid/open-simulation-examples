@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Materials Discovery Lab</title>
+<style>
+:root{
+  --bg:#eef1f4;--panel:rgba(255,255,255,.86);--panel-solid:#fff;--ink:#14191d;--muted:#5b6670;--line:#d4dbe1;
+  --accent:#0f6e66;--accent-soft:#d8eeea;--warn:#b26a06;--bad:#b3372b;--good:#1d7f56;
+  --scene-bg:#e9edf1;--grid:#c3ccd4;--glass:rgba(255,255,255,.72);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#070b10;--panel:rgba(14,20,26,.84);--panel-solid:#0e141a;--ink:#e6ecef;--muted:#93a1a8;--line:#24313a;
+  --accent:#45c2b3;--accent-soft:#12342f;--warn:#e7a640;--bad:#f07a6c;--good:#4cc38a;
+  --scene-bg:#05080c;--grid:#1c2730;--glass:rgba(10,15,20,.66);
+}}
+:root[data-theme="dark"]{
+  --bg:#070b10;--panel:rgba(14,20,26,.84);--panel-solid:#0e141a;--ink:#e6ecef;--muted:#93a1a8;--line:#24313a;
+  --accent:#45c2b3;--accent-soft:#12342f;--warn:#e7a640;--bad:#f07a6c;--good:#4cc38a;
+  --scene-bg:#05080c;--grid:#1c2730;--glass:rgba(10,15,20,.66);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:14px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+header{position:fixed;top:14px;left:16px;right:16px;display:flex;gap:12px;align-items:flex-start;pointer-events:none;z-index:5}
+.brand{pointer-events:auto;background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:12px;padding:10px 14px;max-width:440px}
+.brand .eyebrow{font:500 11px ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.brand h1{margin:2px 0 0;font-size:19px;letter-spacing:-.01em}
+nav.worlds{pointer-events:auto;display:flex;flex-wrap:wrap;gap:6px;margin-left:auto;background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:12px;padding:6px}
+nav.worlds button,.btn{font:500 12.5px system-ui,sans-serif;border:1px solid transparent;background:transparent;color:var(--ink);padding:6px 11px;border-radius:8px;cursor:pointer}
+nav.worlds button[aria-pressed="true"]{background:var(--accent);color:#fff}
+nav.worlds button:hover{border-color:var(--line)}
+.btn{border-color:var(--line);background:var(--panel-solid)}
+.btn[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+aside#panel{position:fixed;right:16px;top:86px;bottom:16px;width:min(380px,calc(100vw - 32px));overflow:auto;background:var(--panel);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:14px;padding:14px 16px;z-index:4;transition:transform .35s ease}
+aside#panel.hidden{transform:translateX(calc(100% + 24px))}
+aside h2{margin:2px 0 6px;font-size:16px}
+aside h3{margin:14px 0 6px;font-size:13px;letter-spacing:.02em;color:var(--muted);text-transform:uppercase;font-weight:600}
+aside p{margin:0 0 8px;color:var(--ink)}
+.verdict{display:inline-block;font:600 11.5px ui-monospace,monospace;padding:2px 9px;border-radius:999px;margin:2px 0 6px}
+.v-reached{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+.v-close{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+.v-not{background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad)}
+table{border-collapse:collapse;width:100%;font-size:12.5px;margin:4px 0 6px}
+th,td{padding:4px 6px;border-bottom:1px solid var(--line);text-align:right}
+th:first-child,td:first-child{text-align:left}
+th{font:500 10.5px ui-monospace,monospace;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.row{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.note{font-size:12px;color:var(--muted)}
+.cbar{height:10px;border-radius:5px;margin:4px 0 2px}
+.cbar-l{display:flex;justify-content:space-between;font:11px ui-monospace,monospace;color:var(--muted)}
+#controls{position:fixed;left:16px;bottom:16px;right:min(412px,calc(100vw - 16px));display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:12px;padding:8px 10px;z-index:4}
+#controls label{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:12.5px}
+#controls input[type=range]{width:min(320px,40vw)}
+#caption{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);max-width:min(640px,calc(100vw - 32px));background:var(--glass);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:14.5px;z-index:6;opacity:0;transition:opacity .4s;pointer-events:none;text-align:center}
+#caption.on{opacity:1}
+.lbl{font:600 11px ui-monospace,monospace;color:var(--ink);background:var(--glass);border:1px solid var(--line);padding:1px 6px;border-radius:6px;white-space:nowrap;pointer-events:none}
+.lbl.small{font-weight:500;font-size:10px;padding:0 4px}
+.lbl.axis{background:transparent;border:0;color:var(--muted)}
+.lbl.hl{border-color:var(--accent);color:var(--accent)}
+canvas.chart{width:100%;height:auto;display:block;background:transparent}
+#toggle-panel{display:none}
+@media (max-width:760px){
+  aside#panel{top:auto;height:44vh;bottom:76px;right:16px}
+  #controls{right:16px}
+  .brand{max-width:none}
+  #toggle-panel{display:inline-block}
+  nav.worlds{margin-left:0}
+  header{flex-direction:column}
+}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+</head>
+<body>
+<div id="stage"></div>
+<header>
+  <div class="brand">
+    <div class="eyebrow">qBraid · open simulation · materials</div>
+    <h1>Materials Discovery Lab</h1>
+    <div class="note" id="sub">Universal machine-learned potentials, benchmarked against DFT and experiment</div>
+  </div>
+  <nav class="worlds" id="worlds" aria-label="Scenes"></nav>
+</header>
+<aside id="panel"></aside>
+<div id="controls"></div>
+<div id="caption"></div>
+
+<script id="data" type="application/json">/*__DATA__*/</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const D = JSON.parse(document.getElementById('data').textContent);
+const $ = s => document.querySelector(s);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const isDark = () => { const t = document.documentElement.dataset.theme; return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; };
+const MODEL_NAME = { mp0: 'MACE-MP-0', mpa0: 'MACE-MPA-0', mp0b3: 'MACE-MP-0b3', orb3: 'ORB v3' };
+
+// ---------- colour maps ----------
+const VIRIDIS = [[68,1,84],[72,40,120],[62,74,137],[49,104,142],[38,130,142],[31,158,137],[53,183,121],[109,205,89],[180,222,44],[253,231,37]];
+const BALANCE = [[33,102,172],[103,169,207],[209,229,240],[247,247,247],[253,219,199],[239,138,98],[178,24,43]];
+function ramp(stops, t) { t = Math.min(1, Math.max(0, t)); const x = t * (stops.length - 1), i = Math.min(stops.length - 2, Math.floor(x)), f = x - i;
+  const a = stops[i], b = stops[i + 1]; return new THREE.Color((a[0] + (b[0] - a[0]) * f) / 255, (a[1] + (b[1] - a[1]) * f) / 255, (a[2] + (b[2] - a[2]) * f) / 255).convertSRGBToLinear(); }
+const cssRamp = stops => 'linear-gradient(90deg,' + stops.map((c, i) => `rgb(${c}) ${(i / (stops.length - 1) * 100).toFixed(0)}%`).join(',') + ')';
+const CPK = { H:0xffffff, Li:0xa98bff, C:0x5a5f66, N:0x3050f8, O:0xff0d0d, F:0x90e050, Na:0xab5cf2, Mg:0x8aff00, Al:0xbfa6a6, Si:0xd8b878, P:0xff8000, S:0xffd23f,
+  Cl:0x1ff01f, K:0x8f40d4, Ca:0x3dff00, Ga:0xc28f8f, Ge:0x668f8f, As:0xbd80e3, Rb:0x702eb0, Sr:0x00ff00, Rh:0x0a7d8c, Pd:0x006985, Ag:0xc0c0c0, Cs:0x57178f, Ba:0x00c900, Pb:0x575961, Cu:0xc88033 };
+const RAD = { H:.31, Li:.6, C:.45, N:.45, O:.45, F:.45, Na:.75, Mg:.65, Al:.6, Si:.55, P:.55, S:.6, Cl:.6, K:.9, Ca:.8, Ga:.6, Ge:.6, As:.6, Rb:.95, Sr:.85, Rh:.6, Pd:.6, Ag:.65, Cs:1.0, Ba:.9, Pb:.7, Cu:.6 };
+
+// ---------- renderer, scene, post ----------
+const stage = $('#stage');
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+stage.appendChild(renderer.domElement);
+const labelRenderer = new CSS2DRenderer(); labelRenderer.domElement.style.cssText = 'position:absolute;inset:0;pointer-events:none';
+stage.appendChild(labelRenderer.domElement);
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+const camera = new THREE.PerspectiveCamera(42, 1, 0.05, 500);
+camera.position.set(0, 4, 18);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.07;
+const hemi = new THREE.HemisphereLight(0xffffff, 0x223344, 0.6); scene.add(hemi);
+const key = new THREE.DirectionalLight(0xffffff, 1.6); key.position.set(6, 10, 8); scene.add(key);
+const rim = new THREE.DirectionalLight(0x88ccff, 0.7); rim.position.set(-8, 4, -6); scene.add(rim);
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.55, 0.6, 0.82); composer.addPass(bloom);
+composer.addPass(new OutputPass());
+function applyTheme() {
+  scene.background = new THREE.Color(css('--scene-bg'));
+  bloom.strength = isDark() ? 0.6 : 0.12; bloom.threshold = isDark() ? 0.78 : 0.95;
+  renderer.toneMappingExposure = isDark() ? 1.0 : 1.08;
+  worlds.forEach(w => w.theme && w.theme());
+}
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h); composer.setSize(w, h); labelRenderer.setSize(w, h); bloom.setSize(w, h);
+  camera.aspect = w / h; camera.updateProjectionMatrix(); }
+addEventListener('resize', resize);
+
+function label(text, cls = '') { const el = document.createElement('div'); el.className = 'lbl ' + cls; el.textContent = text; return new CSS2DObject(el); }
+const sphereGeo = new THREE.SphereGeometry(1, 28, 18);
+const lowSphere = new THREE.SphereGeometry(1, 12, 8);
+const cylGeo = new THREE.CylinderGeometry(1, 1, 1, 12, 1, true);
+function atomMaterial(hex, emissive = 0) {
+  return new THREE.MeshPhysicalMaterial({ color: hex, metalness: 0.05, roughness: 0.32, clearcoat: 0.7, clearcoatRoughness: 0.25, emissive: hex, emissiveIntensity: emissive });
+}
+const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _v = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0);
+function bondMatrix(a, b, r, out) { _v.subVectors(b, a); const L = _v.length(); _q.setFromUnitVectors(_up, _v.normalize());
+  _s.set(r, L, r); out.compose(_v.addVectors(a, b).multiplyScalar(0.5), _q, _s); return out; }
+function cellBox(cell, color) { // cell: 3x3 rows
+  const o = new THREE.Vector3(), a = new THREE.Vector3(...cell[0]), b = new THREE.Vector3(...cell[1]), c = new THREE.Vector3(...cell[2]);
+  const P = [o, a, b, c, a.clone().add(b), a.clone().add(c), b.clone().add(c), a.clone().add(b).add(c)];
+  const E = [[0,1],[0,2],[0,3],[1,4],[1,5],[2,4],[2,6],[3,5],[3,6],[4,7],[5,7],[6,7]];
+  const g = new THREE.BufferGeometry().setFromPoints(E.flatMap(([i, j]) => [P[i], P[j]]));
+  return new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.55 }));
+}
+
+// ---------- camera flights ----------
+let flight = null;
+function flyTo(pos, target, dur = 1.6) { flight = { p0: camera.position.clone(), t0: controls.target.clone(), p1: new THREE.Vector3(...pos), t1: new THREE.Vector3(...target), s: performance.now(), d: dur * 1000 }; }
+const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+// ---------- small 2D charts ----------
+function chartCtx(cv, w, h) { const r = Math.min(devicePixelRatio, 2); cv.width = w * r; cv.height = h * r; cv.style.aspectRatio = `${w}/${h}`; const x = cv.getContext('2d'); x.scale(r, r); return x; }
+function axes(x, w, h, pad, xr, yr, xl, yl, ticksX, ticksY) {
+  const ink = css('--muted'), line = css('--line');
+  const X = v => pad.l + (v - xr[0]) / (xr[1] - xr[0]) * (w - pad.l - pad.r), Y = v => h - pad.b - (v - yr[0]) / (yr[1] - yr[0]) * (h - pad.t - pad.b);
+  x.strokeStyle = line; x.lineWidth = 1; x.fillStyle = ink; x.font = '10px ui-monospace,monospace';
+  ticksY.forEach(t => { x.beginPath(); x.moveTo(pad.l, Y(t)); x.lineTo(w - pad.r, Y(t)); x.stroke(); x.fillText(String(t), 2, Y(t) + 3); });
+  ticksX.forEach(t => { x.fillText(String(t), X(t) - 8, h - pad.b + 13); });
+  x.fillText(xl, w - pad.r - x.measureText(xl).width, h - 2); x.save(); x.translate(10, pad.t + 4); x.fillText(yl, 0, 0); x.restore();
+  return { X, Y };
+}
+
+// ============================================================
+// World 1: discovery (parity + leaderboard)
+// ============================================================
+const worlds = [];
+function makeDiscovery() {
+  const G = new THREE.Group(); G.visible = false; scene.add(G);
+  const disc = D.discovery || {}; const models = Object.keys(disc.scores || {});
+  let cur = models.includes('mpa0') ? 'mpa0' : models[0];
+  const pts = disc.parity || { true: [], pred: {} };
+  const R = [-0.35, 0.65], S = 11, map = v => (Math.min(R[1], Math.max(R[0], v)) - R[0]) / (R[1] - R[0]) * S - S / 2;
+  // quadrant fills
+  const z0 = map(0);
+  const quad = (x0, x1, y0, y1, col) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, y1 - y0), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .11, depthWrite: false }));
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, -0.02); G.add(m); return m; };
+  quad(-S / 2, z0, -S / 2, z0, 0x1d7f56); quad(z0, S / 2, z0, S / 2, 0x6b7785); quad(z0, S / 2, -S / 2, z0, 0xd08a1a); quad(-S / 2, z0, z0, S / 2, 0xc0392b);
+  const qlab = (t, x, y) => { const l = label(t, 'small'); l.position.set(x, y, .1); G.add(l); };
+  qlab('true stable · found', -S / 2 + 1.6, -S / 2 + .4); qlab('false alarm', S / 2 - 1.2, -S / 2 + .4); qlab('missed', -S / 2 + 1, S / 2 - .4); qlab('true unstable', S / 2 - 1.4, S / 2 - .4);
+  const frame = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(S, S)), new THREE.LineBasicMaterial({ color: 0x8899aa, transparent: true, opacity: .5 })); G.add(frame);
+  const diag = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-S / 2, -S / 2, .01), new THREE.Vector3(S / 2, S / 2, .01)]), new THREE.LineDashedMaterial({ color: 0x9aa8b4, dashSize: .25, gapSize: .15 }));
+  diag.computeLineDistances(); G.add(diag);
+  const zl = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(z0, -S / 2, .01), new THREE.Vector3(z0, S / 2, .01), new THREE.Vector3(-S / 2, z0, .01), new THREE.Vector3(S / 2, z0, .01)]), new THREE.LineBasicMaterial({ color: 0x8899aa }));
+  G.add(zl);
+  [-0.2, 0, 0.2, 0.4, 0.6].forEach(v => { const a = label(v.toFixed(1), 'axis small'); a.position.set(map(v), -S / 2 - .45, 0); G.add(a); const b = label(v.toFixed(1), 'axis small'); b.position.set(-S / 2 - .55, map(v), 0); G.add(b); });
+  const xl = label('DFT distance to convex hull (eV/atom)', 'axis'); xl.position.set(0, -S / 2 - 1.0, 0); G.add(xl);
+  const yl = label('model prediction (eV/atom)', 'axis'); yl.position.set(-S / 2 - .6, S / 2 + .6, 0); G.add(yl);
+  // points
+  const n = pts.true.length;
+  const inst = new THREE.InstancedMesh(lowSphere, new THREE.MeshStandardMaterial({ roughness: .35, metalness: .1, emissive: 0xffffff, emissiveIntensity: .12 }), Math.max(1, n));
+  G.add(inst);
+  const yNow = new Float32Array(n), yFrom = new Float32Array(n), yTo = new Float32Array(n), zj = new Float32Array(n).map(() => (Math.random() - .5) * .5);
+  const CL = { TP: new THREE.Color(0x2fbf71), TN: new THREE.Color(0x8a97a6), FP: new THREE.Color(0xf0a326), FN: new THREE.Color(0xe5533d) };
+  function classify(m) { pts.pred[m].forEach((p, i) => { const t = pts.true[i]; const c = p <= 0 ? (t <= 0 ? 'TP' : 'FP') : (t <= 0 ? 'FN' : 'TN'); inst.setColorAt(i, CL[c]); }); inst.instanceColor.needsUpdate = true; }
+  let morph = 1, mStart = 0;
+  function setModel(m) { if (!pts.pred[m]) return; for (let i = 0; i < n; i++) { yFrom[i] = yNow[i]; yTo[i] = map(pts.pred[m][i]); } morph = 0; mStart = performance.now(); classify(m); cur = m; panel(); }
+  if (n) { const m0 = pts.pred[cur]; for (let i = 0; i < n; i++) { yNow[i] = yTo[i] = map(m0[i]); } classify(cur); }
+  // leaderboard bars (in-scene, to the right)
+  const LB = new THREE.Group(); LB.position.set(S / 2 + 4.2, -S / 2, 0); G.add(LB);
+  const lb = (D.leaderboard || []).slice();
+  const ours = disc.scores || {};
+  const keep = lb.filter((r, i) => i < 10 || ['MACE-MPA-0', 'MACE-MP-0', 'ORB v3', 'CHGNet', 'M3GNet'].includes(r.model));
+  const permissive = l => /MIT|Apache|BSD|CC-BY/i.test(l || '');
+  keep.forEach((r, i) => {
+    const h = r.F1 * 9, w = .42, x = i * .62;
+    const mat = new THREE.MeshPhysicalMaterial({ color: permissive(r.lic) ? 0x2aa198 : 0x7f8c99, roughness: .3, clearcoat: .6, transparent: true, opacity: .92 });
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), mat); bar.position.set(x, h / 2, 0); LB.add(bar);
+    const l = label(`${r.model}  ${r.F1.toFixed(3)}`, 'small'); l.position.set(x, h + .35, 0); l.element.style.transform += ' rotate(-50deg)'; l.element.style.transformOrigin = 'left center'; LB.add(l);
+    const mk = Object.entries({ mp0: 'MACE-MP-0', mpa0: 'MACE-MPA-0', orb3: 'ORB v3' }).find(([k, v]) => v === r.model && ours[k]);
+    if (mk) { const s = ours[mk[0]]; const y = s.ours.F1 * 9, lo = s.F1_bootstrap_95[0] * 9, hi = s.F1_bootstrap_95[1] * 9;
+      const dot = new THREE.Mesh(sphereGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x45c2b3, emissiveIntensity: 2.2 })); dot.scale.setScalar(.16); dot.position.set(x, y, w / 2 + .15); LB.add(dot);
+      const wh = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x, lo, w / 2 + .15), new THREE.Vector3(x, hi, w / 2 + .15)]), new THREE.LineBasicMaterial({ color: 0x45c2b3 })); LB.add(wh);
+      const t = label(`ours ${s.ours.F1.toFixed(3)} (n=${s.n})`, 'hl'); t.position.set(x + .2, y - .45, w / 2 + .2); LB.add(t); }
+  });
+  const top10 = lb.length ? lb[Math.max(0, Math.ceil(lb.length * .1) - 1)].F1 : 0.925;
+  const tl = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-.4, top10 * 9, 0), new THREE.Vector3(keep.length * .62, top10 * 9, 0)]), new THREE.LineDashedMaterial({ color: 0xe7a640, dashSize: .2, gapSize: .12 }));
+  tl.computeLineDistances(); LB.add(tl); const tll = label(`top-10% bar F1 ≥ ${top10.toFixed(3)}`, 'small'); tll.position.set(keep.length * .62 + .4, top10 * 9, 0); LB.add(tll);
+  const lbt = label('Matbench Discovery leaderboard · F1 on unique prototypes · teal = commercially usable licence', 'axis'); lbt.position.set(keep.length * .31, -0.8, 0); LB.add(lbt);
+
+  function panel() {
+    const s = ours[cur];
+    const rows = Object.entries(ours).map(([k, v]) => `<tr><td>${MODEL_NAME[k]}</td><td>${v.ours.F1.toFixed(3)}</td><td>${v.published_same_structures.F1.toFixed(3)}</td><td>${(v.full_test_F1 ?? NaN).toFixed(3)}</td><td>${(v.ours.MAE * 1000).toFixed(0)}</td></tr>`).join('');
+    $('#panel').innerHTML = `<h2>Finding stable materials</h2>
+      <span class="verdict ${disc.verdict_class || 'v-close'}">${disc.verdict || ''}</span>
+      <p>Each dot is a hypothetical crystal from the WBM test set. We relaxed ${s ? s.n.toLocaleString() : '?'} randomly chosen unrelaxed structures with each model using the leaderboard protocol, then asked: is it on the convex hull (stable)? Green = correctly found, amber = false alarm, red = missed.</p>
+      <table><tr><th>model</th><th>F1 ours</th><th>F1 pub. same</th><th>F1 full set</th><th>MAE meV</th></tr>${rows}</table>
+      <p class="note">"Pub. same" = the model authors' own published predictions on exactly our sample. Agreement per structure: ${s ? (s.per_structure_vs_published.MAE * 1000).toFixed(2) : '?'} meV/atom mean, ${s ? (s.per_structure_vs_published.frac_within_10meV * 100).toFixed(1) : '?'}% within 10 meV, so the pipeline reproduces the leaderboard.</p>
+      <h3>Switch model (dots morph)</h3><div class="row">${models.map(m => `<button class="btn" data-m="${m}" aria-pressed="${m === cur}">${MODEL_NAME[m]}</button>`).join('')}</div>
+      <h3>Where it sits</h3><p>${disc.placement || ''}</p>
+      <h3>DFT anchor</h3>${dftTable()}
+      <p class="note">${D.stamp || ''}</p>`;
+    $('#panel').querySelectorAll('[data-m]').forEach(b => b.onclick = () => setModel(b.dataset.m));
+  }
+  return { name: 'Discovery', G, enter() { flyTo([2.6, -1.0, 23], [2.6, -0.6, 0]); panel(); controlsHTML(`<span class="note">Drag to orbit · scroll to zoom</span><button class="btn" id="lbview">Leaderboard</button><button class="btn" id="pview">Parity</button>`);
+      $('#lbview').onclick = () => flyTo([S / 2 + 7.5, 3.5, 13], [S / 2 + 7.5, 3.6, 0]); $('#pview').onclick = () => flyTo([0, 0, 15.5], [0, 0, 0]); },
+    update(t) { if (morph < 1) { morph = Math.min(1, (performance.now() - mStart) / 900); const e = ease(morph); for (let i = 0; i < n; i++) yNow[i] = yFrom[i] + (yTo[i] - yFrom[i]) * e; }
+      for (let i = 0; i < n; i++) { _m.makeScale(.06, .06, .06); _m.setPosition(map(pts.true[i]), yNow[i], zj[i] * (1 + Math.sin(t * .6 + i) * .05)); inst.setMatrixAt(i, _m); }
+      inst.instanceMatrix.needsUpdate = true; },
+    tour: [{ pos: [0, 0, 15.5], tgt: [0, 0, 0], text: 'Each dot is a candidate crystal. Green ones were predicted stable and really are: these are the discoveries.' },
+           { pos: [S / 2 + 7.5, 3.5, 13], tgt: [S / 2 + 7.5, 3.6, 0], text: 'Our reruns (glowing markers) land on the published leaderboard values. The open models we can run sit just below the top-10% line.' }] };
+}
+function dftTable() {
+  const d = D.dft || {}; if (!Object.keys(d).length) return '<p class="note">pending</p>';
+  const rows = Object.entries(d).map(([mol, r]) => { const k = Object.keys(r.exp)[0];
+    return `<tr><td>${mol} ${k}</td><td>${r.exp[k]}</td><td>${r.pbe_def2tzvp[k].toFixed(3)}</td>${['mp0', 'mpa0', 'mp0b3'].filter(m => r[m]).map(m => `<td>${r[m][k].toFixed(3)}</td>`).join('')}</tr>`; }).join('');
+  const m = Object.keys(Object.values(d)[0]).filter(x => ['mp0', 'mpa0', 'mp0b3'].includes(x));
+  return `<table><tr><th>molecule</th><th>exp</th><th>PBE</th>${m.map(x => `<th>${MODEL_NAME[x]}</th>`).join('')}</tr>${rows}</table><p class="note">${D.dft_note || ''}</p>`;
+}
+
+// ============================================================
+// World 2: 24 crystals
+// ============================================================
+function makeCrystals() {
+  const G = new THREE.Group(); G.visible = false; scene.add(G);
+  const E = D.eos || { models: {}, solids: [] };
+  const models = Object.keys(E.models); let cur = models.includes('mp0b3') ? 'mp0b3' : models[0];
+  const items = []; const cols = 6, sp = 4.2;
+  const ped = new THREE.CylinderGeometry(1.45, 1.6, .22, 48);
+  E.solids.forEach((s, k) => {
+    const g = new THREE.Group(); const cx = (k % cols - (cols - 1) / 2) * sp, cz = (Math.floor(k / cols) - 1.5) * sp; g.position.set(cx, 0, cz); G.add(g);
+    const pm = new THREE.Mesh(ped, new THREE.MeshPhysicalMaterial({ color: 0x888888, roughness: .4, clearcoat: .8 })); pm.position.y = -.12; g.add(pm);
+    const xtal = new THREE.Group(); g.add(xtal);
+    const sc = 2.0 / s.a;  // fit the cubic cell into ~2 units
+    xtal.scale.setScalar(sc); xtal.position.set(-1, .25, -1);
+    s.atoms.forEach(([el, x, y, z]) => { const m = new THREE.Mesh(sphereGeo, atomMaterial(CPK[el] ?? 0xcccccc, .05)); m.scale.setScalar((RAD[el] || .6) * .55 / sc * .9 * Math.min(1, s.a / 4.5)); m.position.set(x, y, z); xtal.add(m); });
+    xtal.add(cellBox([[s.a, 0, 0], [0, s.a, 0], [0, 0, s.a]], 0x9fb3c8));
+    const l = label(s.solid); l.position.set(0, 2.75, 0); g.add(l);
+    const e = label('', 'small'); e.position.set(0, -.6, 1.7); g.add(e);
+    items.push({ s, g, pm, xtal, e, sc });
+  });
+  function recolor() { const r = E.models[cur]; items.forEach((it, k) => { const err = (r[k].a0 - it.s.a0_exp) / it.s.a0_exp * 100; it.pm.material.color = ramp(BALANCE, (err + 3) / 6); it.e.element.textContent = `${err >= 0 ? '+' : ''}${err.toFixed(2)}%`; }); }
+  let focus = -1;
+  const ray = new THREE.Raycaster(), ptr = new THREE.Vector2();
+  renderer.domElement.addEventListener('click', ev => { if (!G.visible) return; ptr.set(ev.clientX / innerWidth * 2 - 1, -ev.clientY / innerHeight * 2 + 1); ray.setFromCamera(ptr, camera);
+    const hit = ray.intersectObjects(items.map(i => i.pm))[0]; if (hit) { focus = items.findIndex(i => i.pm === hit.object); const p = items[focus].g.position; flyTo([p.x + 3.2, 3.2, p.z + 5.2], [p.x, 1.1, p.z]); panel(); } });
+  function panel() {
+    const st = E.stats[cur];
+    const f = focus >= 0 ? items[focus].s : null, fr = focus >= 0 ? E.models[cur][focus] : null;
+    $('#panel').innerHTML = `<h2>24 crystals, one potential</h2><span class="verdict ${E.verdict_class}">${E.verdict}</span>
+      <p>Metals, semiconductors and ionic crystals from a standard functional-benchmark set. Pedestal colour = lattice-constant error against zero-point-corrected experiment.</p>
+      <div class="cbar" style="background:${cssRamp(BALANCE)}"></div><div class="cbar-l"><span>−3%</span><span>0</span><span>+3%</span></div>
+      <table><tr><th></th><th>a₀ err vs exp</th><th>a₀ err vs PBE</th><th>B₀ err vs exp</th></tr>
+      <tr><td>PBE (the training level)</td><td>${E.stats.pbe.a_exp.toFixed(2)}%</td><td>0</td><td>${E.stats.pbe.b_exp.toFixed(1)}%</td></tr>
+      ${models.map(m => `<tr><td>${MODEL_NAME[m]}</td><td>${E.stats[m].a_exp.toFixed(2)}%</td><td>${E.stats[m].a_pbe.toFixed(2)}%</td><td>${E.stats[m].b_exp.toFixed(1)}%</td></tr>`).join('')}</table>
+      <p class="note">Mean absolute relative errors over 23 solids. Cs is excluded: its second-neighbour shell crosses the models’ 6 Å cutoff, so the energy–volume curve is unphysical (shown, not scored). A potential trained on PBE cannot beat PBE against experiment; the meaningful bar is how closely it reproduces PBE.</p>
+      <h3>Model</h3><div class="row">${models.map(m => `<button class="btn" data-m="${m}" aria-pressed="${m === cur}">${MODEL_NAME[m]}</button>`).join('')}</div>
+      ${f ? `<h3>${f.solid} (${f.structure})</h3><table><tr><th></th><th>a₀ (Å)</th><th>B₀ (GPa)</th></tr><tr><td>experiment</td><td>${f.a0_exp.toFixed(3)}</td><td>${f.B0_exp}</td></tr><tr><td>PBE</td><td>${f.a0_pbe.toFixed(3)}</td><td>${f.B0_pbe}</td></tr><tr><td>${MODEL_NAME[cur]}</td><td>${fr.a0.toFixed(3)}</td><td>${fr.B0.toFixed(1)}</td></tr></table><div class="row"><button class="btn" id="supc">2×2×2 supercell</button></div>` : '<p class="note">Click a pedestal to inspect a crystal.</p>'}
+      <p class="note">Reference: Csonka et al., PRB 79, 155107 (2009), Tables II and V.</p>`;
+    $('#panel').querySelectorAll('[data-m]').forEach(b => b.onclick = () => { cur = b.dataset.m; recolor(); panel(); });
+    if ($('#supc')) $('#supc').onclick = () => { const it = items[focus]; const on = it.xtal.userData.sup = !it.xtal.userData.sup;
+      it.xtal.children.slice().forEach(c => { if (c.userData.copy) it.xtal.remove(c); });
+      if (on) { const base = it.xtal.children.slice(); for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) for (let k = 0; k < 2; k++) { if (!i && !j && !k) continue; base.forEach(c => { const cl = c.clone(); cl.userData.copy = true; cl.position.add(new THREE.Vector3(i, j, k).multiplyScalar(it.s.a)); it.xtal.add(cl); }); }
+        it.xtal.scale.setScalar(it.sc / 2); } else it.xtal.scale.setScalar(it.sc); };
+  }
+  if (items.length) recolor();
+  return { name: 'Crystals', G, enter() { focus = -1; flyTo([0, 15, 20], [0, 0, 0]); panel(); controlsHTML('<span class="note">Click a pedestal to fly in</span>'); },
+    update(t) { items.forEach((it, k) => { it.xtal.rotation.y = 0; it.g.rotation.y = Math.sin(t * .25 + k) * .25 + t * .15; }); },
+    tour: [{ pos: [0, 15, 20], tgt: [0, 0, 0], text: 'Twenty-four reference crystals. One universal potential reproduces their DFT lattice constants to about half a percent.' }] };
+}
+
+// ============================================================
+// World 3: silicon phonons
+// ============================================================
+function makePhonons() {
+  const G = new THREE.Group(); G.visible = false; scene.add(G);
+  const P = D.phonons || {}; const modes = P.modes || {}; const labels = Object.keys(modes).filter(k => !k.startsWith('supercell'));
+  let cur = labels[0] || null;
+  const pos0 = (modes.supercell_positions || []).map(p => new THREE.Vector3(...p));
+  const N = pos0.length, ctr = pos0.reduce((a, p) => a.add(p), new THREE.Vector3()).multiplyScalar(1 / Math.max(N, 1));
+  pos0.forEach(p => p.sub(ctr));
+  const atoms = new THREE.InstancedMesh(sphereGeo, atomMaterial(0xd8b878, .08), Math.max(N, 1)); G.add(atoms);
+  const bonds = []; for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) if (pos0[i].distanceTo(pos0[j]) < 2.6) bonds.push([i, j]);
+  const bm = new THREE.InstancedMesh(cylGeo, new THREE.MeshStandardMaterial({ color: 0x9aa7b3, roughness: .4, metalness: .3 }), Math.max(bonds.length, 1)); G.add(bm);
+  const cur3 = pos0.map(p => p.clone());
+  const amp = 0.28;
+  let chart;
+  function draw() {
+    if (!chart || !P.bands_by_model) return; const cv = chart, x = chartCtx(cv, 340, 210);
+    const pad = { l: 26, r: 6, t: 8, b: 18 }; const nseg = P.bands_by_model[Object.keys(P.bands_by_model)[0]].length;
+    const { X, Y } = axes(x, 340, 210, pad, [0, nseg], [0, 17], 'Γ  X  W  K  Γ  L', 'THz', [], [0, 5, 10, 15]);
+    const colors = { mp0: '#e5533d', mpa0: '#f0a326', mp0b3: css('--accent') };
+    Object.entries(P.bands_by_model).forEach(([m, segs]) => { x.strokeStyle = colors[m]; x.lineWidth = m === 'mp0b3' ? 1.8 : 1.1;
+      segs.forEach((seg, si) => { const nb = seg.freqs[0].length; for (let b = 0; b < nb; b++) { x.beginPath(); seg.freqs.forEach((f, qi) => { const xx = X(si + qi / (seg.freqs.length - 1)); qi ? x.lineTo(xx, Y(f[b])) : x.moveTo(xx, Y(f[b])); }); x.stroke(); } }); });
+    const nx = { G_LTO: 0, X_TA: 1, X_LA: 1, X_TO: 1, L_TA: 5, L_LA: 5, L_TO: 5 };
+    x.fillStyle = css('--ink'); Object.entries(P.neutron || {}).forEach(([k, f]) => { x.beginPath(); x.arc(X(nx[k]), Y(f), 3.2, 0, 7); x.fill(); });
+    if (cur && modes[cur]) { const q = cur.split('-')[0]; const xp = { G: 0, X: 1, L: 5 }[q]; x.strokeStyle = css('--ink'); x.lineWidth = 2; x.beginPath(); x.arc(X(xp), Y(modes[cur].freq), 7, 0, 7); x.stroke(); }
+    x.font = '10px ui-sans-serif'; let lx = pad.l + 4; Object.keys(colors).filter(m => P.bands_by_model[m]).forEach(m => { x.fillStyle = colors[m]; x.fillRect(lx, 12, 10, 3); x.fillStyle = css('--muted'); x.fillText(MODEL_NAME[m], lx + 13, 16); lx += 82; });
+    x.fillStyle = css('--ink'); x.beginPath(); x.arc(lx + 4, 13, 3, 0, 7); x.fill(); x.fillStyle = css('--muted'); x.fillText('neutron', lx + 10, 16);
+  }
+  function panel() {
+    const rows = Object.entries(P.summary || {}).map(([m, s]) => `<tr><td>${MODEL_NAME[m]}</td><td>${s.G_LTO.toFixed(2)}</td><td>${s.mare.toFixed(1)}%</td></tr>`).join('');
+    $('#panel').innerHTML = `<h2>Atoms in motion: silicon phonons</h2><span class="verdict ${P.verdict_class || ''}">${P.verdict || ''}</span>
+      <p>A 216-atom silicon crystal vibrating in one normal mode at a time (amplitude exaggerated). The mode shapes are phonopy's, from force constants computed with the potential.</p>
+      <canvas class="chart" id="disp"></canvas>
+      <table><tr><th>model</th><th>Γ optical (THz)</th><th>error vs neutron</th></tr><tr><td>neutron (exp)</td><td>${(P.neutron || {}).G_LTO ?? ''}</td><td></td></tr>${rows}</table>
+      <p>${P.note || ''}</p>
+      <h3>Mode</h3><div class="row">${labels.map(l => `<button class="btn" data-l="${l}" aria-pressed="${l === cur}">${l.replace('G-', 'Γ-')} · ${modes[l].freq.toFixed(1)} THz</button>`).join('')}</div>
+      <p class="note">Neutron data: Nilsson &amp; Nelin, PRB 6, 3777 (1972). Mode shapes from ${MODEL_NAME[P.modes_model] || ''}.</p>`;
+    chart = $('#disp'); draw();
+    $('#panel').querySelectorAll('[data-l]').forEach(b => b.onclick = () => { cur = b.dataset.l; panel(); });
+  }
+  return { name: 'Phonons', G, theme: draw, enter() { flyTo([14, 9, 16], [0, 0, 0]); panel(); controlsHTML('<span class="note">Each mode animates at a visual rate proportional to its frequency</span>'); },
+    update(t) { if (!N) return; const m = modes[cur]; const w = m ? m.freq * 0.35 : 0;
+      for (let i = 0; i < N; i++) { const p = cur3[i].copy(pos0[i]);
+        if (m) { const c = Math.cos(w * t), s = Math.sin(w * t); p.x += amp * (m.re[i][0] * c + m.im[i][0] * s); p.y += amp * (m.re[i][1] * c + m.im[i][1] * s); p.z += amp * (m.re[i][2] * c + m.im[i][2] * s); }
+        _m.makeScale(.42, .42, .42); _m.setPosition(p); atoms.setMatrixAt(i, _m); }
+      atoms.instanceMatrix.needsUpdate = true;
+      bonds.forEach(([i, j], k) => bm.setMatrixAt(k, bondMatrix(cur3[i], cur3[j], .13, _m))); bm.instanceMatrix.needsUpdate = true; },
+    tour: [{ pos: [14, 9, 16], tgt: [0, 0, 0], text: 'Phonons are where universal potentials are weakest. The original MACE-MP-0 vibrates silicon about a quarter too slowly; the b3 update fixes most of that.' }] };
+}
+
+// ============================================================
+// World 4: Li-ion diffusion in Li6PS5Cl
+// ============================================================
+function makeMD() {
+  const G = new THREE.Group(); G.visible = false; scene.add(G);
+  const M = D.md || { runs: {} }; const temps = Object.keys(M.runs).sort((a, b) => b - a);
+  let T = temps.includes('800') ? '800' : temps[0]; if (!T) return { name: 'Li-ion MD', G, enter() { $('#panel').innerHTML = '<h2>Li-ion diffusion</h2><p>pending</p>'; controlsHTML(''); }, update() {}, tour: [] };
+  Object.values(M.runs).forEach(r => { if (!r.q) { const b = atob(r.b64), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); r.q = new Int16Array(u.buffer); } });
+  const sym = M.symbols, NA = sym.length, cell = M.cell; const ctr = new THREE.Vector3(cell[0][0] + cell[1][0] + cell[2][0], cell[0][1] + cell[1][1] + cell[2][1], cell[0][2] + cell[1][2] + cell[2][2]).multiplyScalar(.5);
+  const idx = el => sym.map((s, i) => s === el ? i : -1).filter(i => i >= 0);
+  const groups = {}; const box = cellBox(cell, 0x7f95aa); box.position.copy(ctr).multiplyScalar(-1); G.add(box);
+  ['Li', 'P', 'S', 'Cl'].forEach(el => { const ids = idx(el); const mat = el === 'Li' ? new THREE.MeshStandardMaterial({ color: 0xc9b6ff, emissive: 0x8b5cf6, emissiveIntensity: 1.6, roughness: .3 }) : atomMaterial(CPK[el], .04);
+    const im = new THREE.InstancedMesh(sphereGeo, mat, ids.length); G.add(im); groups[el] = { ids, im, r: { Li: .32, P: .42, S: .5, Cl: .55 }[el] }; });
+  // PS4 tetrahedra: P + its 4 nearest S at frame 0
+  const tetra = []; const fr0 = frame(T, 0); const S_ids = idx('S');
+  idx('P').forEach(p => { const d = S_ids.map(s => [s, mic(fr0, p, s)]).sort((a, b) => a[1] - b[1]).slice(0, 4).map(a => a[0]); tetra.push([p, ...d]); });
+  const tg = new THREE.BufferGeometry(); tg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(tetra.length * 12 * 3), 3));
+  const tmesh = new THREE.Mesh(tg, new THREE.MeshPhysicalMaterial({ color: 0xff9a3c, transparent: true, opacity: .32, roughness: .2, side: THREE.DoubleSide, depthWrite: false })); G.add(tmesh);
+  // Li trails
+  const TL = 28, LiIds = groups.Li.ids; const tpos = new Float32Array(LiIds.length * TL * 2 * 3), tcol = new Float32Array(LiIds.length * TL * 2 * 3);
+  const trg = new THREE.BufferGeometry(); trg.setAttribute('position', new THREE.BufferAttribute(tpos, 3)); trg.setAttribute('color', new THREE.BufferAttribute(tcol, 3));
+  const trails = new THREE.LineSegments(trg, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })); G.add(trails);
+  function frame(T, f) { const r = M.runs[T]; const q = r.q, nf = r.nframes; f = Math.max(0, Math.min(nf - 1, f)); return (i, k) => q[(f * NA + i) * 3 + k] * r.scale; }
+  function mic(fr, i, j) { let d2 = 0; for (let k = 0; k < 3; k++) { let d = fr(j, k) - fr(i, k); const L = cell[k][k]; d -= L * Math.round(d / L); d2 += d * d; } return Math.sqrt(d2); }
+  let playing = true, speed = 1, fpos = 0;
+  const posAt = (T, f, i, out) => { const a = Math.floor(f), b = Math.min(a + 1, M.runs[T].nframes - 1), w = f - a, A = frame(T, a), B = frame(T, b);
+    for (let k = 0; k < 3; k++) { let x0 = A(i, k), x1 = B(i, k); const L = cell[k][k]; if (x1 - x0 > L / 2) x1 -= L; if (x0 - x1 > L / 2) x1 += L; out.setComponent(k, x0 + (x1 - x0) * w); } return out.sub(ctr); };
+  const tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3();
+  let chart;
+  function drawArr() {
+    if (!chart) return; const x = chartCtx(chart, 340, 190); const A = M.arrhenius; if (!A) return;
+    const xs = A.T.map(t => 1000 / t), ys = A.D.map(d => Math.log10(d));
+    const xr = [Math.min(...xs) - .1, Math.max(...xs) + .1], yr = [Math.min(...ys) - .5, Math.max(...ys) + .4];
+    const { X, Y } = axes(x, 340, 190, { l: 34, r: 8, t: 10, b: 20 }, xr, yr, '1000/T (1/K)', 'log₁₀ D (cm²/s)', [1, 1.25, 1.5, 1.75].filter(v => v > xr[0] && v < xr[1]), [-7, -6, -5, -4].filter(v => v > yr[0] && v < yr[1]));
+    x.strokeStyle = css('--accent'); x.lineWidth = 2; x.beginPath(); x.moveTo(X(xr[0]), Y(A.fit_intercept + A.fit_slope * xr[0])); x.lineTo(X(xr[1]), Y(A.fit_intercept + A.fit_slope * xr[1])); x.stroke();
+    x.fillStyle = css('--accent'); xs.forEach((v, i) => { x.beginPath(); x.arc(X(v), Y(ys[i]), 4, 0, 7); x.fill(); });
+    x.fillStyle = css('--ink'); x.font = '11px ui-monospace,monospace'; x.fillText(`Eₐ = ${A.Ea_eV.toFixed(2)} eV`, X(xr[0]) + 6, Y(yr[0]) - 8);
+  }
+  function panel() {
+    const A = M.arrhenius || {};
+    $('#panel').innerHTML = `<h2>Watching lithium move</h2><span class="verdict ${M.verdict_class || ''}">${M.verdict || ''}</span>
+      <p>The argyrodite solid electrolyte Li₆PS₅Cl, ${NA} atoms, simulated with ${MODEL_NAME[M.model] || ''} on one L4 GPU. Purple: lithium (with trails). Orange tetrahedra: PS₄ units. Green: chlorine.</p>
+      <canvas class="chart" id="arr"></canvas>
+      <table><tr><th>T (K)</th><th>D_Li (cm²/s)</th><th>MD steps/s</th></tr>${(A.T || []).map((t, i) => `<tr><td>${t}</td><td>${A.D[i].toExponential(2)}</td><td>${A.sps[i].toFixed(0)}</td></tr>`).join('')}</table>
+      <p>${M.note || ''}</p>
+      <h3>Temperature</h3><div class="row">${temps.map(t => `<button class="btn" data-t="${t}" aria-pressed="${t === T}">${t} K</button>`).join('')}</div>`;
+    chart = $('#arr'); drawArr();
+    $('#panel').querySelectorAll('[data-t]').forEach(b => b.onclick = () => { T = b.dataset.t; fpos = 0; panel(); });
+  }
+  return { name: 'Li-ion MD', G, theme: drawArr,
+    enter() { flyTo([24, 14, 26], [0, 0, 0]); panel();
+      controlsHTML(`<button class="btn" id="pp">❚❚</button><label>time <input type="range" id="scrub" min="0" max="1000" value="0"></label><label>speed <input type="range" id="spd" min="0.2" max="4" step="0.1" value="1"></label><span class="note mono" id="tlab"></span>`);
+      $('#pp').onclick = () => { playing = !playing; $('#pp').textContent = playing ? '❚❚' : '▶'; };
+      $('#scrub').oninput = e => { fpos = e.target.value / 1000 * (M.runs[T].nframes - 1); };
+      $('#spd').oninput = e => speed = +e.target.value; },
+    update(t, dt) { const r = M.runs[T]; if (playing) fpos = (fpos + dt * 6 * speed) % (r.nframes - 1);
+      const sc = $('#scrub'); if (sc && playing) sc.value = Math.round(fpos / (r.nframes - 1) * 1000);
+      const tl = $('#tlab'); if (tl) tl.textContent = `${(fpos * r.dt_ps).toFixed(1)} ps @ ${T} K`;
+      Object.values(groups).forEach(g => { g.ids.forEach((i, k) => { posAt(T, fpos, i, tmp); _m.makeScale(g.r, g.r, g.r); _m.setPosition(tmp); g.im.setMatrixAt(k, _m); }); g.im.instanceMatrix.needsUpdate = true; });
+      const tp = tg.attributes.position.array; let o = 0;
+      tetra.forEach(([p, a, b, c, d]) => { const V = [a, b, c, d].map(i => { posAt(T, fpos, i, tmp2); posAt(T, fpos, p, tmp); const v = tmp2.clone(); for (let k = 0; k < 3; k++) { const L = cell[k][k]; let dd = v.getComponent(k) - tmp.getComponent(k); dd -= L * Math.round(dd / L); v.setComponent(k, tmp.getComponent(k) + dd); } return v; });
+        [[0, 1, 2], [0, 1, 3], [0, 2, 3], [1, 2, 3]].forEach(f => f.forEach(j => { tp[o++] = V[j].x; tp[o++] = V[j].y; tp[o++] = V[j].z; })); });
+      tg.attributes.position.needsUpdate = true; tg.computeVertexNormals();
+      const base = new THREE.Color(0xa78bfa); let w = 0;
+      LiIds.forEach((i) => { for (let s = 0; s < TL; s++) { const f0 = Math.max(0, fpos - (s + 1) * .5), f1 = Math.max(0, fpos - s * .5);
+        posAt(T, f0, i, tmp); posAt(T, f1, i, tmp2); const jump = tmp.distanceTo(tmp2) > 3; const a = jump ? 0 : (1 - s / TL) * .9;
+        tpos.set([tmp.x, tmp.y, tmp.z, tmp2.x, tmp2.y, tmp2.z], w * 6); tcol.set([base.r * a, base.g * a, base.b * a, base.r * a, base.g * a, base.b * a], w * 6); w++; } });
+      trg.attributes.position.needsUpdate = true; trg.attributes.color.needsUpdate = true;
+      G.rotation.y += dt * .03; },
+    tour: [{ pos: [24, 14, 26], tgt: [0, 0, 0], text: 'A solid that conducts lithium like a liquid. The trails show lithium ions hopping between cages while the PS₄ framework only rattles.' },
+           { pos: [9, 4, 11], tgt: [0, 0, 0], text: 'Repeating this at three temperatures gives the activation energy, the number battery chemists screen for.' }] };
+}
+
+// ---------- assemble ----------
+worlds.push(makeDiscovery(), makeCrystals(), makePhonons(), makeMD());
+let active = -1;
+function controlsHTML(h) { $('#controls').innerHTML = h + ` <span style="flex:1"></span><button class="btn primary" id="tourb">▶ Guided tour</button><button class="btn" id="themeb">◐</button><button class="btn" id="toggle-panel">Info</button>`;
+  $('#tourb').onclick = startTour; $('#themeb').onclick = () => { document.documentElement.dataset.theme = isDark() ? 'light' : 'dark'; applyTheme(); worlds[active] && worlds[active].enter && worlds[active].theme && worlds[active].theme(); };
+  $('#toggle-panel').onclick = () => $('#panel').classList.toggle('hidden'); }
+function show(i, fly = true) { if (active >= 0) worlds[active].G.visible = false; active = i; worlds[i].G.visible = true; worlds[i].enter();
+  document.querySelectorAll('#worlds button').forEach((b, k) => b.setAttribute('aria-pressed', k === i));
+  try { localStorage.setItem('mat-world', i); } catch (e) {} if (location.hash !== '#' + i) history.replaceState(null, '', '#' + i); }
+worlds.forEach((w, i) => { const b = document.createElement('button'); b.textContent = w.name; b.onclick = () => { stopTour(); show(i); }; $('#worlds').appendChild(b); });
+
+// guided tour
+let tour = null;
+function startTour() { const steps = []; worlds.forEach((w, i) => w.tour.forEach(s => steps.push({ ...s, w: i }))); tour = { steps, k: -1, next: 0 }; nextStep(); }
+function stopTour() { tour = null; $('#caption').classList.remove('on'); }
+function nextStep() { if (!tour) return; tour.k++; if (tour.k >= tour.steps.length) { stopTour(); return; } const s = tour.steps[tour.k];
+  if (s.w !== active) show(s.w); setTimeout(() => flyTo(s.pos, s.tgt, 2.2), 60); $('#caption').textContent = s.text; $('#caption').classList.add('on'); tour.next = performance.now() + 6500; }
+renderer.domElement.addEventListener('pointerdown', () => { if (tour) stopTour(); });
+
+// loop
+let last = performance.now(), t0 = last, running = true;
+document.addEventListener('visibilitychange', () => { running = !document.hidden; if (running) { last = performance.now(); requestAnimationFrame(loop); } });
+function loop(now) { if (!running) return; const dt = Math.min(.05, (now - last) / 1000); last = now; const t = (now - t0) / 1000;
+  if (flight) { const f = Math.min(1, (now - flight.s) / flight.d), e = ease(f); camera.position.lerpVectors(flight.p0, flight.p1, e); controls.target.lerpVectors(flight.t0, flight.t1, e); if (f >= 1) flight = null; }
+  if (tour && now > tour.next) nextStep();
+  if (active >= 0) worlds[active].update(t, dt);
+  controls.update(); composer.render(); labelRenderer.render(scene, camera); requestAnimationFrame(loop); }
+resize(); applyTheme();
+let start = 0; try { start = +(localStorage.getItem('mat-world') || 0); } catch (e) {}
+const h = parseInt(location.hash.slice(1)); if (!isNaN(h) && worlds[h]) start = h;
+show(Math.min(start, worlds.length - 1));
+if (location.search.includes('theme=light')) { document.documentElement.dataset.theme = 'light'; applyTheme(); }
+if (location.search.includes('theme=dark')) { document.documentElement.dataset.theme = 'dark'; applyTheme(); }
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
