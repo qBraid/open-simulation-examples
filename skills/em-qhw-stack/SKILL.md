@@ -1,8 +1,9 @@
 ---
 name: em-qhw-stack
-description: Design and simulate superconducting quantum hardware (transmons, resonators, CPW, filters) with open-source electromagnetics on qBraid. AWS Palace for 3D finite-element eigenmode/driven runs, energy-participation quantization into a circuit Hamiltonian, and numerical simulation of that Hamiltonian, set against real IBM device parameters. Use when asked to design a qubit or resonator, compute mode frequencies, Q or participation ratios, replace HFSS or Sonnet with open tools, or turn a chip layout into a Hamiltonian.
+description: Design and simulate superconducting quantum hardware (transmons, resonators, CPW, filters) with open-source electromagnetics on qBraid, including surface-loss (TLS) participation and predicted T1. AWS Palace for 3D finite-element eigenmode/driven runs, energy-participation quantization into a circuit Hamiltonian, and numerical simulation of that Hamiltonian, set against real IBM device parameters. Use when asked to design a qubit or resonator, compute mode frequencies, Q or participation ratios, replace HFSS or Sonnet with open tools, or turn a chip layout into a Hamiltonian.
 metadata:
-  version: "0.1.0-draft"
+  version: "0.2.0-draft"
+  verified: "2026-10-01 v2 surface-loss pipeline, shared qBraid pool box"
   layer: "1"
   status: "draft - verified on the subscription pod only"
 ---
@@ -105,7 +106,73 @@ lands inside or outside the fleet's range. What is not: T1. The simulated T1
 is a loss-model bound set by the assumed loss tangents, while the device T1
 reflects fabrication, TLS defects and packaging.
 
-## 5. What needs an instance
+## 6. Surface loss and predicted T1 (v2 method)
+
+A T1 number from a simulation is a **prediction of the geometry-limited
+lifetime under assumed loss tangents**, never a measurement. Say so every time.
+
+**Method: two-step surface participation**, after Wang et al., APL 107, 162601 (2015).
+- **Global.** Palace `Electrostatic` on the layout. Metal is zero-thickness
+  sheets on the substrate, there is one terminal per conductor, and the qubit
+  mode is the island at 1 V with everything else grounded (a grounded transmon)
+  or ±q charges (a floating pair). Use a half model across the mirror plane:
+  the natural (Neumann) boundary is exact for symmetric modes and halves time
+  and memory.
+- **Local.** The `loss/edge2d.py` 2D slot model has finite film thickness and
+  grading down to 1 nm. The field is read on the midline of the t = 3 nm
+  interface layer (Wang Fig. S2), which regularises the corner singularity.
+  The tables S_i(g) are converged to 0.03%.
+- **Join.** Near each edge, |E| = K/√u. K is taken from the surface charge in
+  the band x0/4 < u < x0 (x0 = 4 µm) and multiplied by S_i at the local gap g.
+  Beyond x0, the coarse 3D field is integrated directly.
+- **Conventions:** t = 3 nm and ε = 10 for MA, MS and SA. They are the same
+  as Wang 2015 and Ganjam 2024, so their loss tangents can be reused directly.
+
+
+**Run it (all on a CPU instance, never on a shared pod)**
+```bash
+python loss/pipeline.py table 0.2 10.34 4.0 table.json            # 2D edge integrals, ~2 min
+python loss/pipeline.py point runs/final '{"W":160,"G":100,"L":310}' table.json --fieldmap
+python loss/export_gds.py '{"W":160,"G":100,"L":310}' final_qubit.gds  # analysed geometry as a mask
+```
+One electrostatic point is 420-460k tets at order 2, about 5 min on 2 ranks, with an
+8.5 GB peak. **A shared subscription pod (25 GB cgroup for every agent on it) was
+OOM-killed during this study** while two such runs and other agents' jobs overlapped,
+and `/tmp` (envs, runs) went with it. Run Palace on an on-demand instance, and copy
+the small outputs (CSV, participation JSON) back after every point.
+
+**Gotchas**
+- **Palace terminal excitations are not 1 V.** The terminal voltage is in
+  `terminal-V.csv` (we saw 19.41 V). Normalise the fields by it, or every
+  participation is off by V².
+- **VTK probe tolerance.** `vtkProbeFilter` snaps points within its
+  tolerance to the neighbouring cell. A probe 20 nm below a sheet then reads
+  the field above it. Use `ComputeToleranceOff()` and `SetTolerance(1e-9)`.
+- **Volume classification in gmsh.** Fragmenting an enclosure around the chip
+  leaves a hollow air volume whose centre of mass lies inside the chip.
+  Classify volumes by bounding box, not by centre of mass.
+- **Palace electrostatics memory.** A 420-460k-tet, order-2 run peaks at
+  about 8.3-8.5 GB, mostly the always-on error estimator plus ParaView output.
+  `EstimatorMaxIts` barely helps. Plan one job at a time on a 25 GB pod.
+- **Shipping Palace to another box.** Copy only the `ldd` closure of
+  `palace-x86_64.bin` plus OpenMPI's plugin directories (79 MB compressed) to
+  the same absolute prefix; the RPATH is absolute. Use `tar -C <prefix>` with
+  relative paths, because `./` segments in library paths break naive tarballs.
+
+**Verified result (stamp 2026-10-01).** Island 240 × 190 µm in a 150 µm trench, Ta on
+sapphire: f01 4.80 GHz, alpha -290 MHz, chi/kappa 0.5. Surface participation is 4.7e-4,
+against 8.5e-4 for Palace's example. Predicted T1 is 146-245 µs (raw to calibrated),
+against IBM medians of 145-287 µs. Total cost was about 37 CPU-minutes on a shared pool
+box. Planar edge participation, not the solver, is what keeps this below the tantalum
+records (above 0.5 ms).
+
+**Validation, and the honest gap.** Wang 2015 Design A (Table S1) is the
+reference. Our pad p_MS is about 2× theirs, so our raw T1 predictions are
+conservative. The "calibrated" numbers rescale to Wang's pipeline. Always
+report both. Participation pipelines from different groups differ by O(1),
+and a loss tangent is only meaningful together with the pipeline that fitted it.
+
+## 7. What needs an instance
 
 - AMR or fine meshes: `cpu-32v-128g` ($1.92/h). For a transmon AMR run expect
   about 20-40 min with 32 ranks, so under $1.50.

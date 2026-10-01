@@ -1,0 +1,73 @@
+{
+ "C_sigma_fF": 82.04043947784001,
+ "C_g_fF": 5.32949762977,
+ "C_J_fF": 2.0,
+ "EC_GHz": 0.23610586983619494,
+ "EJ_GHz": 13.495168121620164,
+ "EJ_over_EC": 57.15727495882595,
+ "f01_GHz": 4.799999999999998,
+ "alpha_MHz": -268.2343999204093,
+ "levels_GHz": [
+  0.0,
+  4.799999999999998,
+  9.331765600079587,
+  13.565704777504966
+ ],
+ "LJ_nH": 12.112595510752094,
+ "Ic_nA": 27.170557968629673,
+ "Rn_kOhm_AB": 10.406239693330132,
+ "fr_GHz": 7.0,
+ "Zr_Ohm": 50.0,
+ "g_MHz": 90.22026337060909,
+ "Delta_GHz": -2.2043385583188533,
+ "chi_MHz": 0.5655087734104391,
+ "pull_2chi_MHz": 1.1310175468208783,
+ "kappa_MHz": 1.1310175468208783,
+ "chi_over_kappa": 0.5,
+ "Q_ext": 6189.117065138341,
+ "C_kappa_fF": 7.244320853995239,
+ "T1_purcell_unfiltered_us": 84.00385229468014,
+ "T1_purcell_filtered_us": 2314.661633256065,
+ "Q_filter": 30.0,
+ "p": {
+  "MS": 0.0003926718885036285,
+  "MA": 8.04102604853908e-06,
+  "SA": 0.00044850071951325747
+ },
+ "p_sub": 0.9116396977388,
+ "k_cal": 0.505173463177115,
+ "T1_budget": {
+  "wang2015_raw": {
+   "label": "Al on sapphire, lift-off (Wang 2015)",
+   "p_used": 0.00042632369573254416,
+   "T1_surface_us": 29.913420377261247,
+   "T1_bulk_us": null,
+   "T1_purcell_filtered_us": 2314.661633256065,
+   "T1_total_us": 29.5317679676785
+  },
+  "wang2015_calibrated": {
+   "label": "Al on sapphire, lift-off (Wang 2015)",
+   "p_used": 0.000215367417807676,
+   "T1_surface_us": 59.21415624077135,
+   "T1_bulk_us": null,
+   "T1_purcell_filtered_us": 2314.661633256065,
+   "T1_total_us": 57.73711337491456
+  },
+  "ganjam2024_raw": {
+   "label": "Ta on annealed sapphire (Ganjam 2024)",
+   "p_used": 0.0009264148388847021,
+   "T1_surface_us": 105.26754010727407,
+   "T1_bulk_us": 1398.8859808175112,
+   "T1_purcell_filtered_us": 2314.661633256065,
+   "T1_total_us": 93.92769074621047
+  },
+  "ganjam2024_calibrated": {
+   "label": "Ta on annealed sapphire (Ganjam 2024)",
+   "p_used": 0.000468000192498054,
+   "T1_surface_us": 208.37899806777267,
+   "T1_bulk_us": 1398.8859808175112,
+   "T1_purcell_filtered_us": 2314.661633256065,
+   "T1_total_us": 168.1850624792034
+  }
+ }
+}

@@ -1,0 +1,63 @@
+{
+ "rows": [
+  {
+   "label": "2D edge model: 4x finer corner mesh",
+   "ours": "0.03 % change",
+   "ref": "< 1 %",
+   "verdict": "match"
+  },
+  {
+   "label": "2D edge strength K vs analytic thin slot (g=500 um)",
+   "ours": "0.993",
+   "ref": "1 (h->0)",
+   "verdict": "match"
+  },
+  {
+   "label": "3D field follows K/sqrt(u), 1.4-10 um from edges",
+   "ours": "flat to +-2 %",
+   "ref": "theory: flat",
+   "verdict": "match"
+  },
+  {
+   "label": "3D mesh refinement: edge elements 1.0 -> 0.5 um (Design A)",
+   "ours": "+2.0 %",
+   "ref": "< 5 %",
+   "verdict": "match"
+  },
+  {
+   "label": "Edge band x0 = 4 vs 8 um (same 3D mesh)",
+   "ours": "+19 %",
+   "ref": "0 % ideal",
+   "verdict": "close"
+  },
+  {
+   "label": "Wang 2015 Design A, pad p_MS (Table S1)",
+   "ours": "1.64e-4",
+   "ref": "0.83e-4",
+   "verdict": "2.0x high"
+  },
+  {
+   "label": "Design A T1 from our p (Wang loss model)",
+   "ours": "48 us",
+   "ref": "66-95 us measured",
+   "verdict": "conservative"
+  },
+  {
+   "label": "v1 Palace eigenmode vs Palace reference (8 qty)",
+   "ours": "8/8, f to 9e-10",
+   "ref": "regression data",
+   "verdict": "match"
+  },
+  {
+   "label": "v1 E_C: electrostatic LOM vs eigenmode EPR",
+   "ours": "226 MHz",
+   "ref": "213 MHz",
+   "verdict": "6 % high"
+  }
+ ],
+ "note": "Wang et al., APL 107, 162601 (2015), Table S1: Design A (two 250x500 um Al pads on sapphire, 3D cavity), measured T1 = 75+-6, 66+-7, 95+-8 us; their fitted surface loss tan d_MS + 1.2 tan d_SA + 0.1 tan d_MA = 2.6e-3 (t = 3 nm, eps = 10) and a residual decay of 3 ms^-1. Our participation for the same pads is 2.0x theirs, so our raw T1 predictions are conservative; the 'calibrated' numbers rescale our participations by k = 0.505 to Wang's pipeline. Their pad-to-pad gap and film thickness are not stated exactly (we used a 65 um gap with 25 um stubs and a 100 nm film).",
+ "k_cal": 0.5053171062899142,
+ "T1_pred_raw_us": 48.155570669034915,
+ "pads_MS_ours": 0.00016425329553830824,
+ "pads_MS_wang": 8.3e-05
+}
