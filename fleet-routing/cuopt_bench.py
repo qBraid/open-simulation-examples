@@ -26,7 +26,7 @@ def euc2d(coords):
     return np.floor(d + 0.5).astype(np.int64)
 
 
-def solve(path, time_limit, extra_vehicles=10):
+def solve(path, time_limit, extra_vehicles=10, mode="default", min_vehicles=None):
     import cudf
     import vrplib
     from cuopt import routing
@@ -47,6 +47,12 @@ def solve(path, time_limit, extra_vehicles=10):
                               cudf.Series(np.full(nv, Q, dtype=np.int32)))
     dm.set_vehicle_locations(cudf.Series(np.zeros(nv, dtype=np.int32)),
                              cudf.Series(np.zeros(nv, dtype=np.int32)))
+    if mode == "fixedcost":  # replace vehicle-count-first with an explicit (zero) fleet cost
+        dm.set_vehicle_fixed_costs(cudf.Series(np.zeros(nv, dtype=np.float32)))
+        dm.set_objective_function(cudf.Series([routing.Objective.COST, routing.Objective.VEHICLE_FIXED_COST]),
+                                  cudf.Series(np.array([1.0, 1.0], dtype=np.float32)))
+    if min_vehicles:
+        dm.set_min_vehicles(int(min_vehicles))
     ss = routing.SolverSettings()
     ss.set_time_limit(float(time_limit))
     t0 = time.perf_counter()

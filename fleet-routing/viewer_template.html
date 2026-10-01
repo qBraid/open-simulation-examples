@@ -7,339 +7,756 @@
 <style>
 :root{
   color-scheme:light;
-  --surface-0:#f3f4f1;--surface-1:#fcfcfb;--surface-2:#ecedea;--line:#d6d9d4;
-  --text-primary:#0b0b0b;--text-secondary:#52514e;--text-muted:#77766f;
-  --road:#c9ccc6;--stop:#77766f;--depot:#0b0b0b;
-  --s-pyvrp:#2a78d6;--s-ortools:#eb6834;--s-highs:#1baf7a;--bound:#52514e;
-  --bar:#2a78d6;
+  --surface-0:#eef0ec;--surface-1:#fbfbf9;--surface-2:#e8eae5;--line:#d3d7d0;
+  --text-primary:#0d0f0e;--text-secondary:#4d524f;--text-muted:#747a76;
+  --hud:rgba(251,251,249,.86);--hud-line:rgba(13,15,14,.12);
+  --land:#e4e6df;--water:#9cc3d8;--road-minor:#cfd2cb;--road-mid:#bfc3bb;--road-major:#a9aea6;
+  --sky-top:#9fc7e6;--sky-bottom:#eef0ec;--neutral:#d9dbd5;
+  --stop-pending:#e0952b;--depot:#1d1f1e;
+  --s-pyvrp:#2a78d6;--s-ortools:#eb6834;--s-highs:#1baf7a;--s-cuopt:#8b5cd6;--bound:#4d524f;
+  --accent:#2a78d6;
 }
 @media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){
   color-scheme:dark;
-  --surface-0:#111110;--surface-1:#1a1a19;--surface-2:#252523;--line:#34342f;
-  --text-primary:#ffffff;--text-secondary:#c3c2b7;--text-muted:#8f8e86;
-  --road:#3a3a36;--stop:#8f8e86;--depot:#ffffff;
-  --s-pyvrp:#3987e5;--s-ortools:#d95926;--s-highs:#199e70;--bound:#c3c2b7;
-  --bar:#3987e5;
+  --surface-0:#0b0d0f;--surface-1:#14171a;--surface-2:#1d2125;--line:#2c3237;
+  --text-primary:#f2f4f3;--text-secondary:#bfc5c2;--text-muted:#8b928e;
+  --hud:rgba(20,23,26,.82);--hud-line:rgba(255,255,255,.10);
+  --land:#16191c;--water:#0d2233;--road-minor:#23282c;--road-mid:#2f353a;--road-major:#3d454b;
+  --sky-top:#05080d;--sky-bottom:#1a2430;--neutral:#2b3035;
+  --stop-pending:#f2a93b;--depot:#e9ecea;
+  --s-pyvrp:#4a95ee;--s-ortools:#f07a45;--s-highs:#2bc48b;--s-cuopt:#a984f0;--bound:#bfc5c2;
+  --accent:#4a95ee;
 }}
 :root[data-theme="dark"]{
   color-scheme:dark;
-  --surface-0:#111110;--surface-1:#1a1a19;--surface-2:#252523;--line:#34342f;
-  --text-primary:#ffffff;--text-secondary:#c3c2b7;--text-muted:#8f8e86;
-  --road:#3a3a36;--stop:#8f8e86;--depot:#ffffff;
-  --s-pyvrp:#3987e5;--s-ortools:#d95926;--s-highs:#199e70;--bound:#c3c2b7;
-  --bar:#3987e5;
+  --surface-0:#0b0d0f;--surface-1:#14171a;--surface-2:#1d2125;--line:#2c3237;
+  --text-primary:#f2f4f3;--text-secondary:#bfc5c2;--text-muted:#8b928e;
+  --hud:rgba(20,23,26,.82);--hud-line:rgba(255,255,255,.10);
+  --land:#16191c;--water:#0d2233;--road-minor:#23282c;--road-mid:#2f353a;--road-major:#3d454b;
+  --sky-top:#05080d;--sky-bottom:#1a2430;--neutral:#2b3035;
+  --stop-pending:#f2a93b;--depot:#e9ecea;
+  --s-pyvrp:#4a95ee;--s-ortools:#f07a45;--s-highs:#2bc48b;--s-cuopt:#a984f0;--bound:#bfc5c2;
+  --accent:#4a95ee;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--surface-0);color:var(--text-primary);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
-.wrap{max-width:1200px;margin:0 auto;padding:22px 16px 60px}
-h1{font-size:24px;margin:0 0 4px;letter-spacing:-.01em}
+.wrap{max-width:1320px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:26px;margin:0 0 2px;letter-spacing:-.015em}
 h2{font-size:15px;margin:0 0 8px}
-.sub{color:var(--text-secondary);margin:0 0 14px;max-width:80ch}
+.sub{color:var(--text-secondary);margin:0 0 14px;max-width:96ch}
 .mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}
 .muted{color:var(--text-muted)}
-.grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px}
-.card{background:var(--surface-1);border:1px solid var(--line);border-radius:10px;padding:14px}
-#map{position:relative;height:560px;padding:0;overflow:hidden}
-#map canvas{display:block;width:100%;height:100%}
-.maphint{position:absolute;left:12px;bottom:10px;font-size:12px;color:var(--text-muted);pointer-events:none}
-.tip{position:absolute;pointer-events:none;background:var(--surface-1);border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:12px;box-shadow:0 4px 14px rgba(0,0,0,.15);display:none;white-space:nowrap;z-index:5}
-.solver{display:grid;grid-template-columns:14px 1fr auto;gap:8px;align-items:center;width:100%;text-align:left;background:var(--surface-2);border:2px solid transparent;border-radius:8px;padding:8px 10px;margin:0 0 8px;color:var(--text-primary);font:inherit;cursor:pointer}
+button{font:inherit}
+/* ---------- stage */
+#stage{position:relative;height:min(76vh,780px);min-height:480px;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--surface-1)}
+#stage canvas{display:block;width:100%;height:100%;outline:none}
+#labels{position:absolute;inset:0;pointer-events:none}
+.hud{position:absolute;background:var(--hud);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--hud-line);border-radius:12px;padding:10px 12px}
+#kpis{left:12px;top:12px;display:grid;grid-template-columns:repeat(4,auto);gap:4px 18px;max-width:calc(100% - 24px)}
+.kpi b{display:block;font-size:20px;letter-spacing:-.01em;font-variant-numeric:tabular-nums;line-height:1.15}
+.kpi span{font-size:11.5px;color:var(--text-muted)}
+#modes{right:12px;top:12px;display:flex;gap:6px;padding:6px}
+.seg{border:1px solid var(--hud-line);background:transparent;color:var(--text-primary);border-radius:8px;padding:5px 11px;cursor:pointer;font-size:13px}
+.seg[aria-pressed="true"]{background:var(--text-primary);color:var(--surface-1)}
+.seg.ghost{border-style:dashed}
+#side{right:12px;top:62px;width:270px;max-height:calc(100% - 150px);overflow:auto}
+.solver{display:grid;grid-template-columns:12px 1fr auto;gap:8px;align-items:center;width:100%;text-align:left;background:transparent;border:1.5px solid transparent;border-radius:8px;padding:6px 8px;margin:0 0 4px;color:var(--text-primary);cursor:pointer}
 .solver[aria-pressed="true"]{border-color:var(--text-primary)}
-.solver:disabled{cursor:default;opacity:.85}
-.sw{width:14px;height:14px;border-radius:4px}
-.solver b{display:block}
-.solver small{color:var(--text-secondary)}
-.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;font-size:13px}
-.kv dt{color:var(--text-muted)}.kv dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.solver:disabled{cursor:default;opacity:.8}
+.sw{width:12px;height:12px;border-radius:3px}
+.solver small{display:block;color:var(--text-secondary);font-size:11.5px}
+.cbar{height:10px;border-radius:3px;margin:4px 0 2px}
+.cticks{display:flex;justify-content:space-between;font-size:10.5px;color:var(--text-muted)}
+.lg{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-secondary);margin:3px 0}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+#timeline{left:12px;right:12px;bottom:12px;display:grid;grid-template-columns:auto auto 1fr auto auto;gap:10px;align-items:center;padding:8px 12px}
+#play{width:34px;height:34px;border-radius:50%;border:none;background:var(--text-primary);color:var(--surface-1);cursor:pointer;display:grid;place-items:center}
+#clock{font-variant-numeric:tabular-nums;font-weight:600;min-width:70px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+select{background:transparent;color:var(--text-primary);border:1px solid var(--hud-line);border-radius:6px;padding:3px 4px}
+#caption{left:12px;bottom:72px;max-width:420px;display:none}
+#caption b{display:block;font-size:15px;margin-bottom:2px}
+#caption p{margin:0;color:var(--text-secondary);font-size:13px}
+#racebox{left:12px;bottom:72px;width:330px;display:none}
+.lb{position:relative;height:118px}
+.lbrow{position:absolute;left:0;right:0;height:34px;transition:transform .35s ease;display:grid;grid-template-columns:76px 1fr 78px;align-items:center;gap:8px;font-size:12.5px}
+.lbbar{height:12px;border-radius:3px}
+#benchcard{right:12px;top:62px;width:300px;display:none}
+#mini{width:100%;height:190px;border-radius:8px;background:var(--surface-2);display:block;margin-top:6px}
+.lbl{font-size:11px;color:var(--text-secondary);white-space:nowrap;text-shadow:0 0 3px var(--surface-1)}
+.lbl.big{font-size:12.5px;color:var(--text-primary);font-weight:600}
+.hint{position:absolute;left:50%;transform:translateX(-50%);bottom:66px;font-size:11.5px;color:var(--text-muted);pointer-events:none;white-space:nowrap}
+/* ---------- cards */
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}
+.card{background:var(--surface-1);border:1px solid var(--line);border-radius:12px;padding:14px}
+.card.wide{grid-column:1/-1}
 svg text{fill:var(--text-secondary);font-size:11px}
-.axis line,.axis path{stroke:var(--line)}
 table{border-collapse:collapse;width:100%;font-size:12.5px;font-variant-numeric:tabular-nums}
 th,td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:right}
 th:first-child,td:first-child{text-align:left}
 th{color:var(--text-muted);font-weight:500}
-.ok{font-weight:600}
-details summary{cursor:pointer;color:var(--text-secondary);font-size:12.5px;margin-top:8px}
+.note{font-size:12.5px;color:var(--text-secondary);margin:8px 0 0}
+.verdict{display:inline-block;font-size:11.5px;font-weight:600;border-radius:999px;padding:2px 9px;background:var(--surface-2)}
 .legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--text-secondary);margin:0 0 6px}
 .legend i{display:inline-block;width:12px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
-.note{font-size:12.5px;color:var(--text-secondary);margin:8px 0 0}
-@media (max-width:900px){.grid,.row2{grid-template-columns:1fr}#map{height:420px}}
+.tip{position:absolute;pointer-events:none;background:var(--surface-1);border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:12px;box-shadow:0 4px 14px rgba(0,0,0,.15);display:none;white-space:nowrap;z-index:5}
+@media (max-width:900px){.grid{grid-template-columns:1fr}#side,#benchcard{display:none!important}#kpis{grid-template-columns:repeat(2,auto)}#timeline{grid-template-columns:auto 1fr auto}#timeline .opt{display:none}#racebox{width:auto;right:12px}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Fleet Routing Race</h1>
+  <h1>Fleet Routing Race · Chicago</h1>
   <p class="sub" id="sub"></p>
+
+  <div id="stage">
+    <div id="labels"></div>
+    <div class="hud" id="kpis"></div>
+    <div class="hud" id="modes">
+      <button class="seg" data-mode="city" aria-pressed="true">City</button>
+      <button class="seg" data-mode="bench" aria-pressed="false">Benchmark</button>
+      <button class="seg ghost" id="tourBtn">Tour</button>
+      <button class="seg ghost" id="raceBtn">Race replay</button>
+    </div>
+    <div class="hud" id="side">
+      <div class="muted" style="font-size:11.5px;margin-bottom:4px">Routes shown</div>
+      <div id="solvers"></div>
+      <div class="muted" style="font-size:11.5px;margin:10px 0 0">Building height (m)</div>
+      <div class="cbar" id="hbar"></div>
+      <div class="cticks"><span>6</span><span>20</span><span>60</span><span>200</span><span>450</span></div>
+      <div class="lg"><span class="dot" style="background:var(--neutral)"></span>grey: storey count unknown (estimated)</div>
+      <div class="lg"><span class="dot" style="background:var(--stop-pending)"></span>stop waiting for delivery</div>
+      <div class="lg"><span class="dot" style="background:var(--accent)"></span>delivered (vehicle colour)</div>
+      <div class="lg" style="font-size:11px">Vans, pins and route ribbons are drawn several times real size so they read at city scale.</div>
+    </div>
+    <div class="hud" id="benchcard">
+      <b id="bc-title">CVRPLIB X benchmark</b>
+      <div id="bc-body" class="note" style="margin-top:4px"></div>
+      <canvas id="mini" width="560" height="380"></canvas>
+    </div>
+    <div class="hud" id="caption"><b id="cap-t"></b><p id="cap-p"></p></div>
+    <div class="hud" id="racebox"><div class="muted" style="font-size:11.5px">Solver race · <span id="race-t">0.0 s</span> of 60 s</div><div class="lb" id="lb"></div></div>
+    <div class="hint" id="hint">drag to orbit · right-drag to pan · scroll to zoom · click a route to follow it</div>
+    <div class="hud" id="timeline">
+      <button id="play" aria-label="pause"></button>
+      <span id="clock">08:00</span>
+      <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="time">
+      <select id="speed" class="opt" aria-label="playback speed"><option value="1">1×</option><option value="3" selected>3×</option><option value="8">8×</option></select>
+      <span class="muted opt" id="tlabel" style="font-size:12px">delivery clock</span>
+    </div>
+  </div>
+
   <div class="grid">
-    <div class="card" id="map"><div class="tip" id="maptip"></div><div class="maphint">drag to orbit · scroll to zoom · click a route to isolate it</div></div>
-    <div>
-      <div class="card">
-        <h2>Solvers raced (same 60 s, one process each)</h2>
-        <div id="solvers"></div>
-        <dl class="kv" id="summary"></dl>
-      </div>
-      <div class="card" style="margin-top:14px">
-        <h2 id="rtitle">Route</h2>
-        <dl class="kv" id="rinfo"><dt>Selected</dt><dd>none; click a route</dd></dl>
-      </div>
-    </div>
-  </div>
-
-  <div class="row2">
     <div class="card">
-      <h2>Best route length found against time</h2>
+      <h2>How short is short? A certified bound for Chicago</h2>
+      <svg id="boundsvg" viewBox="0 0 600 170" width="100%" role="img" aria-label="Best plan versus lower bounds"></svg>
+      <p class="note" id="boundnote"></p>
+    </div>
+    <div class="card">
+      <h2>Chicago race: best plan found against time</h2>
       <div class="legend" id="clegend"></div>
-      <div style="position:relative"><svg id="conv" viewBox="0 0 560 250" width="100%" role="img" aria-label="Incumbent distance over time per solver"></svg><div class="tip" id="ctip"></div></div>
-      <details><summary>Table view</summary><table id="ctable"></table></details>
+      <div style="position:relative"><svg id="conv" viewBox="0 0 600 230" width="100%" role="img" aria-label="Incumbent distance over time per solver"></svg><div class="tip" id="ctip"></div></div>
+    </div>
+    <div class="card wide">
+      <h2>Benchmark: CVRPLIB X instances (Uchoa et al. 2017) <span class="verdict" id="verdict"></span></h2>
+      <p class="note" id="benchnote" style="margin-top:0"></p>
+      <div style="overflow:auto"><table id="benchtable"></table></div>
+      <details style="margin-top:8px"><summary class="muted" style="cursor:pointer">Every instance</summary><div style="overflow:auto"><table id="benchall"></table></div></details>
     </div>
     <div class="card">
-      <h2>Known-answer anchors (CVRPLIB)</h2>
+      <h2>Known-answer anchors</h2>
       <table id="anchors"></table>
-      <p class="note">Proven means the HiGHS lower bound meets the best route, so no better solution exists. For X-n101-k25 the best-known solution is reached, but the simple capacity cuts used here leave a certified gap. Closing it takes branch-cut-and-price.</p>
+      <p class="note">Proven means the HiGHS lower bound meets the best route, so no better solution exists.</p>
     </div>
-  </div>
-
-  <div class="row2">
     <div class="card">
       <h2>Quantum readiness: QAOA on one 4-stop route</h2>
-      <div style="position:relative"><svg id="qbar" viewBox="0 0 560 230" width="100%" role="img" aria-label="Probability of sampling the optimal tour by QAOA depth"></svg><div class="tip" id="qtip"></div></div>
+      <div style="position:relative"><svg id="qbar" viewBox="0 0 560 210" width="100%" role="img" aria-label="Probability of sampling the optimal tour by QAOA depth"></svg><div class="tip" id="qtip"></div></div>
       <p class="note" id="qnote"></p>
-    </div>
-    <div class="card">
-      <h2>What this does and doesn't show</h2>
-      <p class="note" id="qtext"></p>
-      <table id="qtable"></table>
+      <details><summary class="muted" style="cursor:pointer">What this does and doesn't show</summary><p class="note" id="qtext"></p><table id="qtable"></table></details>
     </div>
   </div>
   <p class="note mono" id="stamp" style="margin-top:14px"></p>
 </div>
 
+<pre id="dbg" style="display:none;position:fixed;left:0;top:0;z-index:99;max-width:100vw;max-height:60vh;overflow:auto;background:#300;color:#fdd;font-size:11px;margin:0;padding:6px"></pre>
+<script>if(location.hash.includes('debug')){ const el=document.getElementById('dbg'); el.style.display='block'; const log=(...a)=>{ el.textContent += a.map(x=>x&&x.stack? x.stack : String(x)).join(' ').slice(0,1500)+'\n'; };
+  const ce=console.error, cw=console.warn; console.error=(...a)=>{log('E',...a); ce(...a);}; console.warn=(...a)=>{log('W',...a); cw(...a);};
+  window.addEventListener('error', e=>log('X', e.message, e.filename+':'+e.lineno)); window.addEventListener('unhandledrejection', e=>log('R', e.reason)); }</script>
 <script>const D = /*__DATA__*/null;</script>
 <script>
+// ======================================================================= shared helpers (2D)
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const SOLV = [["pyvrp","PyVRP (hybrid genetic search)"],["ortools","OR-Tools (guided local search)"],["highs","HiGHS (exact MIP, lower bound)"]];
 const km = m => (m/1000).toFixed(1)+" km";
-let current = D.winner, selected = null, onSolver = () => {}, onSelect = () => {};
+const C = D.city, B = D.bench;
+const SOLV = [["pyvrp","PyVRP","hybrid genetic search"],["ortools","OR-Tools","guided local search"],["highs","HiGHS","exact MIP · lower bound"]];
+const fmtPct = v => v==null? "—" : (v<0.005 && v>-0.005? "0.00%" : v.toFixed(2)+"%");
+const mean = a => a.length? a.reduce((s,x)=>s+x,0)/a.length : null;
 
 document.getElementById('sub').innerHTML =
-  `${D.stops.length-1} delivery stops and one depot in ${D.city}, on the real OpenStreetMap road network (${D.meta.graph_nodes.toLocaleString()} intersections, one-way streets respected). Vehicle capacity ${D.capacity}. Three open-source solvers race on the same problem. The best answer is <b>${km(D.best)}</b> and HiGHS certifies that nothing shorter than <b>${km(D.lower_bound)}</b> exists, which leaves a ${D.gap}% gap.`;
-const st = D.stamp;
-document.getElementById('stamp').textContent =
-  `Verified ${st.date} · ${st.host} · ${st.processes} processes × ${st.threads_per_solver} thread · ${st.time_limit_s}s budget · ${st.cost_credits} credits · env ${st.env}`;
+  `${C.stops.length-1} delivery stops and one depot in ${C.name}, on the real OpenStreetMap street network (${C.meta.graph_nodes.toLocaleString()} intersections, one-way streets respected), drawn among ${D.scenery.stats.buildings.toLocaleString()} City of Chicago building footprints. Open-source solvers race on the same problem; the best plan is <b>${km(C.best)}</b>, and a directed lower bound certifies that no plan can be shorter than <b>${km(C.bound.best)}</b> (gap ${C.bound.gap}%). The same solvers are then scored on the standard CVRPLIB X benchmark against best-known solutions.`;
 
-// ---------------- solver cards
-const sEl = document.getElementById('solvers');
-SOLV.forEach(([k,label])=>{
-  const s = D.solvers[k]; if(!s) return;
-  const b = document.createElement('button'); b.className='solver'; b.dataset.k=k;
-  const hasRoutes = s.routes.length>0;
-  const val = hasRoutes ? km(s.cost) : (s.lower_bound? "≥ "+km(s.lower_bound) : "none");
-  const extra = hasRoutes ? `${s.routes.length} vehicles · +${(100*(s.cost-D.lower_bound)/s.cost).toFixed(1)}% over bound` : "no routes in 60 s; proves the lower bound";
-  b.innerHTML = `<span class="sw" style="background:var(--s-${k})"></span><span><b>${label}</b><small>${extra}</small></span><span class="mono">${val}</span>`;
-  b.setAttribute('aria-pressed', k===current);
-  if(!hasRoutes) b.disabled = true;
-  b.onclick = ()=>{ current=k; [...sEl.children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.k===k)); selected=null; onSolver(); showRoute(); };
-  sEl.appendChild(b);
-});
-document.getElementById('summary').innerHTML =
-  `<dt>Winner</dt><dd>${D.winner}</dd><dt>Best</dt><dd>${km(D.best)}</dd><dt>Lower bound</dt><dd>${km(D.lower_bound)}</dd><dt>Certified gap</dt><dd>${D.gap}%</dd>`;
+// ---------------- KPIs
+const totalStops = C.stops.length-1;
+document.getElementById('kpis').innerHTML =
+  `<div class="kpi"><b id="k-best">${km(C.best)}</b><span>best plan (${C.winner})</span></div>`+
+  `<div class="kpi"><b>${C.bound.gap}%</b><span>certified gap to optimum</span></div>`+
+  `<div class="kpi"><b id="k-del">0 / ${totalStops}</b><span>stops delivered</span></div>`+
+  `<div class="kpi"><b id="k-km">0.0 km</b><span>driven so far</span></div>`;
 
-function showRoute(){
-  const s = D.solvers[current], el = document.getElementById('rinfo');
-  if(selected==null){ el.innerHTML = `<dt>Selected</dt><dd>none; click a route</dd><dt>Vehicles</dt><dd>${s.routes.length}</dd><dt>Total</dt><dd>${km(s.cost)}</dd>`; return; }
-  const r = s.routes[selected];
-  el.innerHTML = `<dt>Vehicle</dt><dd>${selected+1} of ${s.routes.length}</dd><dt>Stops</dt><dd>${r.stops.length}</dd><dt>Load</dt><dd>${r.load} / ${D.capacity}</dd><dt>Distance</dt><dd>${km(r.m)}</dd>`;
-}
-showRoute();
-
-// ---------------- convergence chart (one axis: km)
+// ---------------- certified bound card
 (function(){
-  const svg = document.getElementById('conv'), W=560,H=250,m={l:52,r:78,t:10,b:30};
-  const series = SOLV.map(([k])=>[k,(D.solvers[k]||{}).trace||[]]).filter(([k,t])=>t.some(p=>p[1]!=null));
-  const T = D.stamp.time_limit_s;
-  const ys = series.flatMap(([k,t])=>t.filter(p=>p[1]!=null).map(p=>p[1])).concat([D.lower_bound]);
-  const y0 = Math.min(...ys)*0.98, y1 = Math.max(...ys)*1.01;
-  const x = t => m.l + (Math.log10(Math.max(t,0.1))+1)/(Math.log10(T)+1)*(W-m.l-m.r);
+  const svg = document.getElementById('boundsvg'), W=600, m={l:150,r:70,t:12};
+  const rows = [
+    ["Best plan (PyVRP)", C.best, "var(--s-pyvrp)"],
+    ["OR-Tools plan", C.solvers.ortools && C.solvers.ortools.cost, "var(--s-ortools)"],
+    ["Directed bound (this work)", C.bound.directed, "var(--s-highs)"],
+    ["Symmetric bound (v1)", C.bound.symmetric, "var(--bound)"],
+  ].filter(r=>r[1]);
+  const lo = Math.min(...rows.map(r=>r[1]))*0.97, hi = Math.max(...rows.map(r=>r[1]))*1.005;
+  const x = v => m.l + (v-lo)/(hi-lo)*(W-m.l-m.r);
+  let g = '';
+  rows.forEach((r,i)=>{ const y = m.t + i*36;
+    g += `<text x="${m.l-8}" y="${y+15}" text-anchor="end" style="fill:var(--text-primary)">${r[0]}</text>`;
+    g += `<rect x="${m.l}" y="${y+4}" width="${x(r[1])-m.l}" height="16" rx="3" fill="${r[2]}" opacity=".9"/>`;
+    g += `<text x="${x(r[1])+6}" y="${y+16}">${(r[1]/1000).toFixed(1)} km</text>`; });
+  g += `<line x1="${x(C.best)}" x2="${x(C.best)}" y1="4" y2="${m.t+rows.length*36}" stroke="var(--text-muted)" stroke-dasharray="3 3"/>`;
+  svg.innerHTML = g;
+  document.getElementById('boundnote').innerHTML =
+    `The optimum lies between the green bar and the best plan. Version 1 bounded the problem with a <i>symmetric</i> relaxation (min of the two directions on every street), which ignores one-way streets: certified gap ${C.bound.symmetric_gap}%. This version solves the directed two-index ACVRP with ${C.bound.cuts? C.bound.cuts.toLocaleString():''} rounded capacity cuts (component, greedy and exact min-cut separation, HiGHS), which raises the bound to ${km(C.bound.directed)} and cuts the gap to <b>${C.bound.gap}%</b>. Closing the rest needs branch-cut-and-price (route-based columns), which no open-source package offers ready-made today; the plan itself is probably within ~1–2% of optimal, but only the ${C.bound.gap}% is certified.`;
+})();
+
+// ---------------- Chicago convergence chart (log time); also used by race replay
+const RACE = (function(){
+  const svg = document.getElementById('conv'), W=600,H=230,m={l:52,r:84,t:10,b:30};
+  const series = ["pyvrp","ortools"].map(k=>[k,(C.solvers[k]||{}).trace||[]]).filter(([k,t])=>t.length);
+  const T = C.stamp.time_limit_s;
+  const ys = series.flatMap(([k,t])=>t.map(p=>p[1])).concat([C.bound.best]);
+  const y0 = Math.min(...ys)*0.985, y1 = Math.max(...ys)*1.01;
+  const x = t => m.l + (Math.log10(Math.max(t,0.05))+1.3)/(Math.log10(T)+1.3)*(W-m.l-m.r);
   const y = v => m.t + (1-(v-y0)/(y1-y0))*(H-m.t-m.b);
   let g = '';
-  [0.1,1,10,T].forEach(t=>{ g+=`<line x1="${x(t)}" x2="${x(t)}" y1="${m.t}" y2="${H-m.b}" stroke="var(--line)" stroke-width="1"/><text x="${x(t)}" y="${H-m.b+16}" text-anchor="middle">${t}s</text>`; });
-  const ticks = 4; for(let i=0;i<=ticks;i++){ const v=y0+(y1-y0)*i/ticks; g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1" opacity=".6"/><text x="${m.l-6}" y="${y(v)+4}" text-anchor="end">${(v/1000).toFixed(0)} km</text>`; }
-  // lower bound
-  g += `<line x1="${m.l}" x2="${W-m.r}" y1="${y(D.lower_bound)}" y2="${y(D.lower_bound)}" stroke="var(--bound)" stroke-width="1.5" stroke-dasharray="5 4"/><text x="${W-m.r+6}" y="${y(D.lower_bound)+4}">bound</text>`;
-  const pts = {};
+  [0.1,1,10,T].forEach(t=>{ g+=`<line x1="${x(t)}" x2="${x(t)}" y1="${m.t}" y2="${H-m.b}" stroke="var(--line)"/><text x="${x(t)}" y="${H-m.b+16}" text-anchor="middle">${t}s</text>`; });
+  for(let i=0;i<=4;i++){ const v=y0+(y1-y0)*i/4; g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" opacity=".6"/><text x="${m.l-6}" y="${y(v)+4}" text-anchor="end">${(v/1000).toFixed(0)} km</text>`; }
+  g += `<line x1="${m.l}" x2="${W-m.r}" y1="${y(C.bound.best)}" y2="${y(C.bound.best)}" stroke="var(--s-highs)" stroke-width="1.5" stroke-dasharray="5 4"/><text x="${W-m.r+6}" y="${y(C.bound.best)+4}">bound</text>`;
   series.forEach(([k,t])=>{
-    const p = t.filter(q=>q[1]!=null); pts[k]=p;
-    let d = '';
-    p.forEach((q,i)=>{ const X=x(q[0]),Y=y(q[1]); d += i? `H${X}V${Y}` : `M${X},${Y}`; });
-    d += `H${x(T)}`;
-    g += `<path d="${d}" fill="none" stroke="var(--s-${k})" stroke-width="2" stroke-linejoin="round"/>`;
-    const last = p[p.length-1];
-    g += `<circle cx="${x(T)}" cy="${y(last[1])}" r="4" fill="var(--s-${k})" stroke="var(--surface-1)" stroke-width="2"/><text x="${W-m.r+8}" y="${y(last[1])+4}">${k}</text>`;
+    let d=''; t.forEach((q,i)=>{ const X=x(q[0]),Y=y(q[1]); d+= i? `H${X}V${Y}` : `M${X},${Y}`; }); d+=`H${x(T)}`;
+    g += `<path d="${d}" fill="none" stroke="var(--s-${k})" stroke-width="2" stroke-linejoin="round" class="cv" data-k="${k}"/>`;
+    const last=t[t.length-1]; g+=`<text x="${W-m.r+8}" y="${y(last[1])+4}" style="fill:var(--s-${k})">${k}</text>`;
   });
-  g += `<line id="cx" y1="${m.t}" y2="${H-m.b}" stroke="var(--text-muted)" stroke-width="1" visibility="hidden"/><rect x="${m.l}" y="${m.t}" width="${W-m.l-m.r}" height="${H-m.t-m.b}" fill="transparent" id="chit"/>`;
+  g += `<rect id="cmask" x="0" y="0" width="0" height="${H}" fill="var(--surface-1)" opacity=".75"/><line id="ccur" y1="${m.t}" y2="${H-m.b}" stroke="var(--text-primary)" stroke-width="1" visibility="hidden"/>`;
+  g += `<rect x="${m.l}" y="${m.t}" width="${W-m.l-m.r}" height="${H-m.t-m.b}" fill="transparent" id="chit"/>`;
   svg.innerHTML = g;
-  document.getElementById('clegend').innerHTML = series.map(([k])=>`<span><i style="background:var(--s-${k})"></i>${k}</span>`).join('')+`<span><i style="background:var(--bound);height:2px"></i>HiGHS lower bound</span>`;
-  const tip = document.getElementById('ctip'), cx = svg.querySelector('#cx');
-  const at = (p,t)=>{ let v=null; for(const q of p) if(q[0]<=t) v=q[1]; return v; };
+  document.getElementById('clegend').innerHTML = series.map(([k])=>`<span><i style="background:var(--s-${k})"></i>${k}</span>`).join('')+`<span><i style="background:var(--s-highs);height:2px"></i>certified lower bound</span>`;
+  const at = (t,k)=>{ let v=null; for(const q of (C.solvers[k]||{}).trace||[]) if(q[0]<=t) v=q[1]; return v; };
+  const tip = document.getElementById('ctip');
   svg.querySelector('#chit').addEventListener('mousemove', e=>{
-    const r = svg.getBoundingClientRect(), sx = (e.clientX-r.left)*W/r.width;
-    const t = Math.pow(10, (sx-m.l)/(W-m.l-m.r)*(Math.log10(T)+1)-1);
-    cx.setAttribute('x1',sx); cx.setAttribute('x2',sx); cx.setAttribute('visibility','visible');
-    tip.style.display='block'; tip.style.left=Math.min(e.clientX-r.left+12, r.width-170)+'px'; tip.style.top='8px';
-    tip.innerHTML = `<b>t = ${t<1?t.toFixed(2):t.toFixed(1)} s</b><br>`+series.map(([k])=>{const v=at(pts[k],t);return `<span style="color:var(--s-${k})">■</span> ${k}: ${v?km(v):'none yet'}`}).join('<br>')+`<br>bound: ${km(D.lower_bound)}`;
+    const r=svg.getBoundingClientRect(), sx=(e.clientX-r.left)*W/r.width;
+    const t=Math.pow(10,(sx-m.l)/(W-m.l-m.r)*(Math.log10(T)+1.3)-1.3);
+    tip.style.display='block'; tip.style.left=Math.min(e.clientX-r.left+12,r.width-170)+'px'; tip.style.top='8px';
+    tip.innerHTML=`<b>t = ${t<1?t.toFixed(2):t.toFixed(1)} s</b><br>`+series.map(([k])=>{const v=at(t,k);return `<span style="color:var(--s-${k})">■</span> ${k}: ${v?km(v):'none yet'}`}).join('<br>');
   });
-  svg.querySelector('#chit').addEventListener('mouseleave',()=>{tip.style.display='none';cx.setAttribute('visibility','hidden')});
-  const cps=[1,5,10,30,60].filter(t=>t<=T);
-  document.getElementById('ctable').innerHTML = `<tr><th>solver</th>${cps.map(t=>`<th>${t}s</th>`).join('')}</tr>`+series.map(([k])=>`<tr><td>${k}</td>${cps.map(t=>{const v=at(pts[k],t);return `<td>${v?km(v):'none'}</td>`}).join('')}</tr>`).join('');
+  svg.querySelector('#chit').addEventListener('mouseleave',()=>tip.style.display='none');
+  return {T, at, setCursor(t){ const c=svg.querySelector('#ccur'), mk=svg.querySelector('#cmask');
+    if(t==null){ c.setAttribute('visibility','hidden'); mk.setAttribute('width',0); return; }
+    const X=x(Math.max(t,0.05)); c.setAttribute('x1',X); c.setAttribute('x2',X); c.setAttribute('visibility','visible');
+    mk.setAttribute('x',X); mk.setAttribute('width',W-m.r-X+2); }};
+})();
+
+// ---------------- benchmark tables
+(function(){
+  const X = B.instances, names = ["pyvrp","ortools","cuopt"];
+  const groups = [["n 100–299",r=>r.n<300],["n 300–599",r=>r.n>=300&&r.n<600],["n 600–1000",r=>r.n>=600],["all",r=>true]];
+  const g = (rows,s)=>mean(rows.map(r=>r.solvers[s]&&r.solvers[s].gap).filter(v=>v!=null));
+  const raced = rows=>mean(rows.map(r=>r.gap).filter(v=>v!=null));
+  let h = `<tr><th>size group</th><th>instances</th><th>race winner (best of solvers)</th>${names.map(s=>`<th>${s}</th>`).join('')}<th>published PyVRP · HGS-CVRP (full budget)</th></tr>`;
+  groups.forEach(([lab,f])=>{ const rows=X.filter(f); if(!rows.length) return;
+    h += `<tr><td>${lab}</td><td>${rows.length}</td><td><b>${fmtPct(raced(rows))}</b></td>${names.map(s=>`<td>${fmtPct(g(rows,s))}</td>`).join('')}<td class="muted">${lab==='all'? '0.22% · 0.11%':''}</td></tr>`; });
+  document.getElementById('benchtable').innerHTML = X.length? h : '<tr><td>benchmark results not yet available</td></tr>';
+  document.getElementById('benchall').innerHTML = `<tr><th>instance</th><th>n</th><th>BKS</th><th>budget</th><th>best</th>${names.map(s=>`<th>${s}</th>`).join('')}</tr>`+
+    X.map(r=>`<tr><td>${r.name}</td><td>${r.n}</td><td>${r.bks}</td><td>${r.tl}s</td><td>${r.best}</td>${names.map(s=>`<td>${r.solvers[s]?fmtPct(r.solvers[s].gap):'—'}</td>`).join('')}</tr>`).join('');
+  const S = B.summary || {};
+  document.getElementById('verdict').textContent = S.verdict || '';
+  document.getElementById('benchnote').innerHTML = S.note || '';
 })();
 
 // ---------------- anchors
 document.getElementById('anchors').innerHTML = `<tr><th>instance</th><th>known</th><th>best found</th><th>lower bound</th><th>status</th></tr>`+
-  D.anchors.map(a=>`<tr><td>${a.instance} <span class="muted">(${a.n})</span></td><td>${a.bks}</td><td>${a.best} <span class="muted">${a.winner}</span></td><td>${a.lower_bound}</td><td class="ok">${a.proven?'proven optimal':'gap '+a.gap+'%'}</td></tr>`).join('')+
-  `<tr><td colspan="5" class="muted" style="text-align:left">Time to the known answer (s), PyVRP / OR-Tools: `+D.anchors.map(a=>{const f=k=>{const r=a.table[k];if(!r)return'none';const ks=Object.keys(r).filter(x=>x.endsWith('s')&&r[x]!=null&&r[x]<=a.bks);return ks.length?ks[0]:'not reached'};return `${a.instance.split('-')[1]}: ${f('pyvrp')} / ${f('ortools')}`}).join(' · ')+`</td></tr>`;
+  D.anchors.map(a=>`<tr><td>${a.instance} <span class="muted">(${a.n})</span></td><td>${a.bks}</td><td>${a.best} <span class="muted">${a.winner}</span></td><td>${a.lower_bound}</td><td><b>${a.proven?'proven optimal':'gap '+a.gap+'%'}</b></td></tr>`).join('');
 
-// ---------------- QAOA
+// ---------------- QAOA (kept from v1)
 (function(){
-  const Q = D.qaoa, svg = document.getElementById('qbar'), W=560,H=230,m={l:52,r:120,t:12,b:34};
+  const Q = D.qaoa, svg = document.getElementById('qbar'), W=560,H=210,m={l:52,r:120,t:12,b:34};
   const rows = Q.rows, maxv = Math.max(...rows.map(r=>r.p_optimal), Q.p_optimal_random_tour)*1.15;
-  const bw = 46, gap = (W-m.l-m.r)/rows.length;
-  const y = v => m.t + (1-v/maxv)*(H-m.t-m.b);
+  const bw = 46, gap = (W-m.l-m.r)/rows.length, y = v => m.t + (1-v/maxv)*(H-m.t-m.b);
   let g = '';
   for(let i=0;i<=4;i++){const v=maxv*i/4; g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" opacity=".6"/><text x="${m.l-6}" y="${y(v)+4}" text-anchor="end">${(100*v).toFixed(1)}%</text>`;}
-  rows.forEach((r,i)=>{
-    const X = m.l + gap*i + (gap-bw)/2, Y = y(r.p_optimal), h = H-m.b-Y;
-    g += `<path d="M${X},${H-m.b}V${Y+4}q0,-4 4,-4h${bw-8}q4,0 4,4V${H-m.b}Z" fill="var(--bar)" data-i="${i}" class="qb"/>`;
-    g += `<text x="${X+bw/2}" y="${Y-6}" text-anchor="middle" style="fill:var(--text-primary)">${(100*r.p_optimal).toFixed(2)}%</text><text x="${X+bw/2}" y="${H-m.b+16}" text-anchor="middle">p = ${r.p}</text>`;
-  });
-  const ref = (v,label)=>{ if(v>maxv) return ''; return `<line x1="${m.l}" x2="${W-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--bound)" stroke-dasharray="5 4" stroke-width="1.5"/><text x="${W-m.r+6}" y="${y(v)+4}">${label}</text>`; };
-  g += ref(Q.p_optimal_random_tour, 'random valid tour');
+  rows.forEach((r,i)=>{ const X = m.l + gap*i + (gap-bw)/2, Y = y(r.p_optimal);
+    g += `<path d="M${X},${H-m.b}V${Y+4}q0,-4 4,-4h${bw-8}q4,0 4,4V${H-m.b}Z" fill="var(--accent)" data-i="${i}" class="qb"/>`;
+    g += `<text x="${X+bw/2}" y="${Y-6}" text-anchor="middle" style="fill:var(--text-primary)">${(100*r.p_optimal).toFixed(2)}%</text><text x="${X+bw/2}" y="${H-m.b+16}" text-anchor="middle">p = ${r.p}</text>`; });
+  g += `<line x1="${m.l}" x2="${W-m.r}" y1="${y(Q.p_optimal_random_tour)}" y2="${y(Q.p_optimal_random_tour)}" stroke="var(--bound)" stroke-dasharray="5 4" stroke-width="1.5"/><text x="${W-m.r+6}" y="${y(Q.p_optimal_random_tour)+4}">random valid tour</text>`;
   g += `<text x="${W-m.r+6}" y="${H-m.b-2}">random bitstring</text><text x="${W-m.r+6}" y="${H-m.b+11}">${(100*Q.p_optimal_uniform_bitstring).toFixed(4)}%</text>`;
   svg.innerHTML = g;
   const tip = document.getElementById('qtip');
   svg.querySelectorAll('.qb').forEach(el=>{
     el.addEventListener('mousemove',e=>{const r=rows[+el.dataset.i],b=svg.getBoundingClientRect();tip.style.display='block';tip.style.left=Math.min(e.clientX-b.left+12,b.width-200)+'px';tip.style.top=(e.clientY-b.top-10)+'px';
-      tip.innerHTML=`<b>depth p = ${r.p}</b><br>P(optimal tour) ${(100*r.p_optimal).toFixed(2)}%<br>P(valid tour) ${(100*r.p_feasible).toFixed(1)}%<br>${r.shots_optimal}/${r.shots} shots optimal<br>best in shots: ${r.best_tour_m_in_shots?km(r.best_tour_m_in_shots):'no valid tour'}`});
-    el.addEventListener('mouseleave',()=>tip.style.display='none');
-  });
-  const any = rows.find(r=>r.found_optimum);
-  document.getElementById('qnote').textContent =
-    `${Q.qubits} qubits, exact statevector simulation, ${rows[0].shots} shots per depth. Optimal tour ${km(Q.optimal_m)} (brute force over ${Q.tours} tours takes ${(Q.brute_force_s*1e3).toFixed(2)} ms). ${any?`The optimum first appears in the shots at p = ${any.p}.`:'The optimum never appears in the shots.'}`;
-  document.getElementById('qtext').innerHTML =
-    `QAOA solves one vehicle's 4-stop sequence, written as a QUBO over 16 qubits (stop × position). A classical computer enumerates all ${Q.tours} tours in well under a millisecond, and the classical solvers above route 80 stops across 13 vehicles in seconds. So this is a <b>readiness experiment</b>. It tests whether the encoding, angles and scoring are right, so that the same pipeline can move onto hardware and larger instances when the hardware can carry them. There is no advantage claim. Scoring counts drawn shots, the same way a QPU run would be scored, not the best amplitude.`;
+      tip.innerHTML=`<b>depth p = ${r.p}</b><br>P(optimal tour) ${(100*r.p_optimal).toFixed(2)}%<br>P(valid tour) ${(100*r.p_feasible).toFixed(1)}%<br>${r.shots_optimal}/${r.shots} shots optimal`});
+    el.addEventListener('mouseleave',()=>tip.style.display='none'); });
+  document.getElementById('qnote').textContent = `${Q.qubits} qubits, exact statevector, ${rows[0].shots} shots per depth. QAOA beats a random bitstring 70–90x but loses 30–40x to simply picking a random valid tour, because most shots break the one-hot constraints. Brute force over all ${Q.tours} tours takes ${(Q.brute_force_s*1e3).toFixed(2)} ms. A readiness experiment, not an advantage claim.`;
+  document.getElementById('qtext').innerHTML = `One vehicle's 4-stop sequence as a 16-qubit stop × position QUBO. The pipeline (encoding, angle transfer to Qiskit, shot-based scoring) is verified and ready to point at a QPU; the classical solvers above do the real work.`;
   document.getElementById('qtable').innerHTML = `<tr><th>p</th><th>P(optimal)</th><th>P(valid)</th><th>best in shots</th><th>Qiskit check</th></tr>`+
     rows.map(r=>`<tr><td>${r.p}</td><td>${(100*r.p_optimal).toFixed(2)}%</td><td>${(100*r.p_feasible).toFixed(1)}%</td><td>${r.best_tour_m_in_shots?km(r.best_tour_m_in_shots):'none'}</td><td>${r.qiskit_overlap.toFixed(6)}</td></tr>`).join('');
 })();
+
+const st = C.stamp;
+document.getElementById('stamp').innerHTML =
+  `Chicago race verified ${st.date} · ${st.host} · ${st.time_limit_s}s budget · 0 credits. Bound: ${C.bound.stamp? `${C.bound.stamp.date}, HiGHS, ${C.bound.stamp.time_limit_s}s, ${C.bound.stamp.threads} thread`: ''}. `+
+  `Benchmark: ${(B.summary&&B.summary.stamp)||''}. Sources: ${D.scenery.stats.sources.join('; ')}; CVRPLIB X instances and BKS (Uchoa et al. 2017) via PyVRP/Instances; published gaps from Wouda, Lan & Kool (2024).`;
 </script>
 
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {CSS2DRenderer, CSS2DObject} from 'three/addons/renderers/CSS2DRenderer.js';
+import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 
-const host = document.getElementById('map');
-const ren = new THREE.WebGLRenderer({antialias:true}); ren.setPixelRatio(Math.min(devicePixelRatio,2));
-host.prepend(ren.domElement);
-const scene = new THREE.Scene();
-const cam = new THREE.PerspectiveCamera(40, 1, 0.01, 200);
-cam.position.set(-1.5, 5.2, 5.6);
-const ctl = new OrbitControls(cam, ren.domElement); ctl.enableDamping = true; ctl.maxPolarAngle = Math.PI*0.47;
-const col = n => new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue(n).trim());
-const P = p => new THREE.Vector3(p[0], 0, -p[1]);  // east = +x, north = -z
+const Q = new URLSearchParams(location.hash.slice(1));
+if(Q.get('theme')) document.documentElement.dataset.theme = Q.get('theme');
+const SHOT = Q.has('shot');
+const U = 1/2000;                                   // 0.5 m grid units -> km
+const V = (x,y,h=0) => new THREE.Vector3(x*U, h, -y*U); // east = +x, north = -z
+const col = n => new THREE.Color(css(n));
+const isDark = () => matchMedia('(prefers-color-scheme: dark)').matches && document.documentElement.dataset.theme!=='light' || document.documentElement.dataset.theme==='dark';
 
-// roads backdrop
-const rp = [];
-for(const seg of D.roads) for(let i=1;i<seg.length;i++){ rp.push(seg[i-1][0],0,-seg[i-1][1], seg[i][0],0,-seg[i][1]); }
-const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.Float32BufferAttribute(rp,3));
-const roadMat = new THREE.LineBasicMaterial({color:col('--road')});
-scene.add(new THREE.LineSegments(rg, roadMat));
+// ---------------------------------------------------------------- renderer, scenes, cameras
+const stage = document.getElementById('stage');
+const ren = new THREE.WebGLRenderer({antialias:true, powerPreference:'high-performance', preserveDrawingBuffer:SHOT});
+ren.setPixelRatio(Math.min(devicePixelRatio,2));
+ren.toneMapping = THREE.ACESFilmicToneMapping; ren.outputColorSpace = THREE.SRGBColorSpace;
+ren.shadowMap.enabled = true; ren.shadowMap.type = THREE.PCFSoftShadowMap;
+stage.prepend(ren.domElement);
+const labels = new CSS2DRenderer({element: document.getElementById('labels')});
+const pmrem = new THREE.PMREMGenerator(ren);
+const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
-// stops: height = demand
-const stopMat = new THREE.MeshBasicMaterial({color:col('--stop')});
-const cyl = new THREE.CylinderGeometry(0.035,0.035,1,10); cyl.translate(0,0.5,0);
-const inst = new THREE.InstancedMesh(cyl, stopMat, D.stops.length-1);
-const M = new THREE.Matrix4();
-D.stops.slice(1).forEach((s,i)=>{ const h=0.02+D.demand[i+1]/25*0.22; M.makeScale(1,h,1).setPosition(s[0],0,-s[1]); inst.setMatrixAt(i,M); });
-scene.add(inst);
-const depotMat = new THREE.MeshBasicMaterial({color:col('--depot')});
-const depot = new THREE.Mesh(new THREE.BoxGeometry(0.16,0.4,0.16), depotMat);
-depot.position.copy(P(D.stops[0])).setY(0.2); scene.add(depot);
+const city = new THREE.Scene(), bench = new THREE.Scene();
+city.environment = envTex; city.environmentIntensity = 0.35;
+bench.environment = envTex; bench.environmentIntensity = 0.5;
+const camC = new THREE.PerspectiveCamera(38, 1, 0.005, 60); camC.position.set(-2.4, 3.9, 6.4);
+const camB = new THREE.PerspectiveCamera(36, 1, 0.05, 400);
+const ctlC = new OrbitControls(camC, ren.domElement); ctlC.enableDamping = true; ctlC.maxPolarAngle = Math.PI*0.48; ctlC.target.set(0.3,0,0.7); ctlC.minDistance=0.08; ctlC.maxDistance=12;
+const ctlB = new OrbitControls(camB, ren.domElement); ctlB.enableDamping = true; ctlB.enabled = false;
+let mode = 'city';
 
-// routes of the current solver
-let group = new THREE.Group(); scene.add(group);
-let tubes = [], vans = [];
-const vanGeo = new THREE.SphereGeometry(0.055, 14, 10);
-function build(){
-  scene.remove(group); group.traverse(o=>{o.geometry&&o.geometry.dispose()});
-  group = new THREE.Group(); tubes=[]; vans=[];
-  const s = D.solvers[current]; const c = col('--s-'+current);
-  s.routes.forEach((r,i)=>{
-    const pts = r.path.map(p=>P(p).setY(0.03));
-    const clean = pts.filter((p,k)=>k===0||p.distanceTo(pts[k-1])>1e-4);
-    const curve = new THREE.CatmullRomCurve3(clean, false, 'catmullrom', 0);
-    const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, Math.min(1200, clean.length*3), 0.018, 6, false),
-      new THREE.MeshBasicMaterial({color:c, transparent:true, opacity:.9}));
-    tube.userData.i = i; group.add(tube); tubes.push(tube);
-    // arc-length table for the van
-    const L=[0]; for(let k=1;k<clean.length;k++) L.push(L[k-1]+clean[k].distanceTo(clean[k-1]));
-    const van = new THREE.Mesh(vanGeo, new THREE.MeshBasicMaterial({color:col('--depot')}));
-    van.userData = {pts:clean, L, total:L[L.length-1], phase: i*0.37};
-    group.add(van); vans.push(van);
+// sky dome (gradient), shared by both scenes via clone of material uniforms
+const skyMat = new THREE.ShaderMaterial({side:THREE.BackSide, depthWrite:false, uniforms:{top:{value:new THREE.Color()},bottom:{value:new THREE.Color()}},
+  vertexShader:`varying vec3 vP; void main(){ vP=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
+  fragmentShader:`uniform vec3 top; uniform vec3 bottom; varying vec3 vP; void main(){ float h=clamp(vP.y*1.6+.08,0.,1.); gl_FragColor=vec4(mix(bottom,top,pow(h,.7)),1.); }`});
+const sky = new THREE.Mesh(new THREE.SphereGeometry(40,32,16), skyMat); city.add(sky);
+
+// ---------------------------------------------------------------- lights (sun follows the delivery clock)
+const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1.1); city.add(hemi);
+const sun = new THREE.DirectionalLight(0xffffff, 2.2); sun.castShadow = true;
+sun.shadow.mapSize.set(SHOT?2048:4096, SHOT?2048:4096);
+Object.assign(sun.shadow.camera, {left:-3.4,right:3.4,top:3.4,bottom:-3.4,near:0.1,far:20});
+sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.004;
+city.add(sun, sun.target);
+function setSun(hour){
+  const el = THREE.MathUtils.degToRad(14 + (hour-8)*10), az = THREE.MathUtils.degToRad(100 + (hour-8)*16); // az from north, clockwise
+  const d = new THREE.Vector3(Math.cos(el)*Math.sin(az), Math.sin(el), -Math.cos(el)*Math.cos(az));
+  sun.position.copy(d.multiplyScalar(8)); sun.target.position.set(0,0,0);
+  const dark = isDark();
+  sun.color.set(dark? 0x9db4ff : new THREE.Color().setHSL(0.09, 0.6, 0.62+0.3*(hour-8)/2.5));
+  sun.intensity = dark? 0.55 : 1.6 + 0.9*Math.min((hour-8)/2,1);
+}
+
+// ---------------------------------------------------------------- ground, water, shore
+const S = D.scenery;
+const landMat = new THREE.MeshStandardMaterial({roughness:1, metalness:0});
+const waterMat = new THREE.MeshStandardMaterial({roughness:0.12, metalness:0.0});
+const lake = new THREE.Mesh(new THREE.PlaneGeometry(60,60).rotateX(-Math.PI/2), waterMat); lake.position.y = -0.004; lake.receiveShadow = true; city.add(lake);
+function polyShape(flat){ const s = new THREE.Shape(); for(let i=0;i<flat.length;i+=2){ const x=flat[i]*U, y=flat[i+1]*U; i? s.lineTo(x,y) : s.moveTo(x,y); } return s; }
+if(S.shore && S.shore.length){
+  // land = everything west of the shoreline (north -> south), closed 12 km to the west, 10 km past both ends
+  const sh = S.shore, n=sh.length, far = -24000, pad = 20000;
+  const ring = [...sh, sh[n-2], sh[n-1]-pad, far, sh[n-1]-pad, far, sh[1]+pad, sh[0], sh[1]+pad];
+  const land = new THREE.Mesh(new THREE.ShapeGeometry(polyShape(ring)).rotateX(-Math.PI/2), landMat); land.receiveShadow = true; city.add(land);
+} else { const land = new THREE.Mesh(new THREE.PlaneGeometry(60,60).rotateX(-Math.PI/2), landMat); land.receiveShadow = true; city.add(land); }
+for(const w of [...(S.water||[]), ...(S.piers||[])]){
+  const m = new THREE.Mesh(new THREE.ShapeGeometry(polyShape(w)).rotateX(-Math.PI/2), waterMat); m.position.y = 0.0004; m.receiveShadow = true; city.add(m);
+}
+
+// ---------------------------------------------------------------- roads (ribbons for classed roads, lines for minor)
+function ribbon(flat, w, y, extra){ // returns {pos, s, side}
+  const pos=[], s=[], side=[]; let L=0;
+  for(let i=2;i<flat.length;i+=2){
+    const ax=flat[i-2]*U, az=-flat[i-1]*U, bx=flat[i]*U, bz=-flat[i+1]*U;
+    const dx=bx-ax, dz=bz-az, len=Math.hypot(dx,dz); if(len<1e-6) continue;
+    const nx=-dz/len*w/2, nz=dx/len*w/2;
+    pos.push(ax+nx,y,az+nz, ax-nx,y,az-nz, bx+nx,y,bz+nz,  bx+nx,y,bz+nz, ax-nx,y,az-nz, bx-nx,y,bz-nz);
+    s.push(L,L,L+len, L+len,L,L+len); side.push(1,-1,1, 1,-1,-1); L+=len;
+  }
+  return {pos,s,side,L};
+}
+function ribbonsMesh(list, w, y, mat){
+  const P=[]; for(const f of list){ const r=ribbon(f,w,y); P.push(...r.pos); }
+  const g=new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P,3)); g.computeVertexNormals();
+  const m=new THREE.Mesh(g,mat); m.receiveShadow=true; return m;
+}
+const roadMats = {minor:new THREE.LineBasicMaterial({transparent:true,opacity:.9}), mid:new THREE.MeshStandardMaterial({roughness:.95, side:THREE.DoubleSide}), major:new THREE.MeshStandardMaterial({roughness:.9, side:THREE.DoubleSide})};
+{ const P=[]; for(const f of S.roads.minor) for(let i=2;i<f.length;i+=2) P.push(f[i-2]*U,0.0006,-f[i-1]*U, f[i]*U,0.0006,-f[i+1]*U);
+  const g=new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P,3)); city.add(new THREE.LineSegments(g, roadMats.minor)); }
+city.add(ribbonsMesh(S.roads.mid, 0.010, 0.0009, roadMats.mid));
+city.add(ribbonsMesh(S.roads.major, 0.016, 0.0012, roadMats.major));
+
+// ---------------------------------------------------------------- buildings (cividis by height; grey = estimated)
+const CIV = ['#00224e','#123570','#3b496c','#575d6d','#707173','#8a8678','#a59c74','#c3b369','#e1cc55','#fee838'];
+const civ = t => { t=Math.min(Math.max(t,0),1)*(CIV.length-1); const i=Math.floor(t), f=t-i; return new THREE.Color(CIV[i]).lerp(new THREE.Color(CIV[Math.min(i+1,CIV.length-1)]), f); };
+const hT = h => Math.log(h/6)/Math.log(450/6);
+function hbar(){ const n=col('--neutral'), k=isDark()?0.25:0.28; document.getElementById('hbar').style.background = `linear-gradient(90deg, ${[0,.125,.25,.375,.5,.625,.75,.875,1].map(t=>'#'+civ(t).lerp(n,k).getHexString()).join(',')})`; }
+const bMat = new THREE.MeshStandardMaterial({vertexColors:true, roughness:.82, metalness:.05, side:THREE.DoubleSide});
+let bGeo;
+function buildBuildings(){
+  const b = S.buildings, nb = b.h.length, P=[], Cc=[];
+  const neutral = col('--neutral');
+  for(let k=0;k<nb;k++){
+    const a=b.starts[k], e=(k+1<nb? b.starts[k+1] : b.verts.length/2), m=e-a; if(m<3) continue;
+    const h=b.h[k]/1000, est=!b.src[k];
+    const base = est? neutral.clone() : civ(hT(b.h[k])).lerp(neutral, isDark()? 0.25:0.28);
+    const lo = base.clone().multiplyScalar(isDark()?0.55:0.72), hi = base;
+    const ring=[]; for(let i=a;i<e;i++) ring.push([b.verts[2*i]*U, -b.verts[2*i+1]*U]);
+    for(let i=0;i<m;i++){ const p=ring[i], q=ring[(i+1)%m];
+      P.push(p[0],0,p[1], q[0],0,q[1], q[0],h,q[1],  p[0],0,p[1], q[0],h,q[1], p[0],h,p[1]);
+      for(const c of [lo,lo,hi,lo,hi,hi]) Cc.push(c.r,c.g,c.b); }
+    const tri = THREE.ShapeUtils.triangulateShape(ring.map(p=>new THREE.Vector2(p[0],p[1])), []);
+    const roof = hi.clone().multiplyScalar(1.06);
+    for(const t of tri){ for(const j of t){ P.push(ring[j][0],h,ring[j][1]); Cc.push(roof.r,roof.g,roof.b); } }
+  }
+  if(bGeo){ bGeo.dispose(); }
+  bGeo = new THREE.BufferGeometry(); bGeo.setAttribute('position', new THREE.Float32BufferAttribute(P,3)); bGeo.setAttribute('color', new THREE.Float32BufferAttribute(Cc,3)); bGeo.computeVertexNormals();
+  return bGeo;
+}
+const buildings = new THREE.Mesh(buildBuildings(), bMat); buildings.castShadow = true; buildings.receiveShadow = true; city.add(buildings);
+
+// ---------------------------------------------------------------- routes, schedule, vans, stops
+const SPEED = 22/60;   // km per minute (urban average)
+const SERVICE = 4;     // minutes per stop
+const DAY0 = 8*60;     // 08:00
+const stopPos = C.stops.map(p=>V(p[0],p[1]));
+const vehColor = (i,n) => new THREE.Color().setHSL(((i*0.618034)%1), isDark()? .72:.68, isDark()? .62:.5);
+let current = C.winner, followed = null, routeGroup = new THREE.Group(); city.add(routeGroup);
+let R = [];   // per-route runtime data
+const MAXR = 40;
+const routeMat = new THREE.ShaderMaterial({transparent:true, depthWrite:false, side:THREE.DoubleSide,
+  uniforms:{uProg:{value:new Float32Array(MAXR)}, uCol:{value:Array.from({length:MAXR},()=>new THREE.Color())}, uTrail:{value:0.6}, uDim:{value:0.16}, uFocus:{value:-1}, uGlow:{value:1}, uAlpha:{value:1}},
+  vertexShader:`attribute float aS; attribute float aR; attribute float aSide; varying float vS; varying float vR; varying float vSide;
+    void main(){ vS=aS; vR=aR; vSide=aSide; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
+  fragmentShader:`uniform float uProg[${MAXR}]; uniform vec3 uCol[${MAXR}]; uniform float uTrail; uniform float uDim; uniform float uFocus; uniform float uGlow; uniform float uAlpha;
+    varying float vS; varying float vR; varying float vSide;
+    void main(){ int r=int(vR+.5); float prog=uProg[r]; vec3 c=uCol[r];
+      float edge=1.-smoothstep(.35,1.,abs(vSide));
+      float a; vec3 col;
+      if(vS<=prog){ float age=prog-vS; float k=exp(-age/uTrail); a=mix(.55,1.,k); col=c*(1.+uGlow*.9*k); }
+      else { a=uDim; col=c*.9; }
+      if(uFocus>-.5 && abs(vR-uFocus)>.5) a*=.12;
+      gl_FragColor=vec4(col,a*edge*uAlpha); }`});
+const vanGeo = (()=>{ // body + cab, nose along +z, ~8x real size so vans read at city scale
+  const b=new THREE.BoxGeometry(0.022,0.020,0.040).translate(0,0.010,-0.004), c=new THREE.BoxGeometry(0.022,0.013,0.013).translate(0,0.0065,0.022);
+  const g=new THREE.BufferGeometry(), pos=[...b.toNonIndexed().attributes.position.array, ...c.toNonIndexed().attributes.position.array];
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos,3)); g.computeVertexNormals(); return g; })();
+const vanMat = new THREE.MeshStandardMaterial({roughness:.4, metalness:.2, emissive:0xffffff, emissiveIntensity:.18});
+let vans = null;
+const pinGeo = new THREE.CylinderGeometry(0.003,0.003,1,8).translate(0,0.5,0);
+const headGeo = new THREE.SphereGeometry(0.012,16,12);
+const pinMat = new THREE.MeshStandardMaterial({roughness:.5}), headMat = new THREE.MeshStandardMaterial({roughness:.35, emissive:0xffffff, emissiveIntensity:.25});
+const pins = new THREE.InstancedMesh(pinGeo, pinMat, totalStops), heads = new THREE.InstancedMesh(headGeo, headMat, totalStops);
+pins.castShadow = heads.castShadow = true;
+const pinH = i => 0.035 + C.demand[i]/25*0.09;
+{ const M=new THREE.Matrix4(); for(let i=1;i<=totalStops;i++){ const p=stopPos[i]; M.makeScale(1,pinH(i),1).setPosition(p.x,0,p.z); pins.setMatrixAt(i-1,M); M.makeTranslation(p.x,pinH(i),p.z); heads.setMatrixAt(i-1,M);} }
+city.add(pins, heads);
+const depotG = new THREE.Group();
+{ const box=new THREE.Mesh(new THREE.BoxGeometry(0.07,0.035,0.05).translate(0,0.0175,0), new THREE.MeshStandardMaterial({color:0x5c636a, roughness:.6, metalness:.3}));
+  box.castShadow=true; depotG.add(box);
+  const ring=new THREE.Mesh(new THREE.RingGeometry(0.05,0.058,64).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({color:0xffffff, transparent:true, depthWrite:false}));
+  ring.position.y=0.002; ring.name='ring'; depotG.add(ring);
+  depotG.position.copy(stopPos[0]); city.add(depotG);
+  const l=document.createElement('div'); l.className='lbl big'; l.textContent='Depot'; const o=new CSS2DObject(l); o.position.set(0,0.06,0); depotG.add(o); }
+
+function buildRoutes(){
+  routeGroup.traverse(o=>{ if(o.geometry) o.geometry.dispose(); }); city.remove(routeGroup); routeGroup = new THREE.Group(); city.add(routeGroup);
+  if(vans){ city.remove(vans); vans.dispose(); }
+  const routes = C.solvers[current].routes; R = [];
+  const P=[], Sx=[], Rx=[], Sd=[];
+  routes.forEach((rt,ri)=>{
+    const pts=[]; for(let i=0;i<rt.path.length;i+=2){ const v=V(rt.path[i], rt.path[i+1], 0.006); if(!pts.length || v.distanceTo(pts[pts.length-1])>1e-7) pts.push(v); }
+    const L=[0]; for(let k=1;k<pts.length;k++) L.push(L[k-1]+pts[k].distanceTo(pts[k-1]));
+    // arc-length of each stop along the street path
+    const seq=[...rt.stops], sArc=[]; let k0=0;
+    for(const sid of seq){ const sp=stopPos[sid]; let best=k0, bd=1e9; for(let k=k0;k<pts.length;k++){ const d=Math.hypot(pts[k].x-sp.x, pts[k].z-sp.z); if(d<bd){bd=d;best=k;} if(d<1e-5) break; } sArc.push(L[best]); k0=best; }
+    // schedule: drive at SPEED, dwell SERVICE at each stop
+    const ev=[]; let t=0, s=0;
+    sArc.forEach((sa,j)=>{ const dt=(sa-s)/SPEED; ev.push({t0:t,t1:t+dt,s0:s,s1:sa}); t+=dt; ev.push({t0:t,t1:t+SERVICE,s0:sa,s1:sa,stop:seq[j]}); t+=SERVICE; s=sa; });
+    ev.push({t0:t,t1:t+(L[L.length-1]-s)/SPEED,s0:s,s1:L[L.length-1]}); t=ev[ev.length-1].t1;
+    const color = vehColor(ri, routes.length);
+    R.push({pts,L,total:L[L.length-1],ev,end:t,color,stops:seq,arrive:ev.filter(e=>e.stop!=null).map(e=>[e.stop,e.t0]), m:rt.m, load:rt.load});
+    const rb = ribbon(rt.path, 0.024, 0.006);
+    P.push(...rb.pos); Sx.push(...rb.s); Sd.push(...rb.side); for(let i=0;i<rb.s.length;i++) Rx.push(ri);
+    routeMat.uniforms.uCol.value[ri].copy(color);
   });
-  scene.add(group); paint();
+  const g=new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P,3));
+  g.setAttribute('aS', new THREE.Float32BufferAttribute(Sx,1)); g.setAttribute('aR', new THREE.Float32BufferAttribute(Rx,1)); g.setAttribute('aSide', new THREE.Float32BufferAttribute(Sd,1));
+  const mesh=new THREE.Mesh(g, routeMat); mesh.renderOrder=2; mesh.frustumCulled=false; routeGroup.add(mesh);
+  vans = new THREE.InstancedMesh(vanGeo, vanMat, routes.length); vans.castShadow = true;
+  R.forEach((r,i)=>vans.setColorAt(i, r.color)); city.add(vans);
+  routeMat.uniforms.uFocus.value = -1; followed = null;
+  dayEnd = Math.max(...R.map(r=>r.end)) + 10;
+  document.getElementById('k-best').textContent = km(C.solvers[current].cost);
+  setClock(clockT);
 }
-function paint(){
-  tubes.forEach(t=>{ const on = selected==null || t.userData.i===selected; t.material.opacity = on? .92 : .12; t.material.transparent = true; });
-  vans.forEach((v,i)=>{ v.visible = selected==null || i===selected; });
+let dayEnd = 120, clockT = 0;
+function posAt(r, t){ // km along path at minute t
+  if(t<=0) return 0; for(const e of r.ev){ if(t<=e.t1) return e.t0===e.t1? e.s1 : e.s0+(e.s1-e.s0)*(t-e.t0)/(e.t1-e.t0); } return r.total; }
+const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(1,1,1), _z = new THREE.Vector3(0,0,1), _d = new THREE.Vector3(), _p = new THREE.Vector3();
+function pointAt(r, s, out){ let lo=0, hi=r.L.length-1; while(hi-lo>1){ const mid=(lo+hi)>>1; if(r.L[mid]<s) lo=mid; else hi=mid; }
+  const f=(s-r.L[lo])/Math.max(r.L[hi]-r.L[lo],1e-9); out.lerpVectors(r.pts[lo], r.pts[hi], Math.min(Math.max(f,0),1)); _d.subVectors(r.pts[hi], r.pts[lo]).setY(0).normalize(); return out; }
+const pendingC = () => col('--stop-pending');
+function setClock(t){
+  clockT = Math.min(Math.max(t,0), dayEnd);
+  const hour = (DAY0+clockT)/60; setSun(hour);
+  const hh = Math.floor(hour), mm = Math.floor((hour-hh)*60);
+  document.getElementById('clock').textContent = `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+  document.getElementById('scrub').value = Math.round(1000*clockT/dayEnd);
+  let delivered=0, driven=0; const pc = pendingC(), done = new Map();
+  R.forEach((r,i)=>{ const s=posAt(r,clockT); driven+=s; routeMat.uniforms.uProg.value[i]=s;
+    pointAt(r, s, _p); _q.setFromUnitVectors(_z, _d.lengthSq()>0? _d : _z); _p.y=0.006; _m.compose(_p,_q,_s); vans.setMatrixAt(i,_m);
+    for(const [sid,ta] of r.arrive) if(ta<=clockT){ delivered++; done.set(sid, r.color); } });
+  vans.instanceMatrix.needsUpdate = true;
+  for(let i=1;i<=totalStops;i++){ const c = done.get(i) || pc; heads.setColorAt(i-1, c); pins.setColorAt(i-1, c); }
+  heads.instanceColor.needsUpdate = pins.instanceColor.needsUpdate = true;
+  document.getElementById('k-del').textContent = `${delivered} / ${totalStops}`;
+  document.getElementById('k-km').textContent = `${driven.toFixed(1)} km`;
 }
-onSolver = build; build();
 
-// picking
-const ray = new THREE.Raycaster(), mouse = new THREE.Vector2(), tip = document.getElementById('maptip');
-function pick(e){
-  const r = ren.domElement.getBoundingClientRect();
-  mouse.set(((e.clientX-r.left)/r.width)*2-1, -((e.clientY-r.top)/r.height)*2+1);
-  ray.setFromCamera(mouse, cam); const hit = ray.intersectObjects(tubes)[0];
-  return hit ? hit.object.userData.i : null;
+// ---------------------------------------------------------------- solver cards
+const sEl = document.getElementById('solvers');
+function solverCards(){
+  sEl.innerHTML='';
+  SOLV.forEach(([k,label,sub])=>{ const s=C.solvers[k]; if(!s) return; const has=s.routes.length>0;
+    const b=document.createElement('button'); b.className='solver'; b.dataset.k=k; b.setAttribute('aria-pressed', k===current);
+    b.innerHTML=`<span class="sw" style="background:var(--s-${k})"></span><span><b>${label}</b><small>${has? `${s.routes.length} vans · +${(100*(s.cost-C.bound.best)/s.cost).toFixed(1)}% over bound` : sub}</small></span><span class="mono">${has? km(s.cost) : '≥ '+km(C.bound.best)}</span>`;
+    if(!has) b.disabled=true; b.onclick=()=>{ current=k; solverCards(); buildRoutes(); };
+    sEl.appendChild(b); });
 }
-ren.domElement.addEventListener('mousemove', e=>{
-  const i = pick(e), r = ren.domElement.getBoundingClientRect();
-  if(i==null){ tip.style.display='none'; ren.domElement.style.cursor=''; return; }
-  const rt = D.solvers[current].routes[i];
-  ren.domElement.style.cursor='pointer'; tip.style.display='block';
-  tip.style.left=Math.min(e.clientX-r.left+12, r.width-180)+'px'; tip.style.top=(e.clientY-r.top+12)+'px';
-  tip.innerHTML = `<b>Vehicle ${i+1}</b> · ${current}<br>${rt.stops.length} stops · load ${rt.load}/${D.capacity}<br>${(rt.m/1000).toFixed(1)} km on real streets`;
-});
-let down=null;
-ren.domElement.addEventListener('pointerdown', e=>down=[e.clientX,e.clientY]);
-ren.domElement.addEventListener('pointerup', e=>{
-  if(!down || Math.hypot(e.clientX-down[0], e.clientY-down[1])>4) return;
-  const i = pick(e); selected = (i===selected)? null : i; paint(); showRoute();
-});
+solverCards();
 
+// ---------------------------------------------------------------- benchmark arena
+const BX = B.instances, bNames = ["pyvrp","cuopt","ortools"], bZ = {pyvrp:-0.75, cuopt:0, ortools:0.75};
+const gapY = g => 3.4*Math.sqrt(Math.min(Math.max(g,0),10)/10);
+const SP = 1.5;
+const bHemi = new THREE.HemisphereLight(0xffffff, 0x333333, 1.3), bSun = new THREE.DirectionalLight(0xffffff, 1.6);
+bSun.position.set(-20,30,25); bSun.castShadow = true; Object.assign(bSun.shadow.camera,{left:-30,right:30,top:20,bottom:-20,near:1,far:120}); bSun.shadow.mapSize.set(2048,2048);
+bench.add(bHemi, bSun);
+const floorMat = new THREE.MeshStandardMaterial({roughness:1});
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(BX.length*SP+8, 6).rotateX(-Math.PI/2), floorMat); floor.position.set((BX.length-1)*SP/2, 0, 0); floor.receiveShadow = true; bench.add(floor);
+const barGeo = new THREE.BoxGeometry(0.5,1,0.5).translate(0,0.5,0);
+const barMat = new THREE.MeshStandardMaterial({roughness:.35, metalness:.1});
+const bars = new THREE.InstancedMesh(barGeo, barMat, Math.max(1,BX.length*3)); bars.castShadow = true; bars.receiveShadow = true; bench.add(bars);
+const barIdx = [];
+BX.forEach((r,i)=>bNames.forEach(s=>{ if(r.solvers[s]) barIdx.push([i,s]); })); bars.count = barIdx.length;
+function benchBars(f){ // f = fraction of time budget (1 = final)
+  const M=new THREE.Matrix4();
+  barIdx.forEach(([i,s],k)=>{ const so=BX[i].solvers[s]; let g=so.gap;
+    if(f<1 && so.trace && so.trace.length){ g=null; for(const p of so.trace) if(p[0]<=f) g=p[1]; if(g==null) g=10; }
+    M.makeScale(1, Math.max(gapY(g),0.012), 1).setPosition(i*SP, 0, bZ[s]); bars.setMatrixAt(k,M); });
+  bars.instanceMatrix.needsUpdate = true;
+}
+function benchColors(){ barIdx.forEach(([i,s],k)=>bars.setColorAt(k, col('--s-'+s))); if(bars.instanceColor) bars.instanceColor.needsUpdate = true; }
+const refMeshes = [];
+Object.entries(B.refs).forEach(([name,g],j)=>{
+  const pl = new THREE.Mesh(new THREE.PlaneGeometry(BX.length*SP+1.2, 2.3), new THREE.MeshBasicMaterial({transparent:true, opacity:.14, side:THREE.DoubleSide, depthWrite:false}));
+  pl.rotateX(-Math.PI/2); pl.position.set((BX.length-1)*SP/2, gapY(g), 0); bench.add(pl); refMeshes.push(pl);
+  const l=document.createElement('div'); l.className='lbl'; l.textContent=`${name}: ${g}%`; const o=new CSS2DObject(l); o.position.set(BX.length*SP+0.4, gapY(g)+(j? -0.06:0.12), 1.2); bench.add(o); });
+[0.1,0.5,1,2,5,10].forEach(g=>{ const l=document.createElement('div'); l.className='lbl'; l.textContent=g+'%'; const o=new CSS2DObject(l); o.position.set(-1.3, gapY(g), -1.1); bench.add(o);
+  const tick=new THREE.Mesh(new THREE.BoxGeometry(0.25,0.01,0.01), new THREE.MeshBasicMaterial({color:0x888888})); tick.position.set(-0.9,gapY(g),-1.1); bench.add(tick); });
+{ const l=document.createElement('div'); l.className='lbl big'; l.textContent='gap to best-known solution'; const o=new CSS2DObject(l); o.position.set(-1.3, 3.75, -1.1); bench.add(o); }
+BX.forEach((r,i)=>{ if(i%3 && i!==BX.length-1) return; const l=document.createElement('div'); l.className='lbl'; l.textContent='n='+r.n; const o=new CSS2DObject(l); o.position.set(i*SP, -0.05, 1.45); bench.add(o); });
+bNames.forEach(s=>{ if(!barIdx.some(b=>b[1]===s)) return; const l=document.createElement('div'); l.className='lbl big'; l.style.color=css('--s-'+s); l.textContent=s; const o=new CSS2DObject(l); o.position.set(-1.3,0.05,bZ[s]); bench.add(o); });
+camB.position.set(-5.5, 6.5, 13.5); ctlB.target.set(BX.length*SP*0.42, 0.9, 0); ctlB.update();
+benchBars(1);
+
+// mini-map of an instance solution
+function mini(i){
+  const r=BX[i], cv=document.getElementById('mini'), g=cv.getContext('2d'); g.clearRect(0,0,cv.width,cv.height);
+  if(!r || !r.coords.length) return;
+  const xs=r.coords.filter((_,k)=>k%2===0), ys=r.coords.filter((_,k)=>k%2===1);
+  const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys), sc=Math.min((cv.width-24)/(x1-x0||1),(cv.height-24)/(y1-y0||1));
+  const P=k=>[12+(r.coords[2*k]-x0)*sc, cv.height-12-(r.coords[2*k+1]-y0)*sc];
+  (r.routes||[]).forEach((rt,j)=>{ g.strokeStyle=`hsl(${(j*137.5)%360} 65% ${isDark()?60:45}%)`; g.lineWidth=1.4; g.beginPath(); let p=P(0); g.moveTo(...p); for(const c of rt){p=P(c); g.lineTo(...p);} p=P(0); g.lineTo(...p); g.stroke(); });
+  g.fillStyle=css('--text-secondary'); for(let k=1;k<xs.length;k++){ const p=P(k); g.fillRect(p[0]-1,p[1]-1,2,2); }
+  g.fillStyle=css('--text-primary'); const d=P(0); g.fillRect(d[0]-4,d[1]-4,8,8);
+}
+function benchInfo(i){
+  const r=BX[i]; if(!r){ document.getElementById('bc-body').innerHTML = B.summary&&B.summary.note? B.summary.short||'' : 'Results not yet available.'; return; }
+  document.getElementById('bc-title').textContent = `${r.name} · ${r.n} customers`;
+  document.getElementById('bc-body').innerHTML = `best-known ${r.bks} · budget ${r.tl}s (10% of 2.4·n)<br>`+
+    bNames.filter(s=>r.solvers[s]).map(s=>`<span style="color:var(--s-${s})">■</span> ${s}: <b>${fmtPct(r.solvers[s].gap)}</b>`).join(' · ')+`<br><span class="muted">winning routes (${(r.routes||[]).length} vehicles)</span>`;
+  mini(i);
+}
+benchInfo(BX.length? BX.length-1 : -1);
+
+// ---------------------------------------------------------------- picking
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+function hitTest(e){
+  const r=ren.domElement.getBoundingClientRect(); ndc.set(((e.clientX-r.left)/r.width)*2-1, -((e.clientY-r.top)/r.height)*2+1);
+  if(mode==='bench'){ ray.setFromCamera(ndc,camB); const h=ray.intersectObject(bars)[0]; return h? barIdx[h.instanceId][0] : null; }
+  ray.setFromCamera(ndc,camC); ray.params.Line.threshold = 0.01;
+  const h=ray.intersectObject(vans)[0]; if(h) return h.instanceId;
+  let best=null, bd=0.03; const o=ray.ray.origin, dir=ray.ray.direction; if(Math.abs(dir.y)<1e-6) return null;
+  const tt=-(o.y-0.0045)/dir.y; const gp=o.clone().addScaledVector(dir,tt);
+  R.forEach((r,i)=>{ for(let k=0;k<r.pts.length;k+=2){ const d=Math.hypot(r.pts[k].x-gp.x, r.pts[k].z-gp.z); if(d<bd){bd=d;best=i;} } });
+  return best;
+}
+let down=null; ren.domElement.addEventListener('pointerdown',e=>{down=[e.clientX,e.clientY]; stopTour();});
+ren.domElement.addEventListener('pointerup',e=>{ if(!down||Math.hypot(e.clientX-down[0],e.clientY-down[1])>4) return; const i=hitTest(e);
+  if(mode==='bench'){ if(i!=null) benchInfo(i); return; }
+  followed = (i===followed)? null : i; routeMat.uniforms.uFocus.value = followed==null? -1 : followed;
+  const cap=document.getElementById('caption');
+  if(followed!=null){ const r=R[followed]; cap.style.display='block'; document.getElementById('cap-t').textContent=`Vehicle ${followed+1} · ${current}`;
+    document.getElementById('cap-p').textContent=`${r.stops.length} stops · load ${r.load}/${C.capacity} · ${(r.m/1000).toFixed(1)} km on real streets · back at depot ${fmtClock(r.end)}`; }
+  else cap.style.display='none'; });
+ren.domElement.addEventListener('mousemove',e=>{ if(mode!=='bench') return; const i=hitTest(e); if(i!=null) benchInfo(i); ren.domElement.style.cursor = i!=null? 'pointer':''; });
+const fmtClock = t => { const h=(DAY0+t)/60, hh=Math.floor(h), mm=Math.floor((h-hh)*60); return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`; };
+
+// ---------------------------------------------------------------- modes, playback, race replay
+let playing = !SHOT, raceT = null;
+const playBtn=document.getElementById('play');
+const ICON = {pause:'<svg viewBox="0 0 24 24" width="16" height="16"><rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor"/><rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor"/></svg>', play:'<svg viewBox="0 0 24 24" width="16" height="16"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>'};
+const setPlay = p => { playing=p; playBtn.innerHTML = p? ICON.pause : ICON.play; playBtn.setAttribute('aria-label', p?'pause':'play'); };
+playBtn.onclick = () => setPlay(!playing); setPlay(playing);
+document.getElementById('scrub').addEventListener('input', e => { stopTour(); setPlay(false);
+  if(mode==='bench'){ benchF = e.target.value/1000; benchBars(benchF); document.getElementById('clock').textContent = `${Math.round(100*benchF)}%`; }
+  else setClock(e.target.value/1000*dayEnd); });
+let benchF = 1;
+function setMode(m){
+  mode=m; document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed', b.dataset.mode===m));
+  ctlC.enabled = m==='city'; ctlB.enabled = m==='bench';
+  document.getElementById('side').style.display = m==='city'? '' : 'none';
+  document.getElementById('benchcard').style.display = m==='bench'? 'block' : 'none';
+  document.getElementById('raceBtn').style.display = '';
+  document.getElementById('tlabel').textContent = m==='city'? 'delivery clock' : 'share of time budget';
+  document.getElementById('hint').textContent = m==='city'? 'drag to orbit · right-drag to pan · scroll to zoom · click a route to follow it' : 'hover a bar for the instance and its winning routes · Race replay animates the bars over the time budget';
+  document.getElementById('caption').style.display='none';
+  if(m==='bench'){ benchF=1; benchBars(1); document.getElementById('clock').textContent='100%'; document.getElementById('scrub').value=1000; }
+  else setClock(clockT);
+  // CSS2DRenderer only updates labels of the scene it renders: hide the other scene's labels by hand
+  (m==='city'? bench : city).traverse(o=>{ if(o.isCSS2DObject) o.element.style.display='none'; });
+}
+document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{ stopTour(); setMode(b.dataset.mode); });
+
+// race replay: City = Chicago traces (60 s, log time) with leaderboard; Benchmark = bars shrink over the budget
+const lb = document.getElementById('lb');
+const LBK = ["pyvrp","ortools"].filter(k=>C.solvers[k] && C.solvers[k].trace.length);
+LBK.forEach((k,i)=>{ const d=document.createElement('div'); d.className='lbrow'; d.id='lb-'+k;
+  d.innerHTML=`<span style="color:var(--s-${k});font-weight:600">${k}</span><span><div class="lbbar" style="background:var(--s-${k});width:0"></div></span><span class="mono" style="text-align:right">—</span>`; lb.appendChild(d); });
+{ const d=document.createElement('div'); d.className='lbrow'; d.style.transform=`translateY(${LBK.length*38}px)`; d.innerHTML=`<span class="muted">bound</span><span><div class="lbbar" style="background:var(--s-highs);opacity:.5;width:100%"></div></span><span class="mono" style="text-align:right">${km(C.bound.best)}</span>`; lb.appendChild(d); }
+function raceFrame(t){
+  document.getElementById('race-t').textContent = (t<1? t.toFixed(2) : t.toFixed(1))+' s';
+  const vals = LBK.map(k=>[k, RACE.at(t,k)]).sort((a,b)=>(a[1]??1e12)-(b[1]??1e12));
+  const worst = 1.12*C.bound.best;
+  vals.forEach(([k,v],i)=>{ const el=document.getElementById('lb-'+k); el.style.transform=`translateY(${i*38}px)`;
+    const w = v==null? 0 : Math.max(4, 100*(1-(v-C.bound.best)/(worst-C.bound.best)));
+    el.children[1].firstChild.style.width = w+'%'; el.children[2].textContent = v==null? 'searching' : `${km(v)} · +${(100*(v-C.bound.best)/v).toFixed(1)}%`; });
+  RACE.setCursor(t);
+  const lead = vals[0] && vals[0][1]!=null ? vals[0][0] : null;
+  if(lead && lead!==current){ current=lead; solverCards(); buildRoutes(); }
+}
+document.getElementById('raceBtn').onclick = () => { stopTour();
+  if(mode==='city'){ raceT = 0; document.getElementById('racebox').style.display='block'; setClock(dayEnd*0.45); setPlay(true); }
+  else { raceT = 0; setPlay(true); } };
+
+// ---------------------------------------------------------------- guided tour
+const TOUR = [
+  {p:[-2.4,3.9,6.4], t:[0.3,0,0.7], h:9.0, title:'80 deliveries, real streets', text:`${totalStops} stops on the OpenStreetMap network, ${C.solvers[C.winner].routes.length} vans, capacity ${C.capacity}. Every street honours its one-way direction.`},
+  {p:[stopPos[0].x-0.35,0.28,stopPos[0].z+0.45], t:[stopPos[0].x+0.2,0,stopPos[0].z-0.25], h:8.15, title:'08:00 at the depot', text:'All vans leave together. Each trail shows where a van has been; the faint ribbon ahead is the rest of its route.'},
+  {p:[-0.65,0.45,0.75], t:[0.35,0.12,-0.25], h:8.9, title:'The Loop', text:`${S.stats.height_from_stories.toLocaleString()} buildings carry real storey counts from the City of Chicago footprint dataset (colour = height, cividis). Grey ones are estimated.`},
+  {p:[1.9,1.2,0.8], t:[0.9,0,-0.55], h:9.6, title:'Certified, not just good', text:`Best plan ${km(C.best)}. A directed lower bound proves no plan is shorter than ${km(C.bound.best)}: a ${C.bound.gap}% certified gap.`},
+  {bench:true, title:'Standard benchmark', text: (B.summary && B.summary.short) || 'The same solvers on the CVRPLIB X set, scored against best-known solutions.'},
+];
+let tourI = -1, tourTimer = null, tween = null;
+const ease = x => x<.5? 4*x*x*x : 1-Math.pow(-2*x+2,3)/2;
+function flyTo(pos, tgt, dur=2.2){ tween = {from:camC.position.clone(), fromT:ctlC.target.clone(), to:new THREE.Vector3(...pos), toT:new THREE.Vector3(...tgt), t0:performance.now(), dur:dur*1000}; }
+function tourStep(){
+  tourI++; if(tourI>=TOUR.length){ stopTour(); return; }
+  const s = TOUR[tourI]; document.getElementById('caption').style.display='block';
+  document.getElementById('cap-t').textContent = `${tourI+1}/${TOUR.length} · ${s.title}`; document.getElementById('cap-p').textContent = s.text;
+  if(s.bench){ setMode('bench'); document.getElementById('caption').style.display='block'; raceT = 0; setPlay(true); }
+  else { if(mode!=='city') setMode('city'); flyTo(s.p, s.t); setClock((s.h*60)-DAY0); }
+  tourTimer = setTimeout(tourStep, s.bench? 9000 : 6500);
+}
+function stopTour(){ if(tourI<0) return; tourI=-1; clearTimeout(tourTimer); tween=null; document.getElementById('caption').style.display='none'; document.getElementById('tourBtn').textContent='Tour'; }
+document.getElementById('tourBtn').onclick = () => { if(tourI>=0){ stopTour(); return; } document.getElementById('tourBtn').textContent='Stop tour'; tourI=-1; tourStep(); };
+
+// ---------------------------------------------------------------- theme
 function theme(){
-  scene.background = col('--surface-1'); roadMat.color = col('--road'); stopMat.color = col('--stop'); depotMat.color = col('--depot');
-  build();
+  const dark = isDark();
+  skyMat.uniforms.top.value = col('--sky-top'); skyMat.uniforms.bottom.value = col('--sky-bottom');
+  city.fog = new THREE.Fog(col('--sky-bottom'), 4.5, 16);
+  hemi.color = dark? new THREE.Color(0x8aa0c8) : new THREE.Color(0xdfeaf5); hemi.groundColor = col('--land'); hemi.intensity = dark? .45 : 1.0;
+  landMat.color = col('--land'); waterMat.color = col('--water'); waterMat.roughness = dark? .25 : .12;
+  roadMats.minor.color = col('--road-minor'); roadMats.mid.color = col('--road-mid'); roadMats.major.color = col('--road-major');
+  routeMat.blending = dark? THREE.AdditiveBlending : THREE.NormalBlending; routeMat.uniforms.uGlow.value = dark? .45 : .25; routeMat.uniforms.uDim.value = dark? .10 : .22; routeMat.uniforms.uAlpha.value = dark? .55 : 1.; routeMat.needsUpdate = true;
+  vanMat.emissiveIntensity = dark? .3 : .12; headMat.emissiveIntensity = dark? .12 : .08;
+  depotG.getObjectByName('ring').material.color = col('--depot');
+  buildings.geometry = buildBuildings(); hbar();
+  ren.toneMappingExposure = dark? 1.05 : 0.95;
+  bench.background = col('--surface-1'); floorMat.color = col('--surface-2'); bHemi.intensity = dark? .7 : 1.3;
+  refMeshes.forEach((m,j)=>m.material.color = col(j? '--s-highs' : '--s-pyvrp'));
+  benchColors();
+  if(R.length) buildRoutes(); else buildRoutes();
+  setSun((DAY0+clockT)/60);
 }
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', theme);
 new MutationObserver(theme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+// ---------------------------------------------------------------- size, visibility, loop
+function size(){ const w=stage.clientWidth, h=stage.clientHeight; ren.setSize(w,h,false); labels.setSize(w,h); for(const c of [camC,camB]){ c.aspect=w/h; c.updateProjectionMatrix(); } }
+new ResizeObserver(size).observe(stage); size();
+let visible = true;
+document.addEventListener('visibilitychange', ()=>{ visible = !document.hidden; });
+new IntersectionObserver(es=>{ for(const e of es) visible = e.isIntersecting && !document.hidden; }).observe(stage);
+
 theme();
+setMode(Q.get('mode')==='bench'? 'bench' : 'city');
+setClock(Q.has('t')? (+Q.get('t')*60 - DAY0) : (SHOT? 30 : 0));
+if(Q.get('cam')){ const v=Q.get('cam').split(',').map(Number); camC.position.set(v[0],v[1],v[2]); ctlC.target.set(v[3],v[4],v[5]); }
+if(Q.has('race') && mode==='bench'){ benchF = +Q.get('race'); benchBars(benchF); }
+if(Q.has('race') && mode==='city'){ document.getElementById('racebox').style.display='block'; raceFrame(+Q.get('race')); }
+if(!SHOT && !Q.has('notour')) setTimeout(()=>{ if(tourI<0 && !interacted) document.getElementById('tourBtn').click(); }, 1800);
+let interacted = false; ren.domElement.addEventListener('pointerdown', ()=>interacted=true, {once:true});
 
-function size(){ const w=host.clientWidth, h=host.clientHeight; ren.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix(); }
-new ResizeObserver(size).observe(host); size();
-
-const speed = 0.9; // km per second of animation
 const clock = new THREE.Clock();
-(function loop(){
-  const t = clock.getElapsedTime();
-  for(const v of vans){
-    const {pts,L,total,phase} = v.userData, cycle = total/speed + 1.2;
-    const s = Math.min(((t+phase*cycle) % cycle)*speed, total);
-    let k = 1; while(k<L.length-1 && L[k]<s) k++;
-    const a = pts[k-1], b = pts[k], f = (s-L[k-1])/Math.max(L[k]-L[k-1],1e-9);
-    v.position.lerpVectors(a,b,Math.min(Math.max(f,0),1)).setY(0.07);
-  }
-  ctl.update(); ren.render(scene, cam); requestAnimationFrame(loop);
-})();
+function frame(){
+  requestAnimationFrame(frame);
+  const dt = Math.min(clock.getDelta(), 0.1);
+  if(!visible) return;
+  const sp = +document.getElementById('speed').value;
+  if(tween){ const f=Math.min((performance.now()-tween.t0)/tween.dur,1), e=ease(f); camC.position.lerpVectors(tween.from,tween.to,e); ctlC.target.lerpVectors(tween.fromT,tween.toT,e); if(f>=1) tween=null; }
+  if(raceT!=null && playing){
+    raceT += dt*sp/3;               // the 60 s race replays in ~20 s at 1x on a log clock
+    const T = RACE.T, u = Math.min(raceT/12,1);
+    if(mode==='city'){ const t = Math.pow(10, -1.3 + u*(Math.log10(T)+1.3)); raceFrame(t); }
+    else { benchF = u; benchBars(u); document.getElementById('clock').textContent = `${Math.round(100*u)}%`; document.getElementById('scrub').value = Math.round(1000*u); }
+    if(u>=1){ raceT=null; setTimeout(()=>{ document.getElementById('racebox').style.display='none'; RACE.setCursor(null); }, 2500); }
+  } else if(playing && mode==='city'){ let t = clockT + dt*sp*1.0; if(t>dayEnd) t=0; setClock(t); }
+  const ring = depotG.getObjectByName('ring'); const ph = (performance.now()/1600)%1; ring.scale.setScalar(1+ph*1.6); ring.material.opacity = 0.8*(1-ph);
+  if(followed!=null && !tween && mode==='city'){ pointAt(R[followed], posAt(R[followed], clockT), _p); ctlC.target.lerp(_p, 0.06); }
+  const cam = mode==='city'? camC : camB; (mode==='city'? ctlC : ctlB).update();
+  ren.render(mode==='city'? city : bench, cam); labels.render(mode==='city'? city : bench, cam);
+}
+frame();
+if(Q.has('debug')) setTimeout(()=>{ const el=document.getElementById('dbg');
+  el.textContent += 'programs: '+ren.info.programs.map(p=>p.name+(p.diagnostics? ' DIAG '+JSON.stringify(p.diagnostics).slice(0,600) : '')).join(' | ')+'\n';
+  routeGroup.traverse(o=>{ if(o.isMesh){ o.geometry.computeBoundingBox(); const b=o.geometry.boundingBox; const a=o.geometry.attributes.position.array; el.textContent += 'route mesh verts '+o.geometry.attributes.position.count+' bbox '+b.min.toArray().map(v=>v.toFixed(3))+' / '+b.max.toArray().map(v=>v.toFixed(3))+' first '+Array.from(a.slice(0,9)).map(v=>v.toFixed(4))+' parent '+(o.parent&&o.parent.parent? o.parent.parent.type:'none')+'\n'; } }); const mm=new THREE.Matrix4(); vans.getMatrixAt(0,mm); el.textContent += 'van0 '+new THREE.Vector3().setFromMatrixPosition(mm).toArray().map(v=>v.toFixed(3))+'\n';
+  el.textContent += 'R '+R.length+' prog0 '+routeMat.uniforms.uProg.value[0].toFixed(3)+' col0 '+routeMat.uniforms.uCol.value[0].getHexString()+' vans '+(vans&&vans.count)+'\n'; }, 3000);
 </script>
 </body>
 </html>

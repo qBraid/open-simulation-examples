@@ -45,6 +45,8 @@ def main():
     ap.add_argument("--start", type=int, default=0)
     ap.add_argument("--stop", type=int, default=10**9)
     ap.add_argument("--host", default="qBraid pool gpu-l4 box (cgroup ~5 CPUs), 1 thread per solver")
+    ap.add_argument("--sequential", action="store_true",
+                    help="run the solvers one after another (same per-solver budget) on a single core")
     a = ap.parse_args()
 
     here = os.path.dirname(os.path.abspath(__file__))
@@ -63,7 +65,15 @@ def main():
         n = inst.n - 1
         tlim = round(a.factor * 2.4 * n, 1)
         t0 = time.time()
-        res = race(inst, tlim, tuple(a.solvers.split(",")))
+        if a.sequential:
+            parts = [race(inst, tlim, (s,)) for s in a.solvers.split(",")]
+            results = {k: v for p in parts for k, v in p["results"].items()}
+            feas = [r for r in results.values() if r.get("cost") is not None]
+            win = min(feas, key=lambda r: r["cost"]) if feas else None
+            res = {"results": results, "winner": win["solver"] if win else None,
+                   "best_cost": win["cost"] if win else None, "best_routes": win["routes"] if win else None}
+        else:
+            res = race(inst, tlim, tuple(a.solvers.split(",")))
         rec = {
             "instance": name, "n": n, "bks": bks, "factor": a.factor, "time_limit_s": tlim,
             "winner": res["winner"], "best": res["best_cost"],
@@ -76,7 +86,7 @@ def main():
                     "error": r.get("error")}
                 for s, r in res["results"].items()
             },
-            "best_routes": res["best_routes"] if n <= 400 else None,
+            "best_routes": res["best_routes"],
             "stamp": {"date": date.today().isoformat(), "host": a.host,
                       "python": platform.python_version(), "wall_s": round(time.time() - t0, 1),
                       "protocol": f"Tmax = {a.factor} x 2.4 n s, 1 seed, 1 thread per solver"},
