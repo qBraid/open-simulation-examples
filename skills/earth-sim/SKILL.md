@@ -9,7 +9,7 @@ description: Run and score AI global weather forecasts (NVIDIA Earth2Studio with
 | Task | Machine | Notes |
 |---|---|---|
 | SFNO 73-ch, 0.25°, 5-day forecast | `gpu-l4` (22 GB usable) is enough for SFNO | ~1.2 s per 6 h step on an L4 after warm-up; first model load ~100 s (NGC download) |
-| FCN3 (needs >22 GB), ensembles | `gpu-a100-sxm` / `gpu-h100-sxm` | ensembles scale linearly in memory; start with 4 members on an L4 |
+| FCN3 (needs >22 GB; ~70 GB peak), ensembles | `gpu-a100-sxm` (2.6 s/step) / `gpu-h100-sxm` | ensembles scale linearly in memory; start with 4 members on an L4 |
 | Scoring, plotting, viewer build | CPU or the Lab pod | xarray + numpy only |
 
 ## Install (verified 2026-10-01)
@@ -26,7 +26,7 @@ Earth2Studio 0.19 does **not** install cleanly with a bare `pip install earth2st
    chunk carries every pressure level, so caching costs about 11 GB per start date.
 5. **FCN3 needs CUDA DISCO kernels.** The PyPI `torch-harmonics` wheel is CPU-only (`+torch2.11.0.cpu`), and
    FCN3 fails with `Could not run 'disco_kernels::forward' with arguments from the 'CUDA' backend`. SFNO is
-   unaffected. To fix it, build from the GitHub tag with `FORCE_CUDA_EXTENSION=1 --no-build-isolation`, using the
+   unaffected. To fix it on CUDA 13 hosts (driver ≥580; see below for driver 570), build from the GitHub tag with `FORCE_CUDA_EXTENSION=1 --no-build-isolation`, using the
    pip CUDA toolchain (`nvidia-cuda-nvcc`, `nvidia-cuda-cccl`, `CUDA_HOME=<site-packages>/nvidia/cu13`). Pin
    `nvidia-nvvm` and `nvidia-cuda-crt` to the **same** minor as `nvidia-cuda-nvcc`. torch 2.14 pulls nvvm 13.4,
    and the build then dies with `ptxas fatal: Unsupported .version 9.4; current version is '9.0'`.
@@ -52,21 +52,33 @@ Run the GPU step through the queue on shared boxes.
 
 ## Choosing the model (the decision that matters)
 - **`SFNO.load_default_package()` is `sfno_73ch_small`**, NVIDIA's public small checkpoint (embed 384, 8 layers).
-  It is a good demo model, but it is not HRES-class beyond day 1 (see below). Say so before a user quotes skill numbers.
-- For skill, use FCN3 (FourCastNet 3). It needs the torch-harmonics CUDA build above **and a GPU with 40 GB or more**:
-  on a 22 GB L4 its decoder OOMs on the first step (one 20.4 GB allocation). Use `gpu-a100-sxm` or larger.
+  It is a good demo model, but it is not HRES-class beyond day 1. Say so before a user quotes skill numbers.
+- **FCN3 (FourCastNet 3) is the skill model.** It is *probabilistic*, so score it the right way:
+  - a **single member** compares with an IFS *ensemble member*, not with deterministic HRES;
+  - an **ensemble mean** (`set_rng(seed=…)` per member) compares with HRES and with the IFS ENS mean.
+- **FCN3 needs >22 GB of GPU memory.** On the L4 its decoder asks for a 20.4 GB block on the first step and OOMs.
+  Use `gpu-a100-sxm`; it peaks around 70 GB at 0.25° and runs at 2.6 s per 6 h step.
+- **The torch-harmonics CUDA build must match the host driver.** Driver 570 means CUDA 12.8: torch cu128 wheels plus
+  conda-forge `cuda-nvcc=12.8` and the CUDA math dev headers. The pip cu12 nvcc wheel contains only ptxas.
+  Driver ≥580 means the CUDA 13 pip toolchain. Check with
+  `nvidia-smi --query-gpu=driver_version --format=csv,noheader` first.
+- **Earth2Studio's `create_iterator` modifies its input tensor in place.** Pass `x.clone()` for every ensemble
+  member. Without it, members after the first start from a corrupted state and score at climatology level (z500 ≈ 1100 at day 1).
 - Always state which checkpoint ran. "SFNO" alone is ambiguous.
 
-## Verified result (2026-10-01, gpu-l4, 12 starts in 2020, 5-day leads)
-| | z500 day 1/3/5 (m²/s²) | T850 day 5 (K) | T2m day 5 (K) |
-|---|---|---|---|
-| sfno_73ch_small (this run) | 66 / 208 / 407 | 2.39 | 2.01 |
-| IFS HRES, same starts (our scorer) | 49 / 134 / 299 | 1.93 | 1.73 |
-| IFS HRES, WB2 2020 full year | 49 / 139 / 308 | 1.94 | 1.73 |
+## Verified results (2026-10-01; 12 starts in 2020, paired with IFS HRES on the same starts)
+| | z500 day 1/3/5 (m²/s²) | T850 day 5 (K) | T2m day 5 (K) | Machine |
+|---|---|---|---|---|
+| sfno_73ch_small, 1 run | 66 / 208 / 407 | 2.39 | 2.01 | L4 |
+| FCN3, 1 member | 59 / 180 / 394 | 2.27 | 1.91 | A100 |
+| **FCN3, 4-member mean** (6 starts) | **46 / 140 / 299** | **1.74** | **1.47** | A100 |
+| IFS HRES, same starts | 49 / 134 / 299 (6 starts: 50 / 133 / 296) | 1.93 | 1.73 | WB2 zarr |
+| IFS ENS member / 50-member mean, WB2 2020 | 65 / 197 / 397 · 47 / 135 / 280 | 2.34 · 1.69 | 1.93 · 1.50 | WB2 |
 
-- Our scorer reproduces WB2's HRES numbers, so the pipeline is right. SFNO-small is 36% worse than HRES on
-  day-5 z500 and only better on day-1 near-surface temperature.
-- The 12-start run took 17 GPU-minutes (~$0.15 of L4). The ERA5 fetch, not the GPU, dominates wall time.
+- Our scorer reproduces WB2's HRES numbers, so the pipeline is right.
+- The FCN3 4-member mean beats HRES on 7 of 9 variable–lead pairs: all temperature pairs and day-1 z500. Day-5 z500
+  is level; **day-3 z500 is 5% worse**. Verdict: *close* to HRES-class with 4 members.
+- Hurricane Laura with FCN3: track error 185 km at 72 h, and it turns north correctly. SFNO-small does not (462 km).
 
 ## Visuals
 `weather/viewer.html`: a three.js globe with an atmospheric glow and day/night terminator, wind particles

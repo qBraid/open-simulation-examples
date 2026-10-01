@@ -9,17 +9,17 @@
 :root{
   --bg:#eef1f4;--panel:rgba(255,255,255,.86);--panel-solid:#fff;--ink:#16202a;--muted:#5b6876;--line:#d3dae1;
   --accent:#0f6e8c;--accent-ink:#fff;--good:#1d7f56;--warn:#b26a06;--bad:#b3372b;
-  --c-model:#0f6e8c;--c-hres:#b3372b;--c-gc:#6b4fb3;--c-pangu:#8a6d1d;--space-top:#dfe6ee;--space-bot:#b9c6d4;
+  --c-model:#0f6e8c;--c-model2:#1d7f56;--c-hres:#b3372b;--c-gc:#6b4fb3;--c-pangu:#8a6d1d;--space-top:#dfe6ee;--space-bot:#b9c6d4;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#05080c;--panel:rgba(14,20,27,.82);--panel-solid:#0e141b;--ink:#e3e9ee;--muted:#93a1ad;--line:#26323d;
   --accent:#4cc3e6;--accent-ink:#04121a;--good:#4cc38a;--warn:#e7a640;--bad:#f07a6c;
-  --c-model:#4cc3e6;--c-hres:#f07a6c;--c-gc:#a78bfa;--c-pangu:#d9b54a;--space-top:#03060a;--space-bot:#0a121c;
+  --c-model:#4cc3e6;--c-model2:#4cc38a;--c-hres:#f07a6c;--c-gc:#a78bfa;--c-pangu:#d9b54a;--space-top:#03060a;--space-bot:#0a121c;
 }}
 :root[data-theme="dark"]{
   --bg:#05080c;--panel:rgba(14,20,27,.82);--panel-solid:#0e141b;--ink:#e3e9ee;--muted:#93a1ad;--line:#26323d;
   --accent:#4cc3e6;--accent-ink:#04121a;--good:#4cc38a;--warn:#e7a640;--bad:#f07a6c;
-  --c-model:#4cc3e6;--c-hres:#f07a6c;--c-gc:#a78bfa;--c-pangu:#d9b54a;--space-top:#03060a;--space-bot:#0a121c;
+  --c-model:#4cc3e6;--c-model2:#4cc38a;--c-hres:#f07a6c;--c-gc:#a78bfa;--c-pangu:#d9b54a;--space-top:#03060a;--space-bot:#0a121c;
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:14px/1.45 "IBM Plex Sans",system-ui,sans-serif;overflow:hidden}
@@ -109,6 +109,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   <span class="mono" id="leadlbl">+0 h</span>
   <div id="ticks"></div>
   <div class="row">
+    <span id="models" style="display:contents"></span>
     <span class="lbl">Field</span>
     <button data-ov="tcwv" aria-pressed="true">Water vapour</button>
     <button data-ov="t2m" aria-pressed="false">2 m temperature</button>
@@ -155,7 +156,9 @@ function unPts(u8){ const a = asI16(u8); for (let i=2;i<a.length;i++) a[i] += a[
 for (const k of Object.keys(raw)){ if (k.endsWith('_pts')) unPts(raw[k]); else unRows(raw[k], /[uv]850$/.test(k) ? WNX : NX); }
 document.getElementById('loading').remove();
 
-const LEADS = P.leads;                 // forecast frames every 6 h
+const LEADS = P.leads;                 // forecast frames every P.fc_step h (6 with one model, 12 with two)
+const FS = P.fc_step;
+const MODELS = Object.keys(P.models);
 const TLEADS = P.truth_leads;          // ERA5 frames every 12 h
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
@@ -233,13 +236,12 @@ function makeTex(u8){
   t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearFilter; t.wrapS = THREE.RepeatWrapping;
   t.unpackAlignment = 1; t.needsUpdate = true; return t;
 }
-const tex = {};      // tex[var].fc[i], tex[var].tr[j]
-for (const v of P.vars){
-  tex[v] = {fc: [], tr: []};
-  const f = raw['fc_'+v], t = raw['tr_'+v];
-  for (let i=0;i<LEADS.length;i++) tex[v].fc.push(makeTex(f.subarray(i*FR,(i+1)*FR)));
-  for (let j=0;j<TLEADS.length;j++) tex[v].tr.push(makeTex(t.subarray(j*FR,(j+1)*FR)));
-}
+const texF = {}, texT = {};   // texF[model][var][i] forecast frames, texT[var][j] ERA5 frames
+for (const m of MODELS){ texF[m] = {};
+  for (const v of P.vars){ const f = raw[`fc_${m}_${v}`]; texF[m][v] = [];
+    for (let i=0;i<LEADS.length;i++) texF[m][v].push(makeTex(f.subarray(i*FR,(i+1)*FR))); } }
+for (const v of P.vars){ const t = raw['tr_'+v]; texT[v] = [];
+  for (let j=0;j<TLEADS.length;j++) texT[v].push(makeTex(t.subarray(j*FR,(j+1)*FR))); }
 // perceptual colour maps (256-entry LUTs from the payload)
 function lutTex(name){
   const rgb = Uint8Array.from(atob(P.cmaps[name]), c=>c.charCodeAt(0));
@@ -322,15 +324,16 @@ const rim = new THREE.Mesh(new THREE.SphereGeometry(1.012, 96, 64), new THREE.Sh
 scene.add(rim);
 
 // ---------- z500 contours (precomputed polylines per frame) ----------
-const z5 = {fc: [], tr: []};
+const z5 = {fc: {}, tr: []};
 {
-  for (const kind of ['fc','tr']){
+  for (const kind of [...MODELS.map(m => 'fc_'+m), 'tr']){
     const pts = asI16(raw['z5_'+kind+'_pts']), meta = P['z5_'+kind];   // meta: per frame [ [len, level], ... ]
+    const list = kind === 'tr' ? z5.tr : (z5.fc[kind.slice(3)] = []);
     let o = 0;
     for (const frame of meta){
       const seg = [], col = [];
       for (const [L, lev] of frame){
-        const strong = (lev % 240 === 0);
+        const strong = (lev % 360 === 0);
         const c = strong ? 1 : .6;
         for (let i=0;i<L-1;i++){
           const lo1 = pts[2*(o+i)]/100, la1 = pts[2*(o+i)+1]/100, lo2 = pts[2*(o+i+1)]/100, la2 = pts[2*(o+i+1)+1]/100;
@@ -344,14 +347,15 @@ const z5 = {fc: [], tr: []};
       g.setAttribute('position', new THREE.Float32BufferAttribute(seg,3));
       g.setAttribute('color', new THREE.Float32BufferAttribute(col,3));
       const l = new THREE.LineSegments(g, new THREE.LineBasicMaterial({vertexColors:true, transparent:true, opacity:.55, depthWrite:false}));
-      l.visible = false; scene.add(l); z5[kind].push(l);
+      l.visible = false; scene.add(l); list.push(l);
     }
   }
 }
 
 // ---------- cyclone tracks: forecast vs ERA5 (from sea-level-pressure minima) ----------
-const trackGroup = new THREE.Group(); scene.add(trackGroup);
-for (const tr of P.tracks){
+const trackGroups = {};
+for (const m of MODELS){ const trackGroup = trackGroups[m] = new THREE.Group(); scene.add(trackGroup);
+for (const tr0 of P.tracks){ const tr = {fc: tr0.fc[m] || [], tr: tr0.tr};
   for (const [kind, colVar] of [['fc','--c-model'],['tr','--c-hres']]){
     const pts = tr[kind].map(p => lonlatToVec(p[0], p[1], 1.008));
     if (pts.length < 2) continue;
@@ -361,7 +365,7 @@ for (const tr of P.tracks){
     trackGroup.add(tube);
     for (const p of pts){ const dot = new THREE.Mesh(new THREE.SphereGeometry(.0065, 12, 8), tube.material); dot.position.copy(p); trackGroup.add(dot); }
   }
-}
+} }
 
 // ---------- wind particles (earth.nullschool-style trails, advected on the real forecast u/v) ----------
 const TW = innerWidth < 760 ? 2048 : 3072, TH = TW/2;
@@ -378,7 +382,8 @@ const trails = new THREE.Mesh(new THREE.SphereGeometry(1.006, 160, 100), new THR
   transparent:true, blending:THREE.AdditiveBlending, depthWrite:false
 }));
 scene.add(trails);
-const U = {fc: asI8(raw.fc_u850), tr: asI8(raw.tr_u850)}, V = {fc: asI8(raw.fc_v850), tr: asI8(raw.tr_v850)};
+const U = {tr: asI8(raw.tr_u850)}, V = {tr: asI8(raw.tr_v850)};
+for (const m of MODELS){ U[m] = asI8(raw[`fc_${m}_u850`]); V[m] = asI8(raw[`fc_${m}_v850`]); }
 const WS = P.wind_scale;   // m/s per int8 step
 const NP = innerWidth < 760 ? 4000 : 9000;
 const plon = new Float32Array(NP), plat = new Float32Array(NP), page = new Uint16Array(NP);
@@ -420,12 +425,18 @@ function stepParticles(kind, fi, dtScale){
 }
 
 // ---------- state & UI ----------
-const S = {lead:0, playing:false, ov:'tcwv', mode:'fc', wind:true, z5:true, sun:true, tracks:true, tour:null};
+const S = {lead:0, playing:false, ov:'tcwv', mode:'fc', wind:true, z5:true, sun:true, tracks:true, tour:null, model:P.headline};
 const $ = id => document.getElementById(id);
 const ICON = {play:'<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.5v11l9-5.5z" fill="currentColor"/></svg>', pause:'<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.5h3v11H3zM8 1.5h3v11H8z" fill="currentColor"/></svg>', stop:'<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="1.5" y="1.5" width="9" height="9" fill="currentColor"/></svg>'};
 const fmtDate = d => d.toISOString().slice(0,16).replace('T',' ') + ' UTC';
 const init = new Date(P.init + 'Z');
-$('subtitle').innerHTML = `${P.model_label} from ERA5 at ${fmtDate(init)} · ${P.gpu} · ${P.step_s.toFixed(2)} s per 6 h step`;
+function setModel(m){ S.model = m; const M = P.models[m];
+  $('subtitle').innerHTML = `${M.label} from ERA5 at ${fmtDate(init)} · ${M.gpu} · ${M.step_s.toFixed(2)} s per 6 h step`;
+  document.querySelectorAll('[data-model]').forEach(b => b.setAttribute('aria-pressed', b.dataset.model === m));
+  $('sl-l').textContent = M.short + ' forecast'; }
+$('models').innerHTML = MODELS.length > 1 ? '<span class="lbl">Model</span>' + MODELS.map(m => `<button data-model="${m}" aria-pressed="false">${P.models[m].short}</button>`).join('') : '';
+document.querySelectorAll('[data-model]').forEach(b => b.onclick = () => setModel(b.dataset.model));
+setModel(S.model);
 $('ticks').innerHTML = [0,24,48,72,96,120].map(h=>`<span>${h? 'day '+h/24 : 'init'}</span>`).join('');
 
 function subsolar(date){   // NOAA-style approximation, good to ~0.1 deg
@@ -528,7 +539,7 @@ function flyTo(stop, ms=2600){
 }
 $('tour').onclick = async () => {
   if (S.tour){ S.tour = null; $('caption').classList.remove('show'); $('tour').innerHTML = ICON.play + ' Guided tour'; return; }
-  S.tour = {}; S.playing = false; $('play').innerHTML = ICON.play; $('tour').innerHTML = ICON.stop + ' Stop tour'; controls.enabled = false;
+  S.tour = {}; setModel(P.headline); S.playing = false; $('play').innerHTML = ICON.play; $('tour').innerHTML = ICON.stop + ' Stop tour'; controls.enabled = false;
   for (const stop of tourStops){
     if (!S.tour) break;
     $('caption').innerHTML = stop.html; $('caption').classList.add('show');
@@ -554,11 +565,11 @@ function loop(now){
   if (hidden) return;
   const dt = Math.min(.05, (now-last)/1000); last = now;
   if (S.playing){ S.lead += dt*8; if (S.lead > 120) S.lead = 0; $('lead').value = S.lead; }
-  const L = S.lead, fi = Math.min(LEADS.length-2, Math.floor(L/6)), ff = (L - LEADS[fi])/6;
+  const L = S.lead, fi = Math.min(LEADS.length-2, Math.floor(L/FS)), ff = (L - LEADS[fi])/FS;
   const ti = Math.min(TLEADS.length-2, Math.floor(L/12)), tf = (L - TLEADS[ti])/12;
-  const tv = tex[S.ov], u = globeMat.uniforms;
+  const tv = {fc: texF[S.model][S.ov], tr: texT[S.ov]}, u = globeMat.uniforms;
   if (S.mode === 'err'){ // error only where truth exists: compare at the same instant using 12 h frames on both sides
-    const j = Math.round(L/12); u.fa.value = u.fb.value = tv.fc[Math.min(LEADS.length-1, j*2)]; u.ta.value = u.tb.value = tv.tr[Math.min(TLEADS.length-1,j)]; u.mixF.value = u.mixT.value = 0;
+    const j = Math.round(L/12); u.fa.value = u.fb.value = tv.fc[Math.min(LEADS.length-1, j*12/FS)]; u.ta.value = u.tb.value = tv.tr[Math.min(TLEADS.length-1,j)]; u.mixF.value = u.mixT.value = 0;
   } else { u.fa.value = tv.fc[fi]; u.fb.value = tv.fc[fi+1]; u.mixF.value = ff; u.ta.value = tv.tr[ti]; u.tb.value = tv.tr[ti+1]; u.mixT.value = tf; }
   const valid = new Date(init.getTime() + L*3600e3);
   const [slon, slat] = subsolar(valid), sd = lonlatToVec(slon, slat, 1);
@@ -568,14 +579,14 @@ function loop(now){
   $('valid').innerHTML = `valid <b>${fmtDate(valid)}</b> · lead +${Math.round(L)} h${S.mode==='err' ? ` (error at +${Math.round(L/12)*12} h)` : ''}`;
   $('leadlbl').textContent = `+${Math.round(L)} h`;
   // contours
-  const zKind = S.mode==='truth' ? 'tr' : 'fc', zi = zKind==='fc' ? Math.round(L/6) : Math.round(L/12);
-  const want = S.z5 ? z5[zKind][Math.min(z5[zKind].length-1, zi)] : null;
+  const zList = S.mode==='truth' ? z5.tr : z5.fc[S.model], zi = S.mode==='truth' ? Math.round(L/12) : Math.round(L/FS);
+  const want = S.z5 ? zList[Math.min(zList.length-1, zi)] : null;
   if (shownZ !== want){ if (shownZ) shownZ.visible = false; if (want) want.visible = true; shownZ = want; }
   // particles
   trails.visible = S.wind;
-  if (S.wind){ const wk = S.mode==='truth' ? 'tr' : 'fc'; const wi = wk==='fc' ? Math.round(L/6) : Math.round(L/12); stepParticles(wk, Math.min(wk==='fc'?LEADS.length-1:TLEADS.length-1, wi), .012); }
+  if (S.wind){ const wk = S.mode==='truth' ? 'tr' : S.model; const wi = wk==='tr' ? Math.round(L/12) : Math.round(L/FS); stepParticles(wk, Math.min(wk==='tr'?TLEADS.length-1:LEADS.length-1, wi), .012); }
   coast.material.opacity = S.ov === 'tcwv' ? .3 : .45;
-  trackGroup.visible = S.tracks; $('trklegend').style.display = S.tracks ? 'flex' : 'none';
+  for (const m of MODELS) trackGroups[m].visible = S.tracks && m === S.model; $('trklegend').style.display = S.tracks ? 'flex' : 'none';
   if (!S.tour && !S.playing && controls.enabled) globe.rotation.y += 0;  // keep geography fixed; camera orbits
   controls.update(); renderer.render(scene, camera);
   if (window.__freeze) { window.__frozen = true; return; }   // capture hook for headless screenshots
@@ -585,6 +596,7 @@ requestAnimationFrame(loop);
 // deep links: #lead=72&ov=msl&mode=swipe&theme=dark&cam=-90,26,2.1   or   #tour
 try { const q = new URLSearchParams((location.hash || '').slice(1));
   if (q.has('theme')) { document.documentElement.dataset.theme = q.get('theme'); drawChart(); applyTheme(); }
+  if (q.has('model') && P.models[q.get('model')]) setModel(q.get('model'));
   if (q.has('ov')) setOverlay(q.get('ov'));
   if (q.has('mode')) setMode(q.get('mode'));
   if (q.has('lead')) { S.lead = +q.get('lead'); $('lead').value = S.lead; }

@@ -4,7 +4,7 @@
 (73 channels, 0.25°, 6-hour steps). The weights are commercially usable. ERA5 comes from the public
 ARCO zarr store.
 **Stands in for:** operational numerical weather prediction (ECMWF IFS HRES) and commercial forecast feeds.
-**Viewer:** `viewer.html`, a self-contained 3D globe (open it in a browser or with `qbraid-canvas weather/viewer.html`).
+**Viewer:** `viewer.html` (5.0 MB), a self-contained 3D globe with an FCN3 / SFNO-small model toggle (open it in a browser or with `qbraid-canvas weather/viewer.html`).
 
 ## What "top-10%" means here
 The public yardstick is [WeatherBench2](https://sites.research.google/weatherbench/) (WB2). The metric is
@@ -44,15 +44,50 @@ reference, so the comparison below is apples to apples.
 HRES only on near-surface temperature at day 1. By day 5 it is 36% worse on z500 and 24% worse on T850.
 It is a good demonstration model, not a top-tier forecaster.
 
-**FourCastNet 3 (the HRES-class open model): blocked by GPU memory, not by the pipeline.**
-- FCN3 needs CUDA DISCO kernels that the PyPI `torch-harmonics` wheel lacks. We built them from source on the
-  pool with pip's CUDA 13.0 toolchain (recipe below); a DISCO test convolution then runs on the GPU.
-- The full model still runs out of memory on the 22 GB L4. Its decoder (a transposed DISCO convolution back to
-  the 0.25° grid) asks for one 20.4 GB buffer on the first step.
-- Next step: rerun `forecast_score.py fcn3` on a `gpu-a100-sxm` (40 GB or more, $2.49/h). The 12-start set should
-  take about 20–30 min, roughly $1–1.50. That run decides whether this example reaches the bar.
+### FourCastNet 3: the verdict (verified 2026-10-01, qBraid `gpu-a100-sxm`, A100 80GB)
 
-**Storm case: Hurricane Laura (start 24 Aug 2020).** SFNO's track stays within 170 km of ERA5 for 48 h
+FCN3 is a **probabilistic** model: each run draws a different but plausible future. Two fair comparisons follow.
+
+**One member against deterministic HRES (12 starts).** z500 at day 1/3/5 is 59 / 180 / 394 m²/s² against HRES 49 / 134 / 299.
+A single FCN3 member is not meant to beat a deterministic forecast on RMSE. It matches **an IFS ensemble member**
+(WB2 2020: 65 / 197 / 397) and it beats SFNO-small at every lead.
+
+**4-member ensemble mean against HRES, paired on 6 of the starts (Jan, Mar, May, Jul, Sep, Nov):**
+
+| Variable | Lead | FCN3 4-member mean | IFS HRES (same starts) | Paired diff ± se | FCN3 better | WB2 IFS ENS mean (50 members) |
+|---|---|---|---|---|---|---|
+| z500 (m²/s²) | day 1 | 46.2 | 49.6 | −3.5 ± 1.3 | 5/6 | 46.8 |
+| z500 | day 3 | 139.7 | 133.3 | **+6.4 ± 2.2** | 1/6 | 134.8 |
+| z500 | day 5 | 298.5 | 296.3 | +2.2 ± 12.0 | 2/6 | 280.2 |
+| T850 (K) | day 1 | 0.70 | 0.85 | −0.15 ± 0.01 | 6/6 | 0.81 |
+| T850 | day 3 | 1.17 | 1.29 | −0.12 ± 0.02 | 6/6 | 1.18 |
+| T850 | day 5 | 1.74 | 1.91 | −0.17 ± 0.04 | 6/6 | 1.69 |
+| T2m (K) | day 1 | 0.79 | 1.13 | −0.34 ± 0.03 | 6/6 | 0.98 |
+| T2m | day 3 | 1.10 | 1.34 | −0.24 ± 0.05 | 6/6 | 1.20 |
+| T2m | day 5 | 1.47 | 1.69 | −0.23 ± 0.01 | 6/6 | 1.50 |
+
+**Verdict: close.** On 7 of 9 variable–lead pairs the FCN3 ensemble mean is better than ECMWF's operational HRES.
+- Temperature at 850 hPa and 2 m is better at every lead on every start.
+- Day-5 z500 is level within noise. The one clear miss is **day-3 z500, 5% worse** (+6.4 ± 2.2).
+- So the bar ("as good as HRES at day 3–5") is met everywhere except mid-range z500.
+
+Caveats:
+- An ensemble mean is smoother than a single forecast, which helps RMSE. The like-for-like ensemble yardstick is
+  ECMWF's 50-member ensemble mean, and 4 FCN3 members are close to it on temperature but behind on day-5 z500
+  (298 vs 280).
+- More members would close part of that gap. With 12 starts × 8 members the z500 error bars would also tighten.
+
+**Hurricane Laura with FCN3 (one member).** The track error is 38 km at 24 h, 56 km at 48 h and 185 km at 72 h, and
+the central pressure stays within 4–5 hPa. FCN3 turns Laura north toward Louisiana as the real storm did, where
+SFNO-small kept it heading west (462 km at 72 h, 813 km at 84 h).
+
+**Cost.**
+- About 2.6 s per 6 h step on the A100; 54 s model load.
+- 12 single-member starts took 21 min and the 4-member ensemble on 6 starts took 25 min. The SFNO viewer rerun reproduced the
+  L4 scores to the last digit.
+- About 1.6 h of A100 time in total including the build, ≈ $4. The `torch-harmonics` CUDA build is a one-off (recipe below).
+
+**Storm case: Hurricane Laura (start 24 Aug 2020), SFNO-small.** SFNO's track stays within 170 km of ERA5 for 48 h
 and 462 km at 72 h, with central pressure within 2–3 hPa. It then keeps Laura moving west across the
 Gulf while the real storm recurves north into Louisiana: the error is 813 km at 84 h. The viewer's
 tour shows this.
@@ -70,7 +105,14 @@ env/bin/uv pip install --python env/bin/python "earth2studio[sfno]==0.19.0" \
   "makani @ git+https://github.com/NVIDIA/makani.git@b38fcb2799d7dbc146fa60459f3f9823394a8bf1" \
   "torch==2.11.*" "torch-harmonics==0.9.2" "torchvision==0.26.*" scipy
 export EARTH2STUDIO_CACHE=/big/disk/e2s-cache
-# FCN3 additionally needs torch-harmonics built with CUDA kernels (the PyPI wheel is CPU-only):
+# FCN3 additionally needs torch-harmonics built with CUDA kernels (the PyPI wheel is CPU-only).
+# Match the toolkit to the driver: driver >= 580 -> CUDA 13 (pip nvcc, below); driver 570 (e.g. qBraid A100) -> CUDA 12.8:
+#   torch==2.11.* from https://download.pytorch.org/whl/cu128, and nvcc from conda-forge (the pip cu12 nvcc wheel has no nvcc):
+#   micromamba create -p /tmp/cuda -c conda-forge cuda-nvcc=12.8 cuda-cudart-dev=12.8 cuda-cccl=12.8 cuda-version=12.8 \
+#       libcusparse-dev libcublas-dev libcusolver-dev libcurand-dev cuda-nvtx-dev cuda-profiler-api
+#   CUDA_HOME=/tmp/cuda PATH=/tmp/cuda/bin:$PATH LIBRARY_PATH=/tmp/cuda/lib FORCE_CUDA_EXTENSION=1 TORCH_CUDA_ARCH_LIST=8.0 \
+#       pip install --no-build-isolation --no-deps ./torch-harmonics
+# CUDA 13 variant:
 env/bin/uv pip install --python env/bin/python "nvidia-cuda-nvcc==13.0.*" "nvidia-nvvm==13.0.*" \
   "nvidia-cuda-crt==13.0.*" "nvidia-cuda-cccl==13.0.*" ninja setuptools wheel
 CU=$(env/bin/python -c "import site;print(site.getsitepackages()[0])")/nvidia/cu13
@@ -80,10 +122,11 @@ CUDA_HOME=$CU PATH=$CU/bin:$PATH FORCE_CUDA_EXTENSION=1 TORCH_CUDA_ARCH_LIST=8.9
   ../env/bin/python -m pip install --no-build-isolation --no-deps . && cd ..
 
 python forecast_score.py sfno results/          # 12 starts in 2020, GPU, about 17 min on an L4
-python forecast_score.py fcn3 results/          # same starts with FourCastNet 3
+python forecast_score.py fcn3 results/          # same starts with FourCastNet 3 (needs a GPU with >22 GB)
+python ensemble_score.py results/ --members 4   # FCN3 ensemble mean on 6 starts
 python hres_score.py results/                   # IFS HRES on the same starts (CPU, network-bound)
-python make_verdict.py results/ results/<model>_viz_2020082400.npz --model <sfno|fcn3>
-python build_viewer.py results/ results/<model>_viz_2020082400.npz --model <sfno|fcn3>
+python make_verdict.py results/ results/fcn3_viz_2020082400.npz --model fcn3
+python build_viewer.py results/ --models fcn3=results/fcn3_viz_2020082400.npz,sfno=results/sfno_viz_2020082400.npz
 python verify_viewer.py viewer.html results/   # sandboxed-frame check + screenshots (Playwright)
 ```
 The WB2 reference numbers in `results/wb2_ref_2020.json` come from

@@ -84,7 +84,7 @@ def contours(z, levels):
     for lev in levels:
         for line in gen.lines(lev):
             if len(line) < 4: continue
-            line = line[:: max(1, len(line) // 160)]  # cap points per line (1 deg grid: smooth enough)
+            line = line[:: max(1, len(line) // 110)]  # cap points per line (1 deg grid: smooth enough)
             lo = np.where(line[:, 0] > 180, line[:, 0] - 360, line[:, 0])
             pts.append(np.stack([lo, line[:, 1]], 1)); meta.append([len(line), int(lev)])
     p = np.round(np.concatenate(pts) * 100).astype(np.int16) if pts else np.zeros((0, 2), np.int16)
@@ -108,75 +108,87 @@ def track(frames, lon0, lat0, rad, lat, lon):
 
 
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument("results"); ap.add_argument("viz"); ap.add_argument("--out", default=os.path.join(HERE, "viewer.html")); ap.add_argument("--init", default="2020-08-24T00:00"); ap.add_argument("--model", default="sfno")
+    ap = argparse.ArgumentParser()
+    ap.add_argument("results")
+    ap.add_argument("--models", required=True, help="headline first: fcn3=res/fcn3_viz.npz,sfno=res/sfno_viz.npz")
+    ap.add_argument("--out", default=os.path.join(HERE, "viewer.html")); ap.add_argument("--init", default="2020-08-24T00:00")
     a = ap.parse_args()
-    Z = np.load(a.viz)
-    lat, lon = Z["lat"], Z["lon"]
-    leads = list(range(0, 121, 6)); tleads = list(range(0, 121, 12))
-    blobs, vmeta = {}, {}
-    for v, m in VMETA.items():
-        fc = np.stack([q8(CONV[v](down(Z[f"{v}_{h:03d}"])), m["lo"], m["hi"]) for h in leads])
-        tr = np.stack([q8(CONV[v](down(Z[f"era5_{v}_{h:03d}"])), m["lo"], m["hi"]) for h in tleads])
-        blobs[f"fc_{v}"] = b64z_rows(fc); blobs[f"tr_{v}"] = b64z_rows(tr); vmeta[v] = m
-    for c in ("u850", "v850"):
-        blobs[f"fc_{c}"] = b64z_rows(np.stack([np.clip(np.round(down2(Z[f"{c}_{h:03d}"]) / WIND_SCALE), -127, 127).astype(np.int8) for h in leads]))
-        blobs[f"tr_{c}"] = b64z_rows(np.stack([np.clip(np.round(down2(Z[f"era5_{c}_{h:03d}"]) / WIND_SCALE), -127, 127).astype(np.int8) for h in tleads]))
-    levels = list(range(4800, 6001, 80))
-    z5 = {}
-    for kind, keyf, ls in (("fc", "z500_{:03d}", leads), ("tr", "era5_z500_{:03d}", tleads)):
+    specs = [kv.split("=", 1) for kv in a.models.split(",")]
+    names = [m for m, _ in specs]; headline = names[0]
+    step = 6 if len(specs) == 1 else 12            # keep the page under ~5 MB with two models
+    leads = list(range(0, 121, step)); tleads = list(range(0, 121, 12))
+    blobs, vmeta, z5, models, tracks_fc = {}, {}, {}, {}, {}
+    levels = list(range(4800, 6001, 120))
+    Z0 = None
+    for m, path in specs:
+        Z = np.load(path)
+        if Z0 is None: Z0 = Z
+        for v, mm in VMETA.items():
+            blobs[f"fc_{m}_{v}"] = b64z_rows(np.stack([q8(CONV[v](down(Z[f"{v}_{h:03d}"])), mm["lo"], mm["hi"]) for h in leads])); vmeta[v] = mm
+        for c in ("u850", "v850"):
+            blobs[f"fc_{m}_{c}"] = b64z_rows(np.stack([np.clip(np.round(down2(Z[f"{c}_{h:03d}"]) / WIND_SCALE), -127, 127).astype(np.int8) for h in leads]))
         metas, allp = [], []
-        for h in ls:
-            m_, p_ = contours(down(Z[keyf.format(h)]) / 9.80665, levels); metas.append(m_); allp.append(p_)
-        z5[kind] = metas; blobs[f"z5_{kind}_pts"] = b64z_pts(np.concatenate(allp))
-    land_pts, land_lens = pack(os.path.join(HERE, "data", "land-50m.json"))
+        for h in leads:
+            m_, p_ = contours(down(Z[f"z500_{h:03d}"]) / 9.80665, levels); metas.append(m_); allp.append(p_)
+        z5[f"fc_{m}"] = metas; blobs[f"z5_fc_{m}_pts"] = b64z_pts(np.concatenate(allp))
+        lat, lon = Z["lat"], Z["lon"]
+        tracks_fc[m] = [track([Z[f"msl_{h:03d}"] for h in range(0, 121, 6)], lo0, la0, rad, lat, lon) for _, lo0, la0, rad in STORMS]
+        S = json.load(open(os.path.join(a.results, f"{m}_scores.json")))
+        models[m] = {"label": FULL[m], "short": LABEL[m], "gpu": S.get("gpu", "NVIDIA GPU"), "step_s": float(np.mean(S["step_s"])), "n": len(S["inits"])}
+        Z = None
+    for v, mm in VMETA.items():
+        blobs[f"tr_{v}"] = b64z_rows(np.stack([q8(CONV[v](down(Z0[f"era5_{v}_{h:03d}"])), mm["lo"], mm["hi"]) for h in tleads]))
+    for c in ("u850", "v850"):
+        blobs[f"tr_{c}"] = b64z_rows(np.stack([np.clip(np.round(down2(Z0[f"era5_{c}_{h:03d}"]) / WIND_SCALE), -127, 127).astype(np.int8) for h in tleads]))
+    metas, allp = [], []
+    for h in tleads:
+        m_, p_ = contours(down(Z0[f"era5_z500_{h:03d}"]) / 9.80665, levels); metas.append(m_); allp.append(p_)
+    z5["tr"] = metas; blobs["z5_tr_pts"] = b64z_pts(np.concatenate(allp))
+    land_pts, land_lens = pack(os.path.join(HERE, "data", "land-110m.json" if len(specs) > 1 else "land-50m.json"))
     blobs["land_pts"] = b64z_pts(land_pts)
+    lat, lon = Z0["lat"], Z0["lon"]
+    tracks = []
+    for k, (name, lo0, la0, rad) in enumerate(STORMS):
+        tr = track([Z0[f"era5_msl_{h:03d}"] for h in tleads], lo0, la0, rad, lat, lon)
+        tracks.append({"name": name, "fc": {m: tracks_fc[m][k] for m in names}, "tr": tr})
 
-    S = json.load(open(os.path.join(a.results, f"{a.model}_scores.json")))
-    other = "sfno" if a.model == "fcn3" else "fcn3"
-    O = json.load(open(os.path.join(a.results, f"{other}_scores.json"))) if os.path.exists(os.path.join(a.results, f"{other}_scores.json")) else None
     H = json.load(open(os.path.join(a.results, "hres_scores.json")))
     R = json.load(open(os.path.join(a.results, "wb2_ref_2020.json")))
+    SC = {m: json.load(open(os.path.join(a.results, f"{m}_scores.json"))) for m in names}
     init = datetime.fromisoformat(a.init)
-    # storm tracks: forecast every 6 h, ERA5 every 12 h
-    tracks = []
-    for name, lo0, la0, rad in STORMS:
-        fc = track([Z[f"msl_{h:03d}"] for h in leads], lo0, la0, rad, lat, lon)
-        tr = track([Z[f"era5_msl_{h:03d}"] for h in tleads], lo0, la0, rad, lat, lon)
-        tracks.append({"name": name, "fc": fc, "tr": tr})
 
     def series(var):
-        k = ["24", "72", "120"]
-        sf = S["rmse"][var]; hp = H["rmse"][var]
-        return [
-            {"label": f"{LABEL[a.model]} (this run, {len(S['inits'])} starts)", "color": "--c-model", "bold": True,
-             "vals": [float(np.mean(sf[h])) for h in k], "band": [[float(np.min(sf[h])), float(np.max(sf[h]))] for h in k]},
-            *([{"label": f"{LABEL[other]} (this run)", "color": "--c-model", "dash": True,
-                "vals": [float(np.mean(O["rmse"][var][h])) for h in k]}] if O and len(O.get("inits", [])) >= 6 else []),
-            {"label": "IFS HRES, same 12 inits", "color": "--c-hres", "vals": [float(np.mean(hp[h])) for h in k]},
-            {"label": "IFS HRES, WB2 2020 (730 inits)", "color": "--c-hres", "dash": True, "vals": [R["hres"][var].get(h) for h in k]},
+        k = ["24", "72", "120"]; hp = H["rmse"][var]; out = []
+        for i, m in enumerate(names):
+            sf = SC[m]["rmse"][var]
+            out.append({"label": f"{LABEL[m]} ({len(SC[m]['inits'])} starts)", "color": "--c-model" if i == 0 else "--c-model2", "bold": i == 0, "dash": i > 0,
+                        "vals": [float(np.mean(sf[h])) for h in k],
+                        **({"band": [[float(np.min(sf[h])), float(np.max(sf[h]))] for h in k]} if i == 0 else {})})
+        out += [
+            {"label": f"IFS HRES, same {len(H['inits'])} starts", "color": "--c-hres", "vals": [float(np.mean(hp[h])) for h in k]},
+            {"label": "IFS HRES, WB2 2020 (730 starts)", "color": "--c-hres", "dash": True, "vals": [R["hres"][var].get(h) for h in k]},
             {"label": "GraphCast, WB2 2020", "color": "--c-gc", "dash": True, "vals": [R["graphcast"][var].get(h) for h in k]},
             {"label": "Pangu, WB2 2020", "color": "--c-pangu", "dash": True, "vals": [R["pangu"][var].get(h) for h in k]},
         ]
+        return out
 
-    rel = {v: (np.mean(S["rmse"][v]["120"]) / np.mean(H["rmse"][v]["120"]) - 1) * 100 for v in ("z500", "t850", "t2m")}
     verdict = json.load(open(os.path.join(a.results, "verdict.json"))) if os.path.exists(os.path.join(a.results, "verdict.json")) else {}
     payload = {
-        "model_label": FULL[a.model], "init": init.isoformat()[:16], "gpu": S.get("gpu", "NVIDIA L4"),
-        "step_s": float(np.mean(S["step_s"])), "grid": {"nx": 360, "ny": 181, "wnx": 180, "wny": 91}, "leads": leads, "truth_leads": tleads,
+        "models": models, "headline": headline, "fc_step": step, "init": init.isoformat()[:16],
+        "grid": {"nx": 360, "ny": 181, "wnx": 180, "wny": 91}, "leads": leads, "truth_leads": tleads,
         "vars": list(VMETA), "vmeta": vmeta, "wind_scale": WIND_SCALE,
         "cmaps": {"ice": lut("ice"), "thermal": lut("thermal"), "deep_r": lut("deep_r"), "diverging": lut("balance")},
-        "z5_fc": z5["fc"], "z5_tr": z5["tr"], "land_lens": land_lens.tolist(), "tracks": tracks,
+        **{f"z5_{k}": v for k, v in z5.items()}, "land_lens": land_lens.tolist(), "tracks": tracks,
         "scores": {v: series(v) for v in ("z500", "t850", "t2m")},
         "score_labels": {"z500": "z500 (m²/s²)", "t850": "T850 (K)", "t2m": "T2m (K)"},
-        "verdict_html": verdict.get("html", ""), "stamp_html": verdict.get("stamp_html", ""),
-        "tour": verdict.get("tour", []), "rel_day5_vs_hres_pct": rel,
+        "verdict_html": verdict.get("html", ""), "stamp_html": verdict.get("stamp_html", ""), "tour": verdict.get("tour", []),
     }
     sizes = {k: round(len(v) / 1e6, 2) for k, v in blobs.items()}
     payload["pack"], payload["index"] = pack_blobs(blobs)
     html = open(os.path.join(HERE, "viewer_template.html")).read().replace("__PAYLOAD__", json.dumps(payload, separators=(",", ":")))
     open(a.out, "w").write(html)
     print(a.out, round(len(html) / 1e6, 2), "MB (raw MB per array:", sizes, ")")
-    print("tracks", [(t["name"], len(t["fc"]), len(t["tr"])) for t in tracks])
+    print("tracks", [(t["name"], {m: len(v) for m, v in t["fc"].items()}, len(t["tr"])) for t in tracks])
 
 
 if __name__ == "__main__":
