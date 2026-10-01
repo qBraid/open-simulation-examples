@@ -48,12 +48,30 @@ def main():
     out = {}
     hist_cache = {}
     for name, log, order, ref_file in CASES:
-        if name not in py_runs or not (LOGS / log).exists() or not (REF / ref_file).exists():
+        if name not in py_runs or not (LOGS / log).exists():
             print("skip", name); continue
         hist_cache.setdefault(log, ref_histories(log))
         if order >= len(hist_cache[log]):
-            print("skip (reference run incomplete)", name); continue
+            print("skip (reference run not started)", name); continue
         rh = np.array(hist_cache[log][order])
+        if not (REF / ref_file).exists():
+            # reference stopped by the compute cap before converging: compare the iterates both completed
+            ph = np.load(RES / f"py_{name}.npz")["hist"][:, 1]
+            m = min(len(ph), len(rh))
+            rel = np.abs(ph[:m] - rh[:m, 1]) / rh[:m, 1]
+            out[name] = dict(
+                params={k: v for k, v in py_runs[name].items() if k not in ("compliance", "iterations", "seconds")},
+                status="partial: reference stopped by the compute cap",
+                compliance_python=py_runs[name]["compliance"], iterations_python=py_runs[name]["iterations"],
+                compared_iterations=int(m), compliance_reference_at_last=float(rh[m - 1, 1]),
+                compliance_python_at_same_iter=float(ph[m - 1]), max_iterwise_rel_diff=float(rel.max()),
+                rel_diff_pct=float(100 * (ph[m - 1] - rh[m - 1, 1]) / rh[m - 1, 1]),
+                iterations_reference=int(rh[-1, 0]), layout_max_abs_diff=float("nan"),
+                layout_mean_abs_diff=float("nan"), layout_share_diff_gt_0p1=float("nan"),
+                seconds_python=py_runs[name]["seconds"], reference_history=rh[:, 1].round(6).tolist(),
+                iterwise_rel_diff=rel.tolist(), identical_until_iter=int(np.argmax(rel > 1e-6)) if (rel > 1e-6).any() else int(m))
+            print(f"{name:24s} PARTIAL: {m} common iterations, max iterwise rel diff {rel.max():.2e}")
+            continue
         d = np.load(RES / f"py_{name}.npz")
         x_py = d["x"]
         x_ref = np.loadtxt(REF / ref_file, delimiter=",")
@@ -62,6 +80,7 @@ def main():
         dx = np.abs(x_py - x_ref)
         c_py, c_ref = py_runs[name]["compliance"], float(rh[-1, 1])
         out[name] = dict(
+            status="complete",
             params={k: v for k, v in py_runs[name].items() if k not in ("compliance", "iterations", "seconds")},
             compliance_python=c_py, compliance_reference=c_ref,
             rel_diff_pct=100 * (c_py - c_ref) / c_ref,

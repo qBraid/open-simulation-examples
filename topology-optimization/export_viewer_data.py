@@ -56,12 +56,16 @@ def top3d_payload(bench):
 
 
 def bracket_payload():
+    import os
+
     import trimesh
     from skimage.measure import marching_cubes
 
+    tag = "" if (RES / "bracket.json").exists() else "_2mm"   # prefer the 1.5 mm run when present
+    summ = json.loads((RES / f"bracket{tag}.json").read_text())
+    os.environ["BRACKET_H_MM"] = str(summ.get("brick_mm", 1.5))
     import bracket as B
-    d = np.load(RES / "bracket.npz")
-    summ = json.loads((RES / "bracket.json").read_text())
+    d = np.load(RES / f"bracket{tag}.npz")
     NX, NY, NZ, h = B.NX, B.NY, B.NZ, B.H_MM
 
     def to_xyz(v):  # element vector (k, i, j) -> array [i, y_up, k]
@@ -77,8 +81,8 @@ def bracket_payload():
     trimesh.smoothing.filter_taubin(mesh, lamb=0.5, nu=-0.53, iterations=12)
     mesh.fix_normals()
     # export the printable part
-    mesh.export(RES / "bracket.stl")
-    stl = dict(triangles=int(len(mesh.faces)), watertight=bool(mesh.is_watertight),
+    mesh.export(RES / f"bracket{tag}.stl")
+    stl = dict(file=f"results/bracket{tag}.stl", triangles=int(len(mesh.faces)), watertight=bool(mesh.is_watertight),
                volume_mm3=round(float(mesh.volume), 1), mass_g_ti64=round(float(mesh.volume) * 4.43e-3, 1),
                bbox_mm=np.round(mesh.extents, 2).tolist())
     (RES / "stl.json").write_text(json.dumps(stl, indent=1))
