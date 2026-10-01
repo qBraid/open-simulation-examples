@@ -18,7 +18,7 @@ NAME = {"mp0": "MACE-MP-0", "mpa0": "MACE-MPA-0", "orb3": "ORB v3", "mp0b3": "MA
 
 # ---------- discovery ----------
 scores, parity = {}, None
-for m in ("mp0", "mpa0", "orb3"):
+for m in ("mp0", "mpa0", "orb3", "eqv3"):
     s = J(f"score_{m}.json")
     if not s: continue
     s["full_test_F1"] = FULL.get(NAME[m]); scores[m] = s

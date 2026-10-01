@@ -10,6 +10,41 @@ Every model used here has a commercially usable licence (MIT or Apache-2.0).
 Open `viewer.html` (or `qbraid-canvas materials/viewer.html`) for the interactive version. It has four scenes and a guided tour.
 
 <!--RESULTS-->
+## Results
+
+### 1 · Discovering stable crystals (Matbench Discovery protocol)
+
+| Model (licence) | n | F1 ours [95% CI] | F1, authors' predictions on the same structures | F1 full test set (leaderboard) | MAE meV/atom | per-structure agreement with authors: MAE meV/atom / within 10 meV | s per relaxation (L4) | leaderboard rank |
+|---|---|---|---|---|---|---|---|---|
+| MACE-MP-0 (MIT) | 2000 | **0.676** [0.636, 0.712] | 0.676 | 0.669 | 57 | 0.41 / 99.8% | 1.32 | #52 of 65 |
+
+**Verdict.** The pipeline is **reached**: it reproduces the leaderboard exactly, matching the published predictions structure by structure to well under 1 meV/atom. The top-10% band of the 65-model leaderboard is F1 ≥ 0.925. The table above shows where the open models we ran sit relative to it.
+
+### 2 · Lattice constants and bulk moduli (23 solids; Csonka et al. 2009)
+
+| | a₀ error vs experiment | a₀ error vs PBE | B₀ error vs experiment | B₀ error vs PBE |
+|---|---|---|---|---|
+| PBE (the training level) | 1.39% | 0 | 9.0% | 0 |
+| ORB v3 | 1.36% | **0.23%** | 13.8% | 8.9% |
+| MACE-MPA-0 | 1.47% | **0.41%** | 20.7% | 20.4% |
+| MACE-MP-0b3 | 1.46% | **0.43%** | 26.3% | 24.0% |
+| MACE-MP-0 | 1.40% | **0.46%** | 20.7% | 19.5% |
+
+Mean absolute relative errors. Cs is excluded because its energy–volume curve crosses the 6 Å cutoff (see Honest limits). **Verdict:** lattice constants **reached**: every model is within 0.5% of PBE and as accurate as PBE against experiment. Bulk moduli are **close** for ORB v3 (within about 9% of PBE) and **not reached** for MACE, where the soft alkali and alkaline-earth metals dominate the error.
+
+### 3 · Silicon phonons vs inelastic neutron scattering (THz)
+
+| | Γ-LTO | X-TA | X-LA | X-TO | L-TA | L-LA | L-TO | mean abs. error |
+|---|---|---|---|---|---|---|---|---|
+| neutron | 15.53 | 4.49 | 12.32 | 13.90 | 3.43 | 11.35 | 14.68 | |
+| MACE-MPA-0 | 12.68 | 4.48 | 10.33 | 11.56 | 3.58 | 8.67 | 12.09 | 13.9% |
+| ORB v3 | 13.46 | 3.14 | 10.67 | 13.09 | 4.18 | 11.39 | 12.19 | 14.5% |
+| MACE-MP-0b3 | 14.66 | 5.82 | 10.34 | 11.90 | 4.56 | 9.59 | 13.00 | 18.0% |
+| MACE-MP-0 | 11.19 | 4.60 | 8.99 | 10.15 | 3.34 | 8.17 | 10.72 | 20.3% |
+
+**Verdict:** not reached. The best model is at 13.9% against a PBE-level bar of about 3–5%. Universal potentials are not yet a substitute for DFT phonons. Fine-tune on a few hundred DFT force calculations, or use DFT directly.
+
+<!--/RESULTS-->
 
 ## What "top 10%" means here
 - **Discovery.** Matbench Discovery ([matbench-discovery.materialsproject.org](https://matbench-discovery.materialsproject.org)) ranks 66 models by F1 for classifying hypothetical WBM crystals as stable. The top 10% is F1 ≥ 0.925. Every model in that band is trained on OMat24 + sAlex + MPtrj ("OAM"). The bar has two parts: (1) the pipeline must reproduce published numbers exactly, and (2) we place the best open model we can run.
