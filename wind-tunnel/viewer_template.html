@@ -554,7 +554,8 @@ function setTab(t) {
   else { CY.tag && (CY.tag.visible = false); applyAhmed(); }
   for (const o of [...document.querySelectorAll('.pin')]) o.style.display = t === 'ahmed' ? '' : 'none';
   if (CY.tagEl) CY.tagEl.style.display = t === 'cyl' ? '' : 'none';
-  if (location.hash !== '#' + t) history.replaceState(null, '', t === 'cyl' ? '#cyl' : '#ahmed');
+  // Sandboxed frames (e.g. the qBraid Agent Canvas, origin 'null') forbid history writes; deep links are a nicety.
+  try { if (location.hash !== '#' + t) history.replaceState(null, '', t === 'cyl' ? '#cyl' : '#ahmed'); } catch (e) {}
 }
 $('#ctlbtn').onclick = () => { for (const id of ['#ctl-ahmed', '#ctl-cyl']) $(id).classList.toggle('open'); };
 $('#tab-ahmed').onclick = () => setTab('ahmed'); $('#tab-cyl').onclick = () => setTab('cyl');

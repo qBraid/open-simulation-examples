@@ -16,6 +16,7 @@ Every viewer is a single self-contained `viewer.html`. Data is inlined, three.js
 - **Comparison built in.** Toggle or slide between baseline and best, or between open-source and reference, and between mesh levels. The benchmark result is visible in the scene, not only in a table.
 - **Performance.** 60 fps on a laptop GPU. Use instancing and BufferGeometry, and decimate to keep the page at 8 MB or less. Pause rendering when the tab is hidden.
 - **Both themes.** Light and dark via CSS tokens and `prefers-color-scheme`. Responsive down to phone width.
+- **Sandbox-safe.** The qBraid Agent Canvas renders pages in a sandboxed `about:srcdoc` frame with origin `null`. Wrap `history.pushState`/`replaceState`, `localStorage`, clipboard and `alert`/`confirm` in try/catch, and never let a failed optional call stop the viewer from starting. Test by rendering with `qbraid-canvas <viewer.html>`, not just by opening the file.
 - **Verification.** Take headless-Chromium screenshots of key states in both themes and commit them as `results/viewer_*.png`. On the pod, Chromium needs conda-forge system libs. Build a private copy per stream (for example `<scratchpad>/<stream>-chromelibs`, never a shared path; `/tmp` is wiped on pod restart), using the recipe in `wind-tunnel/README.md`. Run one screenshot session at a time.
 
 ## 3. Verification stamp
