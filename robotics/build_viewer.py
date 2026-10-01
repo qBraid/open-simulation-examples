@@ -35,6 +35,7 @@ for g in geom["geoms"]:
         g["mesh"] = remap[g["mesh"]]
 
 curve = [json.loads(l) for l in open(os.path.join(a.run, "progress.jsonl"))]
+curve = list({c["step"]: c for c in curve}.values())  # dedupe: a resumed job re-evaluates its start step
 curve = [{"step": c["step"], "reward": c["reward"], "reward_std": c["reward_std"], "wall_s": c["wall_s"]} for c in curve]
 
 

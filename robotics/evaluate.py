@@ -36,6 +36,7 @@ p.add_argument("--n_envs", type=int, default=512)
 p.add_argument("--steps", type=int, default=1000)
 p.add_argument("--settle", type=int, default=50, help="control steps ignored after a command change")
 p.add_argument("--no_track", action="store_true")
+p.add_argument("--step", type=int, default=None, help="training step of these params (for the viewer)")
 a = p.parse_args()
 
 env = registry.load(a.env)
@@ -48,7 +49,7 @@ make_inference = ppo_networks.make_inference_fn(nets)
 with open(os.path.join(a.run, a.params), "rb") as f:
     params = pickle.load(f)
 policy = jax.jit(make_inference(params[:2], deterministic=True))
-out = {"env": a.env, "params": a.params, "tag": a.tag}
+out = {"env": a.env, "params": a.params, "tag": a.tag, "step": a.step}
 
 # ---------------------------------------------------------------- tracking benchmark
 if not a.no_track:

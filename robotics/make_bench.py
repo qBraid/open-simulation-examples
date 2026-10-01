@@ -22,6 +22,7 @@ p.add_argument("--out", default="benchmark.json")
 a = p.parse_args()
 
 curve = [json.loads(l) for l in open(os.path.join(a.run, "progress.jsonl"))]
+curve = list({c["step"]: c for c in curve}.values())  # dedupe: a resumed job re-evaluates its start step
 fin = curve[-1]
 at = lambda s: min(curve, key=lambda c: abs(c["step"] - s))
 ev = json.load(open(os.path.join(a.run, a.final_eval)))
