@@ -61,7 +61,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 #caption b{color:var(--accent)}
 #splitbar{position:absolute;top:0;bottom:0;width:2px;background:var(--accent);display:none;cursor:ew-resize}
 #splitbar::after{content:"\2194";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--accent);color:var(--accent-ink);border-radius:50%;width:30px;height:30px;display:grid;place-items:center;font-size:15px}
-#splitlbl{position:absolute;top:70px;display:none;font:600 12px "IBM Plex Sans";gap:0}
+#splitlbl{position:absolute;top:150px;left:0;right:0;height:0;display:none;font:600 12px "IBM Plex Sans";pointer-events:none}
 #splitlbl span{position:absolute;white-space:nowrap;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:2px 8px}
 #loading{position:absolute;inset:0;display:grid;place-items:center;font:500 14px "IBM Plex Mono";color:var(--muted)}
 @media (max-width:760px){
@@ -83,6 +83,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   <h1>Five days of global weather, forecast in seconds</h1>
   <div class="sub" id="subtitle"></div>
   <div id="valid"></div>
+  <div id="trklegend" class="sub" style="margin-top:6px;display:flex;gap:14px;align-items:center"><span><i style="display:inline-block;width:16px;height:3px;border-radius:2px;background:var(--c-model);vertical-align:middle;margin-right:5px"></i>forecast storm track</span><span><i style="display:inline-block;width:16px;height:3px;border-radius:2px;background:var(--c-hres);vertical-align:middle;margin-right:5px"></i>ERA5 storm track</span></div>
 </div>
 
 <div class="panel" id="cbar">
@@ -362,7 +363,7 @@ for (const tr of P.tracks){
 }
 
 // ---------- wind particles (earth.nullschool-style trails, advected on the real forecast u/v) ----------
-const TW = 2048, TH = 1024;
+const TW = innerWidth < 760 ? 2048 : 3072, TH = TW/2;
 const trailCanvas = document.createElement('canvas'); trailCanvas.width = TW; trailCanvas.height = TH;
 const tctx = trailCanvas.getContext('2d');
 const trailTex = new THREE.CanvasTexture(trailCanvas); trailTex.wrapS = THREE.RepeatWrapping;
@@ -394,7 +395,7 @@ function stepParticles(kind, fi, dtScale){
   tctx.globalCompositeOperation = 'destination-in';
   tctx.fillStyle = 'rgba(0,0,0,0.93)'; tctx.fillRect(0,0,TW,TH);
   tctx.globalCompositeOperation = 'source-over';
-  tctx.lineWidth = 1.3; tctx.lineCap = 'round';
+  tctx.lineWidth = TW/1600; tctx.lineCap = 'round';
   const buckets = [[],[],[],[]];
   for (let i=0;i<NP;i++){
     const [u,v] = windAt(kind, fi, plon[i], plat[i]);
@@ -560,9 +561,9 @@ function loop(now){
   } else { u.fa.value = tv.fc[fi]; u.fb.value = tv.fc[fi+1]; u.mixF.value = ff; u.ta.value = tv.tr[ti]; u.tb.value = tv.tr[ti+1]; u.mixT.value = tf; }
   const valid = new Date(init.getTime() + L*3600e3);
   const [slon, slat] = subsolar(valid), sd = lonlatToVec(slon, slat, 1);
-  u.sunDir.value.copy(sd); u.useSun.value = S.sun ? 1 : 0;
-  atmo.material.uniforms.sunDir.value.copy(sd); atmo.material.uniforms.useSun.value = S.sun?1:0;
-  trails.material.uniforms.sunDir.value.copy(sd); trails.material.uniforms.useSun.value = S.sun?1:0;
+  const sunOn = S.sun && S.mode !== 'err'; u.sunDir.value.copy(sd); u.useSun.value = sunOn ? 1 : 0;
+  atmo.material.uniforms.sunDir.value.copy(sd); atmo.material.uniforms.useSun.value = sunOn?1:0;
+  trails.material.uniforms.sunDir.value.copy(sd); trails.material.uniforms.useSun.value = sunOn?1:0;
   $('valid').innerHTML = `valid <b>${fmtDate(valid)}</b> · lead +${Math.round(L)} h${S.mode==='err' ? ` (error at +${Math.round(L/12)*12} h)` : ''}`;
   $('leadlbl').textContent = `+${Math.round(L)} h`;
   // contours
@@ -573,16 +574,21 @@ function loop(now){
   trails.visible = S.wind;
   if (S.wind){ const wk = S.mode==='truth' ? 'tr' : 'fc'; const wi = wk==='fc' ? Math.round(L/6) : Math.round(L/12); stepParticles(wk, Math.min(wk==='fc'?LEADS.length-1:TLEADS.length-1, wi), .012); }
   coast.material.opacity = S.ov === 'tcwv' ? .3 : .45;
-  trackGroup.visible = S.tracks;
+  trackGroup.visible = S.tracks; $('trklegend').style.display = S.tracks ? 'flex' : 'none';
   if (!S.tour && !S.playing && controls.enabled) globe.rotation.y += 0;  // keep geography fixed; camera orbits
   controls.update(); renderer.render(scene, camera);
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
-// deep links: #tour starts the tour, #err opens the error view, #swipe the swipe view
-if (location.hash === '#err') setMode('err');
-if (location.hash === '#swipe') setMode('swipe');
-if (location.hash === '#tour') setTimeout(() => $('tour').click(), 600);
+// deep links: #lead=72&ov=msl&mode=swipe&theme=dark&cam=-90,26,2.1   or   #tour
+try { const q = new URLSearchParams((location.hash || '').slice(1));
+  if (q.has('theme')) { document.documentElement.dataset.theme = q.get('theme'); drawChart(); applyTheme(); }
+  if (q.has('ov')) setOverlay(q.get('ov'));
+  if (q.has('mode')) setMode(q.get('mode'));
+  if (q.has('lead')) { S.lead = +q.get('lead'); $('lead').value = S.lead; }
+  if (q.has('cam')) { const [lo, la, d] = q.get('cam').split(',').map(Number); camera.position.copy(lonlatToVec(lo, la, d)); }
+  if (q.has('details')) { $('stamp').classList.add('open'); $('t-stamp').setAttribute('aria-pressed', true); }
+  if (location.hash === '#tour') setTimeout(() => $('tour').click(), 600); } catch (e) { /* sandboxed frame: no deep links */ }
 window.__ready = true;
 </script>
 </body>
