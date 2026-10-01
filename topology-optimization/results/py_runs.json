@@ -1,0 +1,121 @@
+{
+ "top88_cant_32x20_ft1": {
+  "nelx": 32,
+  "nely": 20,
+  "volfrac": 0.4,
+  "penal": 3.0,
+  "rmin": 1.2,
+  "ft": 1,
+  "bc": "cantilever",
+  "compliance": 57.280520882927796,
+  "iterations": 72,
+  "seconds": 0.44
+ },
+ "top88_cant_32x20_ft2": {
+  "nelx": 32,
+  "nely": 20,
+  "volfrac": 0.4,
+  "penal": 3.0,
+  "rmin": 1.2,
+  "ft": 2,
+  "bc": "cantilever",
+  "compliance": 60.44414150975573,
+  "iterations": 94,
+  "seconds": 0.57
+ },
+ "top3d_60x20x4": {
+  "nelx": 60,
+  "nely": 20,
+  "nelz": 4,
+  "volfrac": 0.3,
+  "penal": 3.0,
+  "rmin": 1.5,
+  "compliance": 2418.1163084533373,
+  "iterations": 135,
+  "seconds": 72.12
+ },
+ "top88_mbb_60x20_ft1": {
+  "nelx": 60,
+  "nely": 20,
+  "volfrac": 0.5,
+  "penal": 3.0,
+  "rmin": 2.4,
+  "ft": 1,
+  "bc": "mbb",
+  "compliance": 216.81366296245793,
+  "iterations": 106,
+  "seconds": 1.0
+ },
+ "top88_mbb_150x50_ft1": {
+  "nelx": 150,
+  "nely": 50,
+  "volfrac": 0.5,
+  "penal": 3.0,
+  "rmin": 6.0,
+  "ft": 1,
+  "bc": "mbb",
+  "compliance": 219.51987864558197,
+  "iterations": 95,
+  "seconds": 10.54
+ },
+ "top88_mbb_300x100_ft1": {
+  "nelx": 300,
+  "nely": 100,
+  "volfrac": 0.5,
+  "penal": 3.0,
+  "rmin": 16.0,
+  "ft": 1,
+  "bc": "mbb",
+  "compliance": 246.05836539383995,
+  "iterations": 61,
+  "seconds": 34.26
+ },
+ "top88_mbb_60x20_ft2": {
+  "nelx": 60,
+  "nely": 20,
+  "volfrac": 0.5,
+  "penal": 3.0,
+  "rmin": 2.4,
+  "ft": 2,
+  "bc": "mbb",
+  "compliance": 233.71457280760134,
+  "iterations": 144,
+  "seconds": 1.83
+ },
+ "top88_mbb_150x50_ft2": {
+  "nelx": 150,
+  "nely": 50,
+  "volfrac": 0.5,
+  "penal": 3.0,
+  "rmin": 6.0,
+  "ft": 2,
+  "bc": "mbb",
+  "compliance": 235.7336521259628,
+  "iterations": 362,
+  "seconds": 69.46
+ },
+ "top3d_60x20x4_200it": {
+  "nelx": 60,
+  "nely": 20,
+  "nelz": 4,
+  "volfrac": 0.3,
+  "penal": 3.0,
+  "rmin": 1.5,
+  "note": "forced 200 iterations",
+  "compliance": 2416.718906228606,
+  "iterations": 200,
+  "seconds": 232.99
+ },
+ "top88_mbb_300x100_ft2": {
+  "nelx": 300,
+  "nely": 100,
+  "volfrac": 0.5,
+  "penal": 3.0,
+  "rmin": 16.0,
+  "ft": 2,
+  "bc": "mbb",
+  "compliance": 260.8373835695599,
+  "iterations": 1236,
+  "seconds": 2775.04
+ }
+}
