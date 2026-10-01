@@ -39,7 +39,7 @@ nav button[aria-selected="true"]{background:var(--ink);color:var(--bg);border-co
 .lbl{font:11.5px "IBM Plex Mono",monospace;color:var(--muted);pointer-events:none;white-space:nowrap}
 .lbl.big{font-size:12.5px;color:var(--ink);background:var(--panel);padding:2px 6px;border-radius:6px;border:1px solid var(--line)}
 .page2d{position:absolute;inset:86px 16px 16px 16px;overflow:auto;z-index:4;display:none}
-.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(560px,1fr));gap:14px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
 .card h3{margin:0 0 6px;font-size:14px}
 .card canvas{width:100%;height:280px;display:block}
@@ -53,6 +53,7 @@ td.mono{font-family:"IBM Plex Mono",monospace}
 .stamp{font:11px "IBM Plex Mono",monospace;color:var(--muted)}
 @media (max-width:760px){.info{width:auto;right:16px;top:auto;bottom:120px;max-height:30%}.legend{display:none}header .sub{display:none}}
 </style>
+<script>{const t=new URLSearchParams(location.search).get("theme");if(t)document.documentElement.dataset.theme=t;}</script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
 </head>
 <body>
@@ -168,7 +169,7 @@ vsStage.update = (dt)=>{ if(vsPlay){ vsSet(vsT + dt*6); if(vsT>=VS.frames.length
 // =====================================================================================
 // 2. Monte Carlo risk: path fan + tail
 // =====================================================================================
-const MC = D.mc; const fanStage = makeStage([0.5,1.8,11],[0.6,0,0]);
+const MC = D.mc; const fanStage = makeStage([0.9,0.9,10.8],[0.4,-0.4,0]);
 let fanAnim = 0;
 if(MC){
   const P = MC.option_book.path_fan.pnl, days=P.length, npath=P[0].length;
@@ -197,10 +198,10 @@ if(MC){
     const m=new THREE.Mesh(new THREE.BoxGeometry(hgt,Math.max(0.01,y1-y0),0.35),new THREE.MeshStandardMaterial({color:colr,roughness:.4,emissive:colr,emissiveIntensity:mid<=-VaR?.35:.05}));
     m.position.set(4.7+hgt/2,(y0+y1)/2,0); bars.add(m); });
   fanStage.scene.add(bars);
-  const plane=(y,c,txt)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(12,0.012),new THREE.MeshBasicMaterial({color:c}));m.position.set(0.8,y,0.01);fanStage.scene.add(m);fanStage.scene.add(label(txt,new THREE.Vector3(-5.2,y+0.12,0),true));return m;};
-  plane(-VaR*sy,tailCol,`VaR 99% ${usd(VaR)}`); plane(-ES*sy,esCol,`ES 97.5% ${usd(ES)}`); plane(0,0x888888,'P&L 0');
+  const plane=(y,c,txt,dy=0.18,x=3.2)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(12,0.012),new THREE.MeshBasicMaterial({color:c}));m.position.set(0.8,y,0.01);fanStage.scene.add(m);fanStage.scene.add(label(txt,new THREE.Vector3(x,y+dy,0),true));return m;};
+  plane(-VaR*sy,tailCol,`VaR 99% ${usd(VaR)}`); plane(-ES*sy,esCol,`ES 97.5% ${usd(ES)}`,-0.3,0.6); plane(0,0x888888,'P&L 0');
   for(let d=0;d<=days;d+=2) fanStage.scene.add(label('day '+d,new THREE.Vector3(-4.5+d*sx,-lim*sy-0.35,0)));
-  fanStage.scene.add(label('GPU distribution, 2M scenarios →',new THREE.Vector3(5.2,lim*sy*0.95,0)));
+  fanStage.scene.add(label('loss distribution, 2M GPU scenarios',new THREE.Vector3(5.6,lim*sy*0.72,0)));
   fg.setDrawRange(0,0);
   fanStage.update=(dt)=>{ if(fanAnim<1){fanAnim=Math.min(1,fanAnim+dt*0.35); fg.setDrawRange(0, Math.floor(fanAnim*npath*days)*2);} const s=1+0.06*Math.sin(performance.now()/350); bars.children.forEach(b=>{ if(b.material.emissiveIntensity>.2) b.material.emissiveIntensity=.25+.2*Math.sin(performance.now()/300);}); };
 }
@@ -351,8 +352,8 @@ function drawValidation(){
 // ---------- tour ----------
 const TOUR=[
  {tab:'vol',cam:[10,8,13.5],tgt:[0,2.4,0],t:0,title:'A decade and a half of S&P 500 volatility',text:'Each frame is one month-end surface: height is implied vol by strike (left = downside puts) and tenor (depth). This is calm 2011.'},
- {tab:'vol',cam:[-11,12,14],tgt:[-1,4,0],frame:'2020-03-16',title:'March 2020',text:'VIX 82.7. The whole surface lifts, the short end inverts above the long end, and the put wing explodes.'},
- {tab:'risk',cam:[0.5,1.8,11],tgt:[0.6,0,0],title:'10-day risk of an option book, on the GPU',text:'1,500 daily-revalued paths fan out; the orange and red tails are the scenarios that define VaR 99% and ES 97.5%. The bars are 2 million GPU scenarios.'},
+ {tab:'vol',cam:[-14,13,19],tgt:[-0.5,4.6,0],frame:'2020-03-16',title:'March 2020',text:'VIX 82.7. The whole surface lifts, the short end inverts above the long end, and the put wing explodes.'},
+ {tab:'risk',cam:[0.9,0.9,10.8],tgt:[0.4,-0.4,0],title:'10-day risk of an option book, on the GPU',text:'1,500 daily-revalued paths fan out; the orange and red tails are the scenarios that define VaR 99% and ES 97.5%. The bars are 2 million GPU scenarios.'},
  {tab:'risk',cam:[6.5,0.5,5],tgt:[4.6,-1,0],title:'The tail, up close',text:'Expected Shortfall averages everything beyond the 97.5% quantile. The estimators were validated against a closed form, with error bars matching theory.'},
  {tab:'frontier',cam:[5.5,6.5,15.5],tgt:[0,2,-1],title:'The frontier keeps moving',text:'Fifty-two years of ex-ante frontiers stacked in depth. The sample mean-variance portfolio (orange) jumps around; that estimation error is the whole story of the next slide.'},
  {tab:'backtest',title:'1/N is hard to beat',text:'Out of sample since 1973, no optimised portfolio beats equal weighting at 5% significance once costs are paid, as DeMiguel, Garlappi & Uppal found in 2009.'},
@@ -373,10 +374,10 @@ function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);l
 addEventListener('resize',()=>{resize(); if(cur&&cur.page) setTab(cur.id); else drawSpark();});
 sceneBg(); resize();
 const [hash,arg]=location.hash.slice(1).split('@'); setTab(TABS.some(t=>t.id===hash)?hash:'vol');
-if(arg&&hash==='vol'){const i=VS.frames.findIndex(f=>f.date===arg); if(i>=0){vsSet(i); vsStage.cam.position.set(-11,12,14); vsStage.ctl.target.set(-1,4,0);}}
+if(arg&&hash==='vol'){const i=VS.frames.findIndex(f=>f.date===arg); if(i>=0){vsSet(i); vsStage.cam.position.set(-14,13,19); vsStage.ctl.target.set(-0.5,4.6,0);}}
 if(arg&&hash==='frontier'){frPlay=false; frSet(+arg);}
 let last=performance.now();
-function loop(now){ requestAnimationFrame(loop); if(document.hidden) return; const dt=Math.min(0.05,(now-last)/1000); last=now;
+function loop(now){ requestAnimationFrame(loop); if(document.hidden) return; const dt=Math.max(0,Math.min(0.05,(now-last)/1000)); last=now;
   if(!cur||cur.page) return; const st=cur.stage;
   [vsStage,fanStage,frStage].forEach(s=>s.ctl.enabled=(s===st));
   if(fly&&fly.st===st){fly.k=Math.min(1,fly.k+dt/1.8);const e=fly.k<.5?2*fly.k*fly.k:1-Math.pow(-2*fly.k+2,2)/2;st.cam.position.lerpVectors(fly.p0,fly.p1,e);st.ctl.target.lerpVectors(fly.t0,fly.t1,e);if(fly.k>=1)fly=null;}

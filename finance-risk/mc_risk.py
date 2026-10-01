@@ -9,7 +9,7 @@ with 32 independent replications per N and check two things:
       SE(VaR_a) = sqrt(a(1-a)/N) / f(VaR_a)
       SE(ES_a)  = sqrt( (Var(L | L>=VaR_a) + a (ES_a - VaR_a)^2) / ((1-a) N) )
 
-Part B (speed): full revaluation of a 500-option book (Black-Scholes) on 20
+Part B (speed): full revaluation of a net-short 500-option book (Black-Scholes) on 20
 correlated underlyings over a 10-day horizon, GPU (CuPy) against CPU (NumPy,
 2 threads), plus a 1,500-path daily path fan for the viewer.
 
@@ -119,7 +119,7 @@ def book(vol):
     k = s0[und] * rng.uniform(0.8, 1.2, n_opt)
     t = rng.choice([0.08, 0.25, 0.5, 1.0], n_opt)
     is_call = rng.random(n_opt) < 0.5
-    qty = rng.integers(-200, 400, n_opt).astype(float) * 10
+    qty = rng.integers(-400, 150, n_opt).astype(float) * 10   # net short options: a dealer-style short-vol book
     return dict(und=und, s0=s0, k=k, t=t, is_call=is_call, qty=qty, vol=vol[und])
 
 
