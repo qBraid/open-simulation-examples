@@ -9,12 +9,13 @@ from playwright.sync_api import sync_playwright
 src, out = sys.argv[1], sys.argv[2]
 os.makedirs(out, exist_ok=True)
 page_html = open(src).read()
-STATES = [  # (name, theme, hash) — hash drives the viewer's deep links
+STATES = [s for s in [  # (name, theme, hash) — hash drives the viewer's deep links
     ("viewer_light", "light", "lead=0&ov=tcwv&mode=fc&cam=-55,20,4.8"),
     ("viewer_dark_laura_swipe", "dark", "lead=72&ov=msl&mode=swipe&cam=-88,25,2.0"),
     ("viewer_error_day5", "light", "lead=120&ov=t2m&mode=err&cam=20,-35,3.4&details=1"),
     ("viewer_dark_bavi", "dark", "lead=60&ov=tcwv&mode=fc&cam=127,31,2.4"),
-]
+    ("viewer_dark_laura_sfno", "dark", "lead=72&ov=msl&mode=fc&cam=-88,25,2.0&model=sfno"),
+] if "model=" not in s[2] or len(sys.argv) > 3]  # 3rd arg: viewer has a second model
 args = ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"]
 with sync_playwright() as p:
     b = p.chromium.launch(args=args)
