@@ -1,14 +1,14 @@
 """Transmission + storage capacity expansion on the real German grid (PyPSA SciGrid-DE, 24 h).
 
-usage: python expansion.py <scigrid_de.nc> <out_dir> <scenario> [--race] [--pf]
+usage: python expansion.py <scigrid_de.nc> <out_dir> <scenario> [--pf]
 
 A scenario is "w<wind_scale>_s<solar_scale>_c<co2_price>", e.g. w1.5_s1.0_c100.
---race  solve with HiGHS dual simplex and HiGHS interior point in parallel processes,
-        keep the first to finish (both times are recorded).
+Always races HiGHS dual simplex against HiGHS interior point in two processes; the first to
+finish wins (exclusive lock file) and writes the results; the other is stopped.
 --pf    after the linear optimisation, run the full non-linear AC power flow for every hour
         with the optimised dispatch (PyPSA's lopf-then-pf workflow), and export viewer data.
 """
-import json, multiprocessing as mp, re, sys, time
+import json, multiprocessing as mp, os, re, sys, time
 from pathlib import Path
 
 import numpy as np
@@ -48,34 +48,48 @@ def parse(scn):
     return float(w), float(s), float(c)
 
 
-def _solve(args):
-    path, scn, solver_name, q = args
+def _racer(path, scn, solver_name, out, do_pf):
+    """Build, solve, and if first to finish claim the win (O_EXCL lock) and write the outputs."""
     n = build(path, *parse(scn))
     t0 = time.time()
-    status, cond = n.optimize(solver_name="highs", solver_options={"solver": solver_name, "threads": 1,
-                                                                   "run_crossover": "on"})
-    q.put((solver_name, time.time() - t0, status, cond, n.objective))
+    status, cond = n.optimize(solver_name="highs", solver_options={"solver": solver_name, "threads": 1})
+    dt = time.time() - t0
+    try:
+        os.close(os.open(out / f".win_{scn}", os.O_CREAT | os.O_EXCL))
+    except FileExistsError:
+        return
+    rec = {"scenario": scn, "winner": solver_name, "solve_seconds": round(dt, 2), "status": status, "condition": cond}
+    rec.update(summarise(n, scn))
+    (out / f"expansion_{scn}.json").write_text(json.dumps(rec, indent=1))
+    if do_pf and status == "ok":
+        export_viewer(n, out, scn)
 
 
-def race(path, scn):
-    q = mp.Manager().Queue()
-    procs = {s: mp.Process(target=_solve, args=((path, scn, s, q),)) for s in ("simplex", "ipm")}
+def race(path, scn, out, do_pf, solvers=("simplex", "ipm")):
+    (out / f".win_{scn}").unlink(missing_ok=True)
+    procs = {s: mp.Process(target=_racer, args=(path, scn, s, out, do_pf)) for s in solvers}
+    t0 = time.time()
     for p in procs.values():
         p.start()
-    t0, results = time.time(), []
-    while len(results) < 2 and time.time() - t0 < 900:
-        try:
-            results.append(q.get(timeout=5))
-        except Exception:
-            pass
+    winner_file = out / f"expansion_{scn}.json"
+    winner_file.unlink(missing_ok=True)
+    while not winner_file.exists() and any(p.is_alive() for p in procs.values()):
+        time.sleep(2)
+    t_win = time.time() - t0
+    time.sleep(1)
+    rec = json.loads(winner_file.read_text()) if winner_file.exists() else {"scenario": scn}
+    rec["race"] = []
+    for s, p in procs.items():
+        if s == rec.get("winner"):
+            rec["race"].append({"solver": s, "seconds": rec["solve_seconds"], "result": "won"})
+        else:
+            if p.is_alive():
+                p.terminate()
+            rec["race"].append({"solver": s, "seconds": round(t_win, 2), "result": "stopped (lost the race)"})
     for p in procs.values():
-        p.join(timeout=1)
-        if p.is_alive():
-            p.terminate()
-    rows = [{"solver": r[0], "seconds": round(r[1], 2), "status": r[2], "condition": r[3], "objective": r[4]}
-            for r in results]
-    ok = [r for r in rows if r["status"] == "ok"]
-    return rows, (min(ok, key=lambda r: r["seconds"]) if ok else None)
+        p.join()
+    winner_file.write_text(json.dumps(rec, indent=1))
+    return rec
 
 
 def summarise(n, scn):
@@ -94,25 +108,34 @@ def summarise(n, scn):
             "generation_twh_by_carrier": {k: float(v.sum() / 1e6) for k, v in gen.items()}}
 
 
-def export_viewer(n, out):
+def export_viewer(n, out, scn):
     """Hourly AC power flow on the optimised dispatch, packed for the three.js viewer."""
-    for c in n.iterate_components(["Generator", "StorageUnit"]):
-        pass
+    lp_p0 = n.lines_t.p0.copy()                 # linear (LOPF) flows, fallback for non-converged hours
+    lp_gen = n.generators_t.p.copy()            # the optimised dispatch (PF only re-balances losses at the slack)
+    lp_sto = n.storage_units_t.p.copy()
     n.generators_t.p_set = n.generators_t.p
     n.storage_units_t.p_set = n.storage_units_t.p
     n.lines["s_nom"] = n.lines["s_nom_opt"]
+    # PyPSA's SciGrid lopf-then-pf recipe: all generators voltage-controlled (PV), a few PQ units at
+    # bus 492 so the Jacobian stays well posed. Q set points are unknown in the dataset.
+    n.generators["control"] = "PV"
+    n.generators.loc[n.generators.bus == "492", "control"] = "PQ"
     info = n.pf(use_seed=True)
     conv = info["converged"]
+    ok = np.asarray(conv).ravel().astype(bool) if conv is not None else np.ones(len(n.snapshots), bool)
+    bad = n.snapshots[~ok]
+    n.lines_t.p0.loc[bad] = lp_p0.loc[bad]
+    n.buses_t.v_mag_pu.loc[bad] = 1.0
     buses = n.buses
     lines = n.lines
-    loading = (n.lines_t.p0.abs() / (lines.s_nom * lines.s_max_pu)).round(3)
+    loading = (n.lines_t.p0.abs() / (lines.s_nom * lines.s_max_pu)).round(3).fillna(0)
     carriers = ["Nuclear", "Brown Coal", "Hard Coal", "Gas", "Oil", "Run of River", "Storage Hydro",
                 "Wind Offshore", "Wind Onshore", "Solar", "Waste", "Geothermal", "Other", "Multiple"]
-    g = n.generators_t.p.T.groupby(n.generators.carrier).sum().T.reindex(columns=carriers, fill_value=0)
-    st = n.storage_units_t.p.T.groupby(n.storage_units.carrier).sum().T
+    g = lp_gen.T.groupby(n.generators.carrier).sum().T.reindex(columns=carriers, fill_value=0)
+    st = lp_sto.T.groupby(n.storage_units.carrier).sum().T
     data = {
         "snapshots": [str(s) for s in n.snapshots],
-        "converged": [bool(x) for x in np.asarray(conv).ravel()] if conv is not None else None,
+        "converged": [bool(x) for x in ok],
         "buses": {"id": list(buses.index), "x": buses.x.round(4).tolist(), "y": buses.y.round(4).tolist(),
                   "vnom": buses.v_nom.tolist()},
         "v_mag": n.buses_t.v_mag_pu.round(4).T.values.tolist(),
@@ -126,25 +149,14 @@ def export_viewer(n, out):
         "battery": {"bus": [buses.index.get_loc(b) for b in n.storage_units.bus[n.storage_units.carrier == "battery"]],
                     "p_nom": n.storage_units.p_nom_opt[n.storage_units.carrier == "battery"].round(1).tolist()},
     }
-    (out / "viewer_grid.json").write_text(json.dumps(data))
+    (out / f"viewer_grid_{scn}.json").write_text(json.dumps(data))
 
 
 def main():
     path, out, scn = sys.argv[1], Path(sys.argv[2]), sys.argv[3]
     out.mkdir(parents=True, exist_ok=True)
-    rec = {"scenario": scn}
-    if "--race" in sys.argv:
-        rec["race"], rec["winner"] = race(path, scn)
-    n = build(path, *parse(scn))
-    t0 = time.time()
-    n.optimize(solver_name="highs", solver_options={"solver": (rec.get("winner") or {}).get("solver", "simplex"),
-                                                    "threads": 1})
-    rec["solve_seconds"] = round(time.time() - t0, 2)
-    rec.update(summarise(n, scn))
-    (out / f"expansion_{scn}.json").write_text(json.dumps(rec, indent=1))
+    rec = race(path, scn, out, "--pf" in sys.argv)
     print(json.dumps({k: v for k, v in rec.items() if k != "generation_twh_by_carrier"}, indent=1))
-    if "--pf" in sys.argv:
-        export_viewer(n, out)
 
 
 if __name__ == "__main__":
