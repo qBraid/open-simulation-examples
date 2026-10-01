@@ -78,6 +78,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 const D = window.DATA;
+const STILL = new URLSearchParams(location.search).has('still');  // final state for screenshots
 { const th = new URLSearchParams(location.search).get('theme'); if (th) document.documentElement.dataset.theme = th; }
 const $ = s => document.querySelector(s);
 const stage = $('#stage'), hud = $('#hud'), side = $('#side'), controlsEl = $('#controls'), cap = $('#caption'), tip = $('#tip');
@@ -302,7 +303,7 @@ function affSide() {
   <div class="cbar" style="background:${vGrad}"></div><div class="cbar-l"><span>${fmt(dgMax, 1)}</span><span>ΔG kcal/mol</span><span>${fmt(dgMin, 1)}</span></div>
   ${T.map(t => `<h2>${t.toUpperCase()} · ${D.affinity.metrics[t].n} ligands · range ${fmt(D.affinity.metrics[t].exp_range_kcal, 1)} kcal/mol</h2>
    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${scatter(t, 'boltz', 'Boltz-2')}${scatter(t, 'fep', 'FEP+')}</div>`).join('')}
-  <p class="note">Boltz-2 runs in about a minute per ligand on one L4. FEP+ is a physics method taking hours of GPU time per ligand pair, and its numbers come from Schrödinger's public benchmark. The experimental values are the same in both columns.</p>`;
+  <p class="note">Boltz-2 takes a few minutes per ligand on one L4. FEP+ is a physics method taking hours of GPU time per ligand pair, and its numbers come from Schrödinger's public benchmark. The experimental values are the same in both columns.</p>`;
 }
 function affControls() {
   controlsEl.innerHTML = `<div class="card">colour by <button data-m="exp" class="on">experiment</button><button data-m="boltz">Boltz-2</button><button data-m="fep">FEP+</button><button data-m="err">Boltz-2 error</button></div>
@@ -373,7 +374,7 @@ function buildBench() {
   bench.t0 = performance.now();
 }
 function growBench(now) {
-  const k = Math.min(1, (now - (bench.t0 || now)) / 1400), e = 1 - Math.pow(1 - k, 3);
+  const k = STILL ? 1 : Math.min(1, (now - (bench.t0 || now)) / 1400), e = 1 - Math.pow(1 - k, 3);
   bench.group.children.forEach(o => { if (o.userData.h) { o.scale.y = Math.max(0.001, e); o.position.y = o.userData.h * e / 2; } });
 }
 

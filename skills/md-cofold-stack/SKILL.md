@@ -11,7 +11,7 @@ Drafted from a verified run: `open-simulation-examples/drug-discovery`. The READ
 | Question | Default | When to switch |
 |---|---|---|
 | Where does this ligand bind, in what pose? | **Boltz-2** co-folding (MIT, weights public) | Chai-1 (Apache) as a second opinion; classical docking (Vina, GNINA) when the pocket is known and you need hundreds of thousands of ligands |
-| Rank a congeneric series | **Boltz-2 affinity head** for triage (about a minute per ligand on an L4) | Relative FEP (OpenFE, open; FEP+, commercial) for lead optimisation. It is hours per ligand pair and still the accuracy reference |
+| Rank a congeneric series | **Boltz-2 affinity head** for triage (a few minutes per ligand on an L4) | Relative FEP (OpenFE, open; FEP+, commercial) for lead optimisation. It is hours per ligand pair and still the accuracy reference |
 | Is the pose physically sane? | **PoseBusters** checks against the predicted protein | Short OpenMM MD to check stability |
 | What will the user see? | three.js ribbons, ball-and-stick, pocket surface, pose morph (see the example viewer) | Mol* for interactive inspection |
 

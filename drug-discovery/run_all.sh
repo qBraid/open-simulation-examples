@@ -10,7 +10,7 @@ B=https://raw.githubusercontent.com/schrodinger/public_binding_free_energy_bench
 for t in tyk2 cdk2; do [ -f $W/fep/${t}_protein.pdb ] || curl -sfo $W/fep/${t}_protein.pdb $B/${t}_protein.pdb; done
 python prep_posebusters.py $W/posebusters_benchmark_set $W/pb      # 32 complexes + MSAs (ColabFold server)
 python prep_affinity.py $W/fep $W/aff                               # 2 x 16 ligands + MSAs
-for k in 0 1; do ./run_boltz.sh $W/pb/yaml $W/out_pb 16 $k; done   # ~1 min per complex on an L4
+for k in 0 1; do ./run_boltz.sh $W/pb/yaml $W/out_pb 16 $k; done   # ~2-3 min per complex on an L4
 for k in 0 1; do ./run_boltz.sh $W/aff/yaml $W/out_aff 16 $k; done
 python eval_poses.py $W/posebusters_benchmark_set $W/out_pb $W/pb/subset.json $W/pbres.csv $W/eval
 python eval_affinity.py $W/out_aff $W/fep results/affinity.json

@@ -1,0 +1,36 @@
+{
+ "date": "2026-10-01",
+ "machine": "qBraid gpu-l4 shared pool (NVIDIA L4 24 GB, driver 595, ~5 vCPU cgroup)",
+ "env": "Python 3.12, boltz 2.2.1, torch 2.14.1+cu130, posebusters 0.6.5, rdkit, gemmi",
+ "gpu_minutes": 171.4,
+ "gpu_jobs": 5,
+ "cost_usd_gpu_share": 1.4,
+ "note": "CPU prep (MSAs via the public ColabFold server) ran at low priority on the same box; viewer built on the subscription pod at no extra cost",
+ "jobs": [
+  {
+   "minutes": 32.8,
+   "rc": "rc=0",
+   "cmd": "./run_boltz.sh pb/yaml out_pb 16 0"
+  },
+  {
+   "minutes": 40.0,
+   "rc": "rc=124",
+   "cmd": "./run_boltz.sh pb/yaml out_pb 16 1"
+  },
+  {
+   "minutes": 40.0,
+   "rc": "rc=124",
+   "cmd": "./resume_job.sh"
+  },
+  {
+   "minutes": 40.0,
+   "rc": "rc=124",
+   "cmd": "./resume_job.sh"
+  },
+  {
+   "minutes": 18.7,
+   "rc": "rc=0",
+   "cmd": "./resume_job.sh"
+  }
+ ]
+}
