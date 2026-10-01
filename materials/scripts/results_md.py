@@ -24,8 +24,9 @@ if rows:
     out += ["### 1 · Discovering stable crystals (Matbench Discovery protocol)", "",
             "| Model (licence) | n | F1 ours [95% CI] | F1, authors' predictions on the same structures | F1 full test set (leaderboard) | MAE meV/atom | per-structure agreement with authors: MAE meV/atom / within 10 meV | s per relaxation (L4) | leaderboard rank |",
             "|---|---|---|---|---|---|---|---|---|"] + rows + ["",
-            f"**Verdict.** The pipeline is **reached**: it reproduces the leaderboard exactly, matching the published predictions structure by structure to well under 1 meV/atom. "
-            f"The top-10% band of the {len(rank)}-model leaderboard is F1 ≥ {top10:.3f}. The table above shows where the open models we ran sit relative to it.", ""]
+            f"**Verdict: reached.** The top-10% band of the {len(rank)}-model leaderboard is F1 ≥ {top10:.3f}. The #1 model, EquiformerV3+DeNS-OAM (MIT weights), runs on a single qBraid L4 "
+            f"and reproduces its authors' published predictions structure by structure (about 1 meV/atom), as do the two MACE models we reran. "
+            f"Our sample F1 values match the authors' predictions on the same structures. The full-test-set F1 values in the leaderboard column are therefore the ones that apply to these runs.", ""]
 # eos
 eos = {}
 for m in ("mp0", "mpa0", "mp0b3", "orb3"):
@@ -67,7 +68,7 @@ if mds:
     if len(T) >= 2:
         import numpy as np
         sl, ic = np.polyfit(1000 / np.array(T), np.log10(D), 1); Ea = -sl * 1000 * 8.617333e-5 * np.log(10)
-        out += ["", f"Arrhenius fit: **Eₐ = {Ea:.2f} eV**. Measured Li₆PS₅Cl gives about 0.3–0.4 eV in pellets with S/Cl disorder. This is the ordered cell, so treat it as indicative."]
+        out += ["", (f"Only two temperatures: the 600 K run did not fit in the shared GPU's 30-minute slot (MD ran at about 7.5 steps/s for 416 atoms). The two-point slope ({Ea:.2f} eV) is not a reliable activation energy, so no room-temperature conductivity is claimed. This is a visual showcase of lithium transport with a universal potential, not a conductivity prediction. Measured Li₆PS₅Cl: Eₐ ≈ 0.3–0.4 eV, 1–4 mS/cm (disordered pellets)." if len(T) < 3 else f"Arrhenius fit: **Eₐ = {Ea:.2f} eV**. Measured Li₆PS₅Cl gives about 0.3–0.4 eV in pellets with S/Cl disorder. This is the ordered cell, so treat it as indicative.")]
     out.append("")
 # dft
 f = os.path.join(R, "dft_anchor.json")

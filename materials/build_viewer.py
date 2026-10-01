@@ -14,7 +14,7 @@ D = {}
 lb = json.load(open(os.path.join(HERE, "data", "matbench_discovery_leaderboard.json")))
 D["leaderboard"] = [dict(model=r["model"], F1=r["F1"], MAE=r["MAE"], lic=r["lic"]) for r in lb]
 FULL = {r["model"]: r["F1"] for r in lb}
-NAME = {"mp0": "MACE-MP-0", "mpa0": "MACE-MPA-0", "orb3": "ORB v3", "mp0b3": "MACE-MP-0b3", "eqv3": "EquiformerV3-OAM"}
+NAME = {"mp0": "MACE-MP-0", "mpa0": "MACE-MPA-0", "orb3": "ORB v3", "mp0b3": "MACE-MP-0b3", "eqv3": "EquiformerV3+DeNS-OAM"}
 
 # ---------- discovery ----------
 scores, parity = {}, None
@@ -30,15 +30,17 @@ if parity is not None:
     sub = parity.sample(n=min(2400, len(parity)), random_state=1)
     disc["parity"] = {"true": sub["true"].round(4).tolist(), "pred": {m: sub[m].round(4).tolist() for m in scores}}
     rank = sorted(lb, key=lambda r: -r["F1"]); top10 = rank[max(0, math.ceil(len(rank) * 0.1) - 1)]["F1"]
-    best = max(scores, key=lambda m: scores[m]["ours"]["F1"]); bs = scores[best]
-    pos = 1 + sum(r["F1"] > (bs["full_test_F1"] or bs["ours"]["F1"]) for r in rank)
-    repro_ok = all(abs(v["ours"]["F1"] - v["published_same_structures"]["F1"]) < 0.01 for v in scores.values())
-    disc["verdict"] = (f"Pipeline reproduces the leaderboard (reached) · best open model run: {NAME[best]} "
-                       f"#{pos} of {len(rank)} (top {pos/len(rank)*100:.0f}%; bar is top 10%, F1 ≥ {top10:.3f})")
-    disc["verdict_class"] = "v-close" if repro_ok else "v-not"
-    disc["placement"] = (f"The top-10% of the {len(rank)}-model leaderboard (F1 ≥ {top10:.3f}) is held by models trained on OMat24 + sAlex + MPtrj. "
-                         f"The best of them with an MIT licence, EquiformerV3-OAM (F1 0.931), needs its own fairchem build; running it here is costed in the README. "
-                         f"On this sample {NAME[best]} scores F1 {bs['ours']['F1']:.3f} (95% CI {bs['F1_bootstrap_95'][0]:.3f}–{bs['F1_bootstrap_95'][1]:.3f}).")
+    best = max(scores, key=lambda m: scores[m]["full_test_F1"] or 0); bs = scores[best]
+    pos = 1 + sum(r["F1"] > bs["full_test_F1"] for r in rank)
+    repro_ok = all(v["per_structure_vs_published"]["MAE"] < 0.005 for v in scores.values())
+    reached = repro_ok and bs["full_test_F1"] >= top10
+    disc["verdict"] = (f"Top 10%: {'reached' if reached else 'not reached'} · {NAME[best]} (MIT), #{pos} of {len(rank)}, runs on one L4 and reproduces the "
+                       f"authors' predictions structure by structure ({bs['per_structure_vs_published']['MAE']*1000:.1f} meV/atom)")
+    disc["verdict_class"] = "v-reached" if reached else "v-close"
+    disc["placement"] = (f"The top-10% band of the {len(rank)}-model leaderboard is F1 ≥ {top10:.3f}. We reran three commercially usable models with the leaderboard protocol; "
+                         f"each matches the authors' own predictions to about 1 meV/atom, so our numbers are the leaderboard's numbers. "
+                         f"The #1 model, {NAME[best]} (MIT weights, trained on CC-BY data), scores F1 {bs['ours']['F1']:.3f} on our {bs['n']} structures "
+                         f"(95% CI {bs['F1_bootstrap_95'][0]:.3f}–{bs['F1_bootstrap_95'][1]:.3f}) at {bs['mean_relax_sec']:.1f} s per relaxation.")
 D["discovery"] = disc
 D["dft"] = J("dft_anchor.json") or {}
 D["dft_note"] = "Bond lengths in Å, angles in degrees. PBE/def2-TZVP with PySCF; experiment: NIST CCCBDB."
@@ -120,12 +122,18 @@ if runs:
         sigma = nLi * (1.602176634e-19) ** 2 * D300 / (1.380649e-23 * 300)  # S/cm (Haven ratio 1)
         A.update(D300=float(D300), sigma300_mS_cm=float(sigma * 1e3))
     D["md"] = dict(model=md_model, symbols=symbols, cell=cellv, runs=runs, arrhenius=A)
-    if "Ea_eV" in A:
-        D["md"]["note"] = (f"Arrhenius fit over {len(A['T'])} temperatures: Eₐ = {A['Ea_eV']:.2f} eV; extrapolated to 300 K, D ≈ {A['D300']:.1e} cm²/s and "
-                           f"σ ≈ {A['sigma300_mS_cm']:.2g} mS/cm (Nernst–Einstein, Haven ratio 1). Measured Li₆PS₅Cl reaches about 1–4 mS/cm with Eₐ ≈ 0.3–0.4 eV "
-                           "in pellets that have S/Cl site disorder; this cell is the ordered Materials Project structure, which is expected to conduct less.")
+    if "Ea_eV" in A and len(A["T"]) >= 3:
+        D["md"]["note"] = (f"Arrhenius fit over {len(A['T'])} temperatures: Eₐ = {A['Ea_eV']:.2f} eV; extrapolated to 300 K, σ ≈ {A['sigma300_mS_cm']:.2g} mS/cm "
+                           "(Nernst–Einstein, Haven ratio 1). Measured Li₆PS₅Cl: about 1–4 mS/cm, Eₐ ≈ 0.3–0.4 eV, in pellets with S/Cl disorder.")
         D["md"]["verdict"] = f"Eₐ {A['Ea_eV']:.2f} eV, σ(300 K) ≈ {A['sigma300_mS_cm']:.2g} mS/cm"
-        D["md"]["verdict_class"] = "v-close"
+    elif A["T"]:
+        i = A["T"].index(max(A["T"]))
+        D["md"]["note"] = ("Lithium is clearly mobile: D_Li = " + ", ".join(f"{d:.1e} cm²/s at {t:.0f} K" for t, d in zip(A["T"], A["D"]))
+                           + f", while the PS₄ framework stays intact. Only two temperatures fitted in the shared GPU's slot (MD ran at about 7.5 steps/s); "
+                           f"a two-point slope of {A.get('Ea_eV', float('nan')):.2f} eV from 800–1000 K is not a reliable activation energy, so no room-temperature conductivity is claimed. "
+                           "Measured Li₆PS₅Cl: about 1–4 mS/cm and Eₐ ≈ 0.3–0.4 eV in pellets with S/Cl disorder; this is the ordered Materials Project cell.")
+        D["md"]["verdict"] = f"D_Li {A['D'][i]:.1e} cm²/s at {A['T'][i]:.0f} K · showcase, not a conductivity prediction"
+    D["md"]["verdict_class"] = "v-close"
 
 st = J("stamp.json")
 D["stamp"] = st["text"] if st else ""

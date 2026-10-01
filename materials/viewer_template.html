@@ -427,7 +427,7 @@ function makeMD() {
     const { X, Y } = axes(x, 340, 190, { l: 34, r: 8, t: 10, b: 20 }, xr, yr, '1000/T (1/K)', 'log₁₀ D (cm²/s)', [1, 1.25, 1.5, 1.75].filter(v => v > xr[0] && v < xr[1]), [-7, -6, -5, -4].filter(v => v > yr[0] && v < yr[1]));
     x.strokeStyle = css('--accent'); x.lineWidth = 2; x.beginPath(); x.moveTo(X(xr[0]), Y(A.fit_intercept + A.fit_slope * xr[0])); x.lineTo(X(xr[1]), Y(A.fit_intercept + A.fit_slope * xr[1])); x.stroke();
     x.fillStyle = css('--accent'); xs.forEach((v, i) => { x.beginPath(); x.arc(X(v), Y(ys[i]), 4, 0, 7); x.fill(); });
-    x.fillStyle = css('--ink'); x.font = '11px ui-monospace,monospace'; x.fillText(`Eₐ = ${A.Ea_eV.toFixed(2)} eV`, X(xr[0]) + 6, Y(yr[0]) - 8);
+    x.fillStyle = css('--ink'); x.font = '11px ui-monospace,monospace'; x.fillText(A.T.length >= 3 ? `Eₐ = ${A.Ea_eV.toFixed(2)} eV` : `${A.T.length} temperatures`, X(xr[0]) + 6, Y(yr[0]) - 8);
   }
   function panel() {
     const A = M.arrhenius || {};

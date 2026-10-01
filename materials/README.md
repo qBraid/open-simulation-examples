@@ -18,8 +18,9 @@ Open `viewer.html` (or `qbraid-canvas materials/viewer.html`) for the interactiv
 |---|---|---|---|---|---|---|---|---|
 | MACE-MP-0 (MIT) | 2000 | **0.676** [0.636, 0.712] | 0.676 | 0.669 | 57 | 0.41 / 99.8% | 1.32 | #52 of 65 |
 | MACE-MPA-0 (MIT) | 1000 | **0.876** [0.835, 0.913] | 0.872 | 0.852 | 29 | 1.45 / 98.7% | 0.84 | #30 of 65 |
+| EquiformerV3+DeNS-OAM (MIT) | 250 | **0.909** [0.837, 0.966] | 0.909 | 0.931 | 15 | 1.11 / 98.8% | 2.69 | #1 of 65 |
 
-**Verdict.** The pipeline is **reached**: it reproduces the leaderboard exactly, matching the published predictions structure by structure to well under 1 meV/atom. The top-10% band of the 65-model leaderboard is F1 ≥ 0.925. The table above shows where the open models we ran sit relative to it.
+**Verdict: reached.** The top-10% band of the 65-model leaderboard is F1 ≥ 0.925. The #1 model, EquiformerV3+DeNS-OAM (MIT weights), runs on a single qBraid L4 and reproduces its authors' published predictions structure by structure (about 1 meV/atom), as do the two MACE models we reran. Our sample F1 values match the authors' predictions on the same structures. The full-test-set F1 values in the leaderboard column are therefore the ones that apply to these runs.
 
 ### 2 · Lattice constants and bulk moduli (23 solids; Csonka et al. 2009)
 
@@ -45,6 +46,15 @@ Mean absolute relative errors. Cs is excluded because its energy–volume curve 
 
 **Verdict:** not reached. The best model is at 13.9% against a PBE-level bar of about 3–5%. Universal potentials are not yet a substitute for DFT phonons. Fine-tune on a few hundred DFT force calculations, or use DFT directly.
 
+### 4 · Li-ion diffusion in Li₆PS₅Cl (416 atoms, MACE-MPA-0, L4)
+
+| T (K) | D_Li (cm²/s) | MD steps/s |
+|---|---|---|
+| 800 | 2.57e-05 | 8 |
+| 1000 | 4.35e-05 | 7 |
+
+Only two temperatures: the 600 K run did not fit in the shared GPU's 30-minute slot (MD ran at about 7.5 steps/s for 416 atoms). The two-point slope (0.18 eV) is not a reliable activation energy, so no room-temperature conductivity is claimed. This is a visual showcase of lithium transport with a universal potential, not a conductivity prediction. Measured Li₆PS₅Cl: Eₐ ≈ 0.3–0.4 eV, 1–4 mS/cm (disordered pellets).
+
 ### 5 · DFT anchor: small-molecule geometries (Å, degrees)
 
 | molecule / quantity | experiment | PBE/def2-TZVP (PySCF) | MACE-MP-0 | MACE-MPA-0 | MACE-MP-0b3 |
@@ -59,6 +69,10 @@ Mean absolute relative errors. Cs is excluded because its energy–volume curve 
 | CO r(C-O) | 1.128 | 1.136 | 1.143 | 1.141 | 1.144 |
 
 Bond lengths: the potentials reproduce PBE to a mean |Δr| of 0.005 Å (MACE-MP-0), 0.005 Å (MACE-MPA-0), 0.005 Å (MACE-MP-0b3), and PBE is itself 0.009 Å from experiment. That is, the potentials inherit their functional faithfully even for molecules, which are outside their periodic training domain. The PySCF PBE/def2-TZVP optimisations of all six molecules took under a minute on two CPU threads.
+
+### Verification stamp
+
+Verified 2026-10-01 on a shared qBraid gpu-l4 pool box (cgroup: 5 CPUs, 62 GB; NVIDIA L4, driver 595). This stream used 112 GPU-minutes in 7 jobs, 1 queued CPU-minutes, and about 10 single-core minutes for EOS and phonons; at $0.49/h for the box that is about $0.92. EquiformerV3 ran in its own environment (torch 2.7.1+cu128, the authors' fairchem fork). Versions: torch 2.14.1+cu126, mace-torch 0.3.16, orb-models 0.7.0, ase 3.29.0, phonopy 4.7.2, pyscf 2.14.0.
 
 <!--/RESULTS-->
 
@@ -93,8 +107,8 @@ python build_viewer.py results
 Sampling uses seed 20261001 over the WBM unique prototypes. The relaxation settings are FIRE with FrechetCellFilter, at most 500 steps, fmax 0.05 eV/Å (0.02 for ORB v3). These match the leaderboard runs.
 
 ## Honest limits
-- **Sample, not the full test set.** We ran 2,000 of 215,488 structures. The bootstrap 95% interval on F1 is about ±0.05. Exactness is shown instead by per-structure agreement with the authors' own predictions.
-- **The top-10% models were not run.** EquiformerV3+DeNS-OAM (MIT, F1 0.931) needs its own research build of fairchem (torch 2.4, numpy < 2, about 5 GB). The full leaderboard run took 48 H200-hours, so a 500-structure check would take about 40 minutes on an L4, or about 7 minutes on an H100 (roughly $0.60).
+- **Sample, not the full test set.** We ran 2,000 (MACE-MP-0), 1,000 (MPA-0) and 250 (EquiformerV3) of 215,488 structures. The bootstrap 95% interval on F1 is about ±0.05. Exactness is shown instead by per-structure agreement with the authors' own predictions.
+- **EquiformerV3 was checked on 250 structures**, not thousands. Its environment is separate (torch 2.7.1, the authors' fairchem fork, 13 GB on the network home) and it takes 2.7 s per relaxation on an L4. The full 257k test set would take about 190 L4-hours. ORB v3 discovery was not rerun, to free the shared GPU; its lattice-constant and phonon results are included.
 - **PBE is the ceiling.** For lattice constants these models cannot beat PBE's own error against experiment of about 1.4% (overestimate). VASP with a better functional (PBEsol, r²SCAN) would do better. That is the place to spend DFT time, after MLIP screening.
 - **Cutoff artefacts.** Cs (and partly Rb and Na) has neighbour shells near the 6 Å graph cutoff, so E(V) curves have kinks. Cs is excluded from the EOS statistics and shown in the viewer.
 - **MD uses the ordered Materials Project cell** (mp-985592) of Li₆PS₅Cl. Real samples have S/Cl site disorder, which raises conductivity. Activation energies and extrapolated room-temperature conductivity are indicative, not predictive.
