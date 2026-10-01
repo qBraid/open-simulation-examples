@@ -1,0 +1,78 @@
+"""Turn scores + tracks into the verdict, run-details stamp and guided tour (results/verdict.json).
+
+Usage: python make_verdict.py <results_dir> <viz.npz> --wall-min <minutes> --cost <usd>
+"""
+import argparse, json, os
+from datetime import datetime, timedelta
+
+import numpy as np
+
+from build_viewer import STORMS, track
+
+ap = argparse.ArgumentParser(); ap.add_argument("results"); ap.add_argument("viz")
+ap.add_argument("--wall-min", type=float, default=0); ap.add_argument("--cost", type=float, default=0)
+ap.add_argument("--init", default="2020-08-24T00:00")
+a = ap.parse_args()
+S = json.load(open(os.path.join(a.results, "sfno_scores.json")))
+H = json.load(open(os.path.join(a.results, "hres_scores.json")))
+R = json.load(open(os.path.join(a.results, "wb2_ref_2020.json")))
+Z = np.load(a.viz); lat, lon = Z["lat"], Z["lon"]
+init = datetime.fromisoformat(a.init)
+
+rows, paired = [], {}
+for v, unit in (("z500", "m²/s²"), ("t850", "K"), ("t2m", "K")):
+    for h in ("24", "72", "120"):
+        s = np.array(S["rmse"][v][h]); hr = np.array(H["rmse"][v][h])
+        d = s - hr; se = d.std(ddof=1) / np.sqrt(len(d)) if len(d) > 1 else float("nan")
+        paired[(v, h)] = (s.mean(), hr.mean(), d.mean(), se)
+        rows.append({"var": v, "lead_h": int(h), "sfno": float(s.mean()), "hres_paired": float(hr.mean()),
+                     "diff": float(d.mean()), "diff_se": float(se), "sfno_better_inits": int((d < 0).sum()), "n": int(len(d)),
+                     "wb2_hres": R["hres"][v].get(h), "wb2_graphcast": R["graphcast"][v].get(h), "wb2_pangu": R["pangu"][v].get(h)})
+
+z5 = paired[("z500", "120")]; t8 = paired[("t850", "120")]
+pct = lambda p: (p[0] / p[1] - 1) * 100
+within = all(abs(p[2]) <= 2 * p[3] or p[0] <= p[1] for k, p in paired.items() if k[1] in ("72", "120"))
+better = sum(1 for k, p in paired.items() if p[0] < p[1])
+verdict_word = "reached" if within else ("close" if abs(pct(z5)) < 12 else "not reached")
+html = (f"<b>Verdict: {verdict_word}.</b> Day 5 z500 RMSE {z5[0]:.0f} vs IFS HRES {z5[1]:.0f} on the same 12 starts "
+        f"({pct(z5):+.0f}%); T850 {t8[0]:.2f} vs {t8[1]:.2f} K ({pct(t8):+.0f}%). SFNO beats HRES on {better} of 9 "
+        f"variable–lead pairs. GraphCast (non-commercial weights) is the WB2 leader at {R['graphcast']['z500']['120']:.0f}.")
+
+tracks = {}
+for name, lo0, la0, rad in STORMS:
+    leads = list(range(0, 121, 6)); tleads = list(range(0, 121, 12))
+    fc = track([Z[f"msl_{h:03d}"] for h in leads], lo0, la0, rad, lat, lon)
+    tr = track([Z[f"era5_msl_{h:03d}"] for h in tleads], lo0, la0, rad, lat, lon)
+    errs = []
+    for j, p in enumerate(tr):
+        i = j * 2
+        if i < len(fc):
+            la1, lo1, la2, lo2 = map(np.deg2rad, (fc[i][1], fc[i][0], p[1], p[0]))
+            dkm = 6371 * 2 * np.arcsin(np.sqrt(np.sin((la2 - la1) / 2) ** 2 + np.cos(la1) * np.cos(la2) * np.sin((lo2 - lo1) / 2) ** 2))
+            errs.append({"lead_h": j * 12, "km": round(float(dkm)), "p_fc": fc[i][2], "p_era5": p[2]})
+    tracks[name] = {"fc": fc, "tr": tr, "errors": errs}
+
+def stop(lon_, lat_, dist, lead, html_, **kw):
+    return dict(lon=lon_, lat=lat_, dist=dist, lead=lead, html=html_, **kw)
+
+L = tracks["Hurricane Laura"]; B = tracks["Typhoon Bavi"]
+laura_land = L["tr"][min(len(L["tr"]) - 1, 6)] if L["tr"] else [-93, 29.5, 0]
+e72 = next((e for e in L["errors"] if e["lead_h"] == 72), None)
+tour = [
+    stop(-40, 15, 4.8, 0, "<b>One GPU, five days of weather.</b> NVIDIA SFNO steps the whole atmosphere 6 h at a time from the ERA5 state of 24 Aug 2020, 00 UTC.", ov="tcwv", mode="fc", hold=4500),
+    stop(-78, 21, 2.3, 0, "<b>Hurricane Laura</b> is a tropical storm over Hispaniola at the start. Water vapour shows its moisture core; winds are the model's own 850 hPa field.", ov="tcwv", mode="fc", hold=3500),
+    stop(-90, 26, 2.1, 0, "Play forward: Laura crosses the Gulf and intensifies. <b>Cyan</b> is the forecast track, <b>red</b> is ERA5.", ov="msl", mode="fc", play_to=78, hold=9000),
+    stop(laura_land[0], laura_land[1], 1.9, 72, (f"At +72 h the forecast centre is <b>{e72['km']} km</b> from ERA5's, with {e72['p_fc']:.0f} hPa vs {e72['p_era5']:.0f} hPa. " if e72 else "") +
+         "Drag the divider to compare against the reanalysis. Coarse 0.25° models underestimate peak intensity.", ov="msl", mode="swipe", hold=6500),
+    stop(127, 33, 2.4, 72, "<b>Typhoon Bavi</b> in the Yellow Sea on the same run, half a world away, from the same single forward pass.", ov="tcwv", mode="fc", hold=5000),
+    stop(20, -50, 3.2, 120, "Day 5 error in 2 m temperature: the Southern Ocean storm track and continents carry most of it.", ov="t2m", mode="err", hold=6000),
+    stop(-30, 30, 4.8, 120, html.replace("<b>Verdict", "<b>Skill vs ECMWF").replace("</b>", "</b>", 1), ov="tcwv", mode="fc", hold=7000),
+]
+stamp = (f"<h2>Run details</h2>Model: NVIDIA SFNO 73-ch (Earth2Studio {S.get('e2s','0.19.0')}), weights via Earth2Studio, NVIDIA licence.<br>"
+         f"Initial conditions and truth: ERA5 (ARCO public zarr). IFS HRES: WeatherBench2 public zarr.<br>"
+         f"12 starts in 2020 (WB2's test year, outside SFNO training), 00 UTC, leads 1/3/5 days, latitude-weighted RMSE at 0.25°.<br>"
+         f"Machine: qBraid gpu-l4 ({S.get('gpu','NVIDIA L4')}), {np.mean(S['step_s']):.2f} s per 6 h step, model load {S.get('load_s','?')} s.<br>"
+         f"Wall time {a.wall_min:.0f} min · compute cost ≈ ${a.cost:.2f} · {datetime.utcnow():%Y-%m-%d}.")
+json.dump({"html": html, "stamp_html": stamp, "tour": tour, "table": rows, "tracks": tracks, "verdict": verdict_word},
+          open(os.path.join(a.results, "verdict.json"), "w"), indent=1)
+print(html); print(json.dumps(tracks["Hurricane Laura"]["errors"])); print(json.dumps(tracks["Typhoon Bavi"]["errors"]))

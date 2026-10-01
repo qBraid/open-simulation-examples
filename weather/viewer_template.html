@@ -34,7 +34,7 @@ canvas#gl{width:100%;height:100%;display:block;touch-action:none}
 #valid b{color:var(--accent)}
 #controls{left:14px;right:14px;bottom:14px;display:grid;grid-template-columns:auto 1fr auto;gap:8px 14px;align-items:center}
 #controls .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;grid-column:1/-1}
-button,select{font:500 12.5px "IBM Plex Sans",sans-serif;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:8px;padding:5px 10px;cursor:pointer}
+button,select{display:inline-flex;align-items:center;gap:6px;font:500 12.5px "IBM Plex Sans",sans-serif;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:8px;padding:5px 10px;cursor:pointer}
 button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 #play{width:38px;font-size:14px}
@@ -103,7 +103,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 <div class="panel" id="caption"></div>
 
 <div class="panel" id="controls">
-  <button id="play" aria-label="Play">▶</button>
+  <button id="play" aria-label="Play"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.5v11l9-5.5z" fill="currentColor"/></svg></button>
   <input id="lead" type="range" min="0" max="120" step="1" value="0" aria-label="Forecast lead time (hours)">
   <span class="mono" id="leadlbl">+0 h</span>
   <div id="ticks"></div>
@@ -123,9 +123,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     <button id="t-sun" aria-pressed="true">Day / night</button>
     <button id="t-trk" aria-pressed="true">Storm tracks</button>
     <span class="lbl"></span>
-    <button id="tour">▶ Guided tour</button>
+    <button id="tour"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.5v11l9-5.5z" fill="currentColor"/></svg> Guided tour</button>
     <button id="t-stamp" aria-pressed="false">Run details</button>
-    <button id="theme" aria-label="Toggle theme">◐</button>
+    <button id="theme" aria-label="Toggle theme"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M7 1.5a5.5 5.5 0 0 1 0 11z" fill="currentColor"/></svg></button>
   </div>
 </div>
 
@@ -168,7 +168,7 @@ function lonlatToVec(lon, lat, r=1){
   const la = lat*Math.PI/180, lo = lon*Math.PI/180;
   return new THREE.Vector3(r*Math.cos(la)*Math.sin(lo), r*Math.sin(la), r*Math.cos(la)*Math.cos(lo));
 }
-camera.position.copy(lonlatToVec(-60, 22, 3.9));
+camera.position.copy(lonlatToVec(-55, 20, 4.8));
 
 // stars
 {
@@ -294,15 +294,15 @@ const globe = new THREE.Mesh(new THREE.SphereGeometry(1, 192, 128), globeMat);
 scene.add(globe);
 
 // atmosphere: fresnel glow shell
-const atmo = new THREE.Mesh(new THREE.SphereGeometry(1.085, 96, 64), new THREE.ShaderMaterial({
-  uniforms:{sunDir:{value:new THREE.Vector3(1,0,0)}, useSun:{value:1}, tint:{value:new THREE.Color(0x5fb6ff)}},
+const atmo = new THREE.Mesh(new THREE.SphereGeometry(1.055, 96, 64), new THREE.ShaderMaterial({
+  uniforms:{sunDir:{value:new THREE.Vector3(1,0,0)}, useSun:{value:1}, tint:{value:new THREE.Color(0x5fb6ff)}, glow:{value:1}},
   vertexShader:`varying vec3 vN; varying vec3 vV; varying vec3 vW;
     void main(){ vec4 w = modelMatrix*vec4(position,1.); vW = w.xyz; vN = normalize(mat3(modelMatrix)*normal);
       vV = normalize(cameraPosition - w.xyz); gl_Position = projectionMatrix*viewMatrix*w; }`,
-  fragmentShader:`uniform vec3 sunDir, tint; uniform float useSun; varying vec3 vN; varying vec3 vV; varying vec3 vW;
-    void main(){ float fr = pow(1. - abs(dot(vN, vV)), 3.2);
+  fragmentShader:`uniform vec3 sunDir, tint; uniform float useSun, glow; varying vec3 vN; varying vec3 vV; varying vec3 vW;
+    void main(){ float fr = pow(1. - abs(dot(vN, vV)), 4.);
       float lit = mix(1., smoothstep(-.35,.45, dot(normalize(vW), normalize(sunDir))), useSun);
-      gl_FragColor = vec4(tint*fr*1.6*(.25+.75*lit), fr*.9); }`,
+      gl_FragColor = vec4(tint*fr*glow*(.2+.8*lit), fr*.8*glow); }`,
   side:THREE.BackSide, blending:THREE.AdditiveBlending, transparent:true, depthWrite:false
 }));
 scene.add(atmo);
@@ -416,6 +416,7 @@ function stepParticles(kind, fi, dtScale){
 // ---------- state & UI ----------
 const S = {lead:0, playing:false, ov:'tcwv', mode:'fc', wind:true, z5:true, sun:true, tracks:true, tour:null};
 const $ = id => document.getElementById(id);
+const ICON = {play:'<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.5v11l9-5.5z" fill="currentColor"/></svg>', pause:'<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.5h3v11H3zM8 1.5h3v11H8z" fill="currentColor"/></svg>', stop:'<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="1.5" y="1.5" width="9" height="9" fill="currentColor"/></svg>'};
 const fmtDate = d => d.toISOString().slice(0,16).replace('T',' ') + ' UTC';
 const init = new Date(P.init + 'Z');
 $('subtitle').innerHTML = `${P.model_label} from ERA5 at ${fmtDate(init)} · ${P.gpu} · ${P.step_s.toFixed(2)} s per 6 h step`;
@@ -431,6 +432,8 @@ function subsolar(date){   // NOAA-style approximation, good to ~0.1 deg
   let lon = (ra*180/Math.PI - gmst) % 360; if (lon < -180) lon += 360; if (lon > 180) lon -= 360;
   return [lon, dec*180/Math.PI];
 }
+function themeIsDark(){ const r = document.documentElement.dataset.theme; return r ? r==='dark' : matchMedia('(prefers-color-scheme: dark)').matches; }
+function applyTheme(){ atmo.material.uniforms.glow.value = themeIsDark() ? 1.5 : .7; }
 function drawCbar(){
   const c = P.vmeta[S.ov], err = S.mode === 'err';
   const lut = Uint8Array.from(atob(P.cmaps[err ? 'diverging' : c.cmap]), ch=>ch.charCodeAt(0));
@@ -458,8 +461,8 @@ document.querySelectorAll('[data-ov]').forEach(b => b.onclick = () => setOverlay
 document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => setMode(b.dataset.mode));
 toggle('t-wind','wind'); toggle('t-z5','z5'); toggle('t-sun','sun'); toggle('t-trk','tracks');
 $('t-stamp').onclick = () => { const o = $('stamp').classList.toggle('open'); $('t-stamp').setAttribute('aria-pressed', o); };
-$('theme').onclick = () => { const r = document.documentElement; const cur = r.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark':'light'); r.dataset.theme = cur==='dark'?'light':'dark'; drawChart(); };
-$('play').onclick = () => { S.playing = !S.playing; $('play').textContent = S.playing ? '❚❚' : '▶'; };
+$('theme').onclick = () => { const r = document.documentElement; const cur = r.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark':'light'); r.dataset.theme = cur==='dark'?'light':'dark'; drawChart(); applyTheme(); };
+$('play').onclick = () => { S.playing = !S.playing; $('play').innerHTML = S.playing ? ICON.pause : ICON.play; };
 $('lead').oninput = e => { S.lead = +e.target.value; };
 // swipe handle
 let split = .5;
@@ -477,7 +480,7 @@ function drawChart(){
   const series = P.scores[chartVar];
   const leads = [24,72,120];
   const ymax = Math.max(...series.flatMap(s => s.vals.filter(x=>x!=null))) * 1.12;
-  const X = h => pad.l + (h-24)/(96)*(W-pad.l-pad.r), Y = v => H-pad.b - v/ymax*(H-pad.t-pad.b);
+  const X = h => pad.l + 8 + (h-24)/(96)*(W-pad.l-pad.r-26), Y = v => H-pad.b - v/ymax*(H-pad.t-pad.b);
   let g = '';
   for (let k=0;k<=4;k++){ const v = ymax*k/4, y = Y(v); g += `<line x1="${pad.l}" x2="${W-pad.r}" y1="${y}" y2="${y}" stroke="${css('--line')}" stroke-width="1"/>`;
     g += `<text x="${pad.l-4}" y="${y+3}" font-size="9" text-anchor="end" fill="${css('--muted')}" font-family="IBM Plex Mono">${v<10? v.toFixed(1): Math.round(v)}</text>`; }
@@ -518,8 +521,8 @@ function flyTo(stop, ms=2600){
   });
 }
 $('tour').onclick = async () => {
-  if (S.tour){ S.tour = null; $('caption').classList.remove('show'); $('tour').textContent = '▶ Guided tour'; return; }
-  S.tour = {}; S.playing = false; $('play').textContent = '▶'; $('tour').textContent = '■ Stop tour'; controls.enabled = false;
+  if (S.tour){ S.tour = null; $('caption').classList.remove('show'); $('tour').innerHTML = ICON.play + ' Guided tour'; return; }
+  S.tour = {}; S.playing = false; $('play').innerHTML = ICON.play; $('tour').innerHTML = ICON.stop + ' Stop tour'; controls.enabled = false;
   for (const stop of tourStops){
     if (!S.tour) break;
     $('caption').innerHTML = stop.html; $('caption').classList.add('show');
@@ -530,14 +533,15 @@ $('tour').onclick = async () => {
       await new Promise(r => setTimeout(r, 16));
     }
   }
-  S.tour = null; controls.enabled = true; $('caption').classList.remove('show'); $('tour').textContent = '▶ Guided tour';
+  S.tour = null; controls.enabled = true; $('caption').classList.remove('show'); $('tour').innerHTML = ICON.play + ' Guided tour';
 };
 
 // ---------- frame loop ----------
-function resize(){ const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w/h; camera.updateProjectionMatrix();
+function resize(){ const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w/h;
+  const ch = document.getElementById('controls').getBoundingClientRect().height; camera.setViewOffset(w, h, 0, Math.round(ch*.45), w, h); camera.updateProjectionMatrix();
   globeMat.uniforms.res.value.set(w*renderer.getPixelRatio(), h*renderer.getPixelRatio()); placeSplit(); }
 addEventListener('resize', resize); resize();
-setOverlay('tcwv'); setMode('fc');
+setOverlay('tcwv'); setMode('fc'); applyTheme();
 let hidden = false; document.addEventListener('visibilitychange', () => { hidden = document.hidden; if (!hidden) requestAnimationFrame(loop); });
 let last = performance.now(), shownZ = null;
 function loop(now){
