@@ -8,11 +8,11 @@ description: Run and score AI global weather forecasts (NVIDIA Earth2Studio with
 ## What runs where
 | Task | Machine | Notes |
 |---|---|---|
-| SFNO 73-ch, 0.25°, 5-day forecast | `gpu-l4` (24 GB) is enough | ~__STEP__ s per 6 h step on an L4; model load ~__LOAD__ s |
+| SFNO 73-ch, 0.25°, 5-day forecast | `gpu-l4` (24 GB) is enough | ~1.2 s per 6 h step on an L4 after warm-up; first model load ~100 s (NGC download) |
 | FCN3, larger models, ensembles | `gpu-a100-sxm` / `gpu-h100-sxm` | ensembles scale linearly in memory; start with 4 members on an L4 |
 | Scoring, plotting, viewer build | CPU or the Lab pod | xarray + numpy only |
 
-## Install (verified __DATE__)
+## Install (verified 2026-10-01)
 Earth2Studio 0.19 does **not** install cleanly with a bare `pip install earth2studio[sfno]`:
 1. `makani` is not on PyPI. Install it from the pin in Earth2Studio's own pyproject:
    `"makani @ git+https://github.com/NVIDIA/makani.git@b38fcb2799d7dbc146fa60459f3f9823394a8bf1"`.
@@ -22,7 +22,14 @@ Earth2Studio 0.19 does **not** install cleanly with a bare `pip install earth2st
    `operator torchvision::nms does not exist`).
 3. The env is ~12 GB. On GPU boxes whose home is a network filesystem, put it on local disk if there is
    room. Otherwise expect a slow, one-off install. Delete the uv/pip cache afterwards.
-4. Set `EARTH2STUDIO_CACHE` to a large disk. Weights and ERA5 chunks are cached there.
+4. Set `EARTH2STUDIO_CACHE` to a large disk for the weights, but use `ARCO(cache=False)` for ERA5: an ARCO
+   chunk carries every pressure level, so caching costs about 11 GB per start date.
+5. **FCN3 needs CUDA DISCO kernels.** The PyPI `torch-harmonics` wheel is CPU-only (`+torch2.11.0.cpu`), and
+   FCN3 fails with `Could not run 'disco_kernels::forward' with arguments from the 'CUDA' backend`. SFNO is
+   unaffected. To fix it, build from the GitHub tag with `FORCE_CUDA_EXTENSION=1 --no-build-isolation`, using the
+   pip CUDA toolchain (`nvidia-cuda-nvcc`, `nvidia-cuda-cccl`, `CUDA_HOME=<site-packages>/nvidia/cu13`). Pin
+   `nvidia-nvvm` and `nvidia-cuda-crt` to the **same** minor as `nvidia-cuda-nvcc`. torch 2.14 pulls nvvm 13.4,
+   and the build then dies with `ptxas fatal: Unsupported .version 9.4; current version is '9.0'`.
 
 ## Licences: only commercially usable weights
 - OK: SFNO / FourCastNet (NVIDIA), FCN3, Aurora (MIT).
@@ -43,5 +50,28 @@ Earth2Studio 0.19 does **not** install cleanly with a bare `pip install earth2st
 `weather/forecast_score.py <sfno|fcn3> <out>` → `weather/hres_score.py <out>` → `weather/build_viewer.py <out> <viz.npz>`.
 Run the GPU step through the queue on shared boxes.
 
-## Verified result (__DATE__)
-__RESULT__
+## Choosing the model (the decision that matters)
+- **`SFNO.load_default_package()` is `sfno_73ch_small`**, NVIDIA's public small checkpoint (embed 384, 8 layers).
+  It is a good demo model, but it is not HRES-class beyond day 1 (see below). Say so before a user quotes skill numbers.
+- For skill, use FCN3 (FourCastNet 3). It needs the torch-harmonics CUDA build above.
+- Always state which checkpoint ran. "SFNO" alone is ambiguous.
+
+## Verified result (2026-10-01, gpu-l4, 12 starts in 2020, 5-day leads)
+| | z500 day 1/3/5 (m²/s²) | T850 day 5 (K) | T2m day 5 (K) |
+|---|---|---|---|
+| sfno_73ch_small (this run) | 66 / 208 / 407 | 2.39 | 2.01 |
+| IFS HRES, same starts (our scorer) | 49 / 134 / 299 | 1.93 | 1.73 |
+| IFS HRES, WB2 2020 full year | 49 / 139 / 308 | 1.94 | 1.73 |
+
+- Our scorer reproduces WB2's HRES numbers, so the pipeline is right. SFNO-small is 36% worse than HRES on
+  day-5 z500 and only better on day-1 near-surface temperature.
+- The 12-start run took 17 GPU-minutes (~$0.15 of L4). The ERA5 fetch, not the GPU, dominates wall time.
+
+## Visuals
+`weather/viewer.html`: a three.js globe with an atmospheric glow and day/night terminator, wind particles
+advected from the forecast 850 hPa winds, z500 contours, a lead-time scrubber, a forecast vs ERA5 swipe,
+an error map, storm tracks, and a guided tour.
+- Fields are 1°, winds 2°, 8-bit with row deltas, all in one deflate stream: 5.0 MB.
+- The Agent Canvas rejects about 5 MB (HTTP 413), so keep payloads under that.
+- Verify inside a `sandbox="allow-scripts"` srcdoc frame with `weather/verify_viewer.py` (Playwright waits on
+  `window.__ready` and freezes the render loop via `window.__freeze` before each screenshot).
