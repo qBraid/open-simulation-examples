@@ -498,8 +498,8 @@ O.camera.position.set(14, 66, 78); O.controls.target.set(0, 16, 0);
 const opf = D.opf;
 const caseNames = Object.keys(opf.nets);
 let net = null;
-const vScale = 230, vBase = 0.92;
-const yOfV = v => (v - vBase) * vScale;
+let vLo = 0.94, vHi = 1.06;                       // set per case from its voltage limits
+const yOfV = v => 6 + (v - vLo) / (vHi - vLo) * 26;
 const glassMat = new THREE.MeshPhysicalMaterial({ transparent: true, opacity: 0.16, roughness: 0.15, metalness: 0, transmission: 0, side: THREE.DoubleSide, depthWrite: false });
 const glassEdgeMat = new THREE.LineBasicMaterial({ transparent: true, opacity: 0.8 });
 const oGroup = new THREE.Group(); O.scene.add(oGroup);
@@ -511,10 +511,11 @@ function bindCase(name) {
   oGroup.clear(); if (oFlows) O.scene.remove(oFlows.mesh);
   net = opf.nets[name];
   const N = net.nodes, E = net.edges;
-  const span = 34;
+  const span = N.x.length > 1000 ? 46 : 34;
+  vLo = Math.min(...N.vmin); vHi = Math.max(...N.vmax);
   const pos = N.x.map((x, i) => new THREE.Vector3(x * span, yOfV(N.vm[i]), N.y[i] * span));
   // voltage-limit planes
-  const vmin = Math.min(...N.vmin), vmax = Math.max(...N.vmax);
+  const vmin = vLo, vmax = vHi;
   for (const v of [vmin, vmax]) {
     const pl = new THREE.Mesh(new THREE.PlaneGeometry(2 * span + 8, 2 * span + 8).rotateX(-Math.PI / 2), glassMat);
     pl.position.y = yOfV(v); oGroup.add(pl);
@@ -527,7 +528,7 @@ function bindCase(name) {
   const stemPts = [];
   pos.forEach(p => { stemPts.push(p.x, 0, p.z, p.x, p.y, p.z); });
   const stemGeo = new THREE.BufferGeometry(); stemGeo.setAttribute('position', new THREE.Float32BufferAttribute(stemPts, 3));
-  oGroup.add(new THREE.LineSegments(stemGeo, new THREE.LineBasicMaterial({ transparent: true, opacity: 0.12, color: isDark() ? 0x9fb3b0 : 0x55625f })));
+  oGroup.add(new THREE.LineSegments(stemGeo, new THREE.LineBasicMaterial({ transparent: true, opacity: N.x.length > 1000 ? 0.035 : 0.12, color: isDark() ? 0x9fb3b0 : 0x55625f })));
   // branches
   const segs2 = E.a.map((a, i) => ({ a: pos[a], b: pos[E.b[i]], len: pos[a].distanceTo(pos[E.b[i]]), lift: 0 }));
   oLines = new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 1, 6, 1, true), new THREE.MeshStandardMaterial({ roughness: 0.4, metalness: 0.1 }), segs2.length);
@@ -560,6 +561,7 @@ function bindCase(name) {
   nodes.castShadow = true; oGroup.add(nodes);
   net._binding = binding; net._pos = pos;
   document.querySelectorAll('#caseSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.c === name));
+  if (!tour) { const big = N.x.length > 1000; O.camera.position.set(14, big ? 84 : 66, big ? 100 : 78); O.controls.target.set(0, 16, 0); }
   const rec = opf.cases.find(c => c.case === name);
   const ref = rec.reference?.ac, obj = rec.best?.objective;
   const rel = rec.rel_diff_vs_reference;
@@ -653,7 +655,7 @@ async function runOpfTour() {
   await flyTo(O, new THREE.Vector3(14, 66, 78), new THREE.Vector3(0, 16, 0)); await sleep(5000);
   if (!tour) return;
   card('Binding constraints are visible', `${net._binding} buses sit exactly on a voltage limit (red). These are the constraints that set the price of power. Cheaper dispatch would push them out of bounds.`);
-  await flyTo(O, new THREE.Vector3(55, yOfV(1.06) + 6, 30), new THREE.Vector3(0, yOfV(1.06), 0)); await sleep(5200);
+  await flyTo(O, new THREE.Vector3(55, yOfV(vHi) + 8, 30), new THREE.Vector3(0, yOfV(vHi), 0)); await sleep(5200);
   if (!tour) return;
   card('Certified, not just converged', `The AC solution is within ${opf.cases.find(c => c.case === name).certified_gap_pct.toFixed(2)}% of a convex lower bound we solve ourselves: a proof of near-optimality that a local solver alone can't give.`);
   await flyTo(O, new THREE.Vector3(-70, 30, 55), new THREE.Vector3(0, 14, 0)); await sleep(5200);
@@ -719,7 +721,7 @@ if (/dark/.test(location.hash)) document.documentElement.dataset.theme = 'dark';
 if (/light/.test(location.hash)) document.documentElement.dataset.theme = 'light';
 $('#stamp').textContent = D.stamp;
 bindScenario(grid.default || scnNames[0]);
-bindCase(caseNames[0]);
+bindCase(/2869/.test(location.hash) ? caseNames[caseNames.length - 1] : caseNames[0]);
 benchCharts();
 applyTheme();
 setTab(/opf/.test(location.hash) ? 'opf' : 'grid');

@@ -104,9 +104,13 @@ def layout(case, sol):
     g = nx.Graph()
     g.add_nodes_from(sol["bus"].keys())
     g.add_edges_from((b["f"], b["t"]) for b in sol["branch"])
-    pos = nx.kamada_kawai_layout(g) if len(g) <= 400 else nx.spring_layout(g, seed=7, iterations=150, k=1.6 / math.sqrt(len(g)))
+    if len(g) <= 400:
+        pos = nx.kamada_kawai_layout(g)
+    else:  # ForceAtlas2 keeps large sparse grids spread out (spring layout curls them into a ring)
+        pos = nx.forceatlas2_layout(g, max_iter=300, seed=7, scaling_ratio=2.0, gravity=2.0, linlog=False)
     xy = np.array([pos[n] for n in sol["bus"]])
-    xy = (xy - xy.mean(0)) / np.abs(xy - xy.mean(0)).max()
+    xy = xy - np.median(xy, 0)
+    xy = np.clip(xy / np.percentile(np.abs(xy), 97), -1.15, 1.15)      # robust scale: outliers don't squash the core
     out = {n: [round(float(a), 4), round(float(b), 4)] for n, (a, b) in zip(sol["bus"], xy)}
     cache.write_text(json.dumps(out))
     return out

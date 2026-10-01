@@ -7,31 +7,31 @@
    "formulation": "polar",
    "objective": 97213.6069696808,
    "status": "optimal",
-   "seconds": 0.4
+   "seconds": 0.38
   },
   {
    "formulation": "rectangular",
    "objective": 97213.60698022414,
    "status": "optimal",
-   "seconds": 0.28
+   "seconds": 0.26
   },
   {
    "formulation": "current-voltage",
    "objective": 97213.60697996752,
    "status": "optimal",
-   "seconds": 0.34
+   "seconds": 0.33
   }
  ],
  "best": {
   "formulation": "polar",
   "objective": 97213.6069696808,
   "status": "optimal",
-  "seconds": 0.4
+  "seconds": 0.38
  },
  "soc": {
   "objective": 96335.84061946768,
   "status": "optimal",
-  "seconds": 0.37
+  "seconds": 0.35
  },
  "reference": {
   "ac": 97214.0,
