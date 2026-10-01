@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Ahmed body, half model, k-omega SST, snappyHexMesh + simpleFoam.
 # Usage: run.sh <workdir> [nprocs]                      (cfd env active)
-# Env:   SLANT=25|35 (deg, default 35)   LEVEL=coarse|medium|fine (default medium)
+# Env:   SLANT=25|35 (deg, default 35)   LEVEL=coarse|medium|fine|xfine (default medium)
 #        GROUND=fixed|moving (default fixed: no-slip floor, as in the wind tunnel)
 #        ITERS (default 1000)   RESUME=1 skips meshing and continues from the latest write
 # The mesh ladder scales the background mesh by 1.33 per level (cells ~2.4x per level);
@@ -14,7 +14,8 @@ PSTREAM="$CONDA_PREFIX/lib/mpich-3.3/libPstream.so"   # see cylinder2d/run.sh
 par() { if [ "$NP" -gt 1 ]; then mpirun -np "$NP" -genv LD_PRELOAD "$PSTREAM" "$@" -parallel; else "$@"; fi; }
 if [ "${RESUME:-0}" != 1 ]; then
   rm -rf "$WORK"; mkdir -p "$WORK"; cp -r "$HERE/case/." "$WORK/"; cd "$WORK"
-  case $LEVEL in coarse) B="66 11 14";; medium) B="88 15 18";; fine) B="117 20 24";; *) echo "bad LEVEL"; exit 2;; esac
+  case $LEVEL in coarse) B="66 11 14";; medium) B="88 15 18";; fine) B="117 20 24";; xfine) B="156 27 32";; *) echo "bad LEVEL"; exit 2;; esac
+  sed -i "s/maxLocalCells 2000000; maxGlobalCells 4000000;/maxLocalCells 6000000; maxGlobalCells 12000000;/" system/snappyHexMeshDict
   sed -i "s/(88 15 18)/($B)/" system/blockMeshDict
   if [ "$GROUND" = fixed ]; then
     sed -i 's/ground   { type fixedValue; value uniform (40 0 0); }/ground   { type noSlip; }/' 0/U

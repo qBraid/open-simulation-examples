@@ -62,9 +62,9 @@ for case in sorted(glob.glob(str(root / "a[0-9][0-9]_*"))):
     S["levels"][lv] = dict(cells=int(kv["cells"]), Cd=f["Cd"], Cd_std=f["Cd_std"], Cl=f["Cl"], iters=f["iters"],
                            ground=kv["ground"], wall_min=wall(case), run=os.path.basename(case))
 for s, S in slants.items():
-    order = [l for l in ("fine", "medium", "coarse") if l in S["levels"]]
+    order = [l for l in ("xfine", "fine", "medium", "coarse") if l in S["levels"]]
     S["best"] = order[0]
-    L = [S["levels"][l]["Cd"] for l in ("coarse", "medium", "fine") if l in S["levels"]]
+    L = [S["levels"][l]["Cd"] for l in ("coarse", "medium", "fine", "xfine") if l in S["levels"]]
     S["ladder_change_pct"] = round(100 * (L[-1] - L[-2]) / L[-2], 2) if len(L) > 1 else None
 
 bar = ("Top-10% for steady-RANS external aero on the Ahmed body: drag within 5% of the wind-tunnel value on "

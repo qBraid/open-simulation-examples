@@ -81,6 +81,25 @@ the method, not against a vendor's marketing numbers.
     3.2M cells, roughly 1.5 h on 2 ranks) would be needed to close it.
   - Without it, the 0.4% should be read as "inside the band on a converging
     mesh", not as a converged answer.
+- **Fourth level (xfine, 3.23M cells, 35°): attempted 2026-10-01, not completed.**
+  It ran on a dedicated 32-CPU box, cores 0–9, with 10 MPI ranks. The box
+  stopped at about 08:25Z, before the run converged and before results were
+  copied back.
+
+  | Iteration | Mean Cd, last 150 iterations | Drift vs previous 150 |
+  |---|---|---|
+  | 563 | 0.2787 | 7.4% |
+  | 709 | 0.2692 | 3.7% |
+  | 871 | 0.2643 | 1.6% |
+
+  - It was still converging, at 2.8% above the fine-mesh value and falling.
+    The fine level showed the same shape at about 500 iterations.
+  - The stopping rule was at least 800 iterations and under 0.15% drift; the
+    run had not met it.
+  - So the 35° verdict stays **close**. Settling it needs about 1300 iterations
+    at this mesh: roughly 80 min on 10 ranks of a `cpu-32v-128g` box.
+  - The case setup is `LEVEL=xfine` in `ahmed/run.sh`.
+  - Copy the force history back after every leg. A box can stop under you.
 - **25°: not reached.** Every level sits 5–10% below the experiment, Cd keeps
   falling as the mesh refines (about 2% per level), and the flow topology is
   wrong:
@@ -184,6 +203,14 @@ qbraid-canvas wind-tunnel/viewer.html --title "Virtual wind tunnel"
   and nothing warns you. `cylinder2d/run.sh` sets `writeInterval` to the leg's
   end time. This bug cost one pair of v2 runs. The force history of their
   first leg (t = 0–120) was complete and is what the table quotes.
+- **Two MPI jobs on one instance crash at startup in UCX** with a segfault in
+  `ucs_mpool_grow`, "address not mapped to object at address 0x10". The cause
+  is the 64 MB `/dev/shm` on qBraid instances: the first job's ranks take most
+  of it. Run the second job with `UCX_TLS=self,tcp`.
+- **Memory bandwidth limits SIMPLE iteration speed on shared boxes.** On a
+  `cpu-32v-128g` box shared with two other workers, 3.2M cells ran at about
+  6.5 iterations per minute on 5 ranks and about 16 on 10 ranks. Each rank sat
+  at 50–90% CPU.
 - **`nproc` lies on qBraid instances.** The gpu-l4 box reports 48 CPUs, but its
   cgroup quota is 5.1 (`/sys/fs/cgroup/cpu/cpu.cfs_quota_us`). Size MPI runs from
   the quota.
