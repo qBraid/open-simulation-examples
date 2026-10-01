@@ -16,14 +16,19 @@ import time
 import numpy as np
 import scipy.sparse as sp
 
-try:
-    from sksparse.cholmod import cholesky as _cholesky
+try:  # scikit-sparse >= 0.5: cho_factor(A).solve(b); older: cholesky(A)(b)
+    from sksparse import cholmod as _cm
+
+    def _cholesky(A):
+        if hasattr(_cm, "cho_factor"):
+            return _cm.cho_factor(A).solve
+        return _cm.cholesky(A)
 except Exception:  # pragma: no cover - fallback when CHOLMOD is unavailable
     _cholesky = None
 
 
 def solve_spd(K, f):
-    """Solve K u = f for a symmetric positive definite sparse K."""
+    """Solve K u = f for a symmetric positive definite sparse K (CHOLMOD if available)."""
     if _cholesky is not None:
         return _cholesky(K.tocsc())(f)
     from scipy.sparse.linalg import spsolve
