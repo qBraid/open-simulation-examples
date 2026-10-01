@@ -19,7 +19,8 @@ d = json.load(open("data/mp-985592_Li6PS5Cl.json"))
 prim = Atoms(d["species_at_sites"], positions=d["cartesian_site_positions"], cell=d["lattice_vectors"], pbc=True)
 P = np.array([[-1, 1, 1], [1, -1, 1], [1, 1, -1]]) * 2  # fcc primitive -> 2x2x2 conventional
 atoms = make_supercell(prim, P)
-calc = mace_mp(model={"mp0": "medium", "mpa0": "medium-mpa-0", "mp0b3": "medium-0b3"}[model], device="cuda", default_dtype="float32")
+import os
+calc = mace_mp(model={"mp0": "medium", "mpa0": "medium-mpa-0", "mp0b3": "medium-0b3"}[model], device=os.environ.get("DEVICE", "cuda"), default_dtype="float32")
 atoms.calc = calc
 FIRE(FrechetCellFilter(atoms), logfile=None).run(fmax=0.05, steps=300)
 MaxwellBoltzmannDistribution(atoms, temperature_K=T, rng=np.random.default_rng(7))
