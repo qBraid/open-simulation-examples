@@ -14,14 +14,14 @@ Reference implementation: `robotics/` in qBraid/open-simulation-examples (Go1 jo
   - Import the 10-line `jax_compat.py` shim before training.
 - **Disk:** the venv is **6.4 GB**, 4.5 GB of it NVIDIA CUDA wheels. Put it on local `/tmp`, never on the network home of GPU instances.
 - **First `registry.load()`** clones MuJoCo Menagerie (about 30 s) into site-packages.
-- **Backend:** Playground 0.2.0 envs default to `impl="warp"` (MuJoCo Warp), not JAX MJX. Linesearch-iteration warnings are harmless spam.
-- **Throughput:** Go1JoystickFlatTerrain at 8192 envs runs at about **40k PPO steps/s on one L4** at 100% GPU. The report gives 417k on an A100 (Table 7, MJX era). Budget accordingly.
+- **Backend:** Playground 0.2.0 envs default to `impl="warp"` (MuJoCo Warp), not JAX MJX. Warp prints solver/line-search "iterations limit reached" from inside GPU kernels for every world, every step. At 8192 worlds that's **8 GB of log in 20 min** and a ~4x slowdown. Import `warp_quiet.py`, which clears those two `opt.warn_overflow` bits at model creation (physics unchanged), and pipe stdout through `logcap.py`.
+- **Throughput:** Go1JoystickFlatTerrain at 8192 envs runs at **183k PPO steps/s end-to-end on one L4** with logging silenced. The report gives 417k on an A100 (Table 7, MJX). On gpu-l4 that's about $0.07 per 100M steps.
 - **Capped GPU jobs:** save `params_<step>.pkl` at every eval via `policy_params_fn`. Resume with `restore_params=` and offset the step counter. Normaliser stats come back with the params; the Adam state resets.
 
 ## Decision rules
 - **Simulator.** MuJoCo Playground (Apache-2.0) is the default for RL-to-real recipes with published baselines. Genesis or Newton (Apache-2.0) suit very large parallel or differentiable scenes; Drake suits model-based control. Isaac Sim/Lab is free but not OSS.
 - **GPU by task:**
-  - flat-terrain quadruped joystick (200M steps): L4, about 85 min, under $1;
+  - flat-terrain quadruped joystick (200M steps): L4, about 20 min of clean training, about $0.30 including compile and resume;
   - rough terrain or humanoids (3–4x slower per step): A100/H100, or accept multi-hour L4 runs.
 - **Benchmark first.** Use the same env and recipe as the report, and compare eval reward against its Figure 11 curve. Add physical metrics too: velocity-tracking RMSE and fall rate under the env's own command distribution. Reward alone hides falls, because it's clipped at 0.
 
@@ -33,5 +33,23 @@ Reference implementation: `robotics/` in qBraid/open-simulation-examples (Go1 jo
   - Policy in JS: normalise → MLP with swish hidden layers → `tanh` of the first `nu` outputs → `ctrl = home + 0.5·a`, with 5 substeps per action. `live_check.py` is the Python twin and must agree with Brax inference to float32 precision.
 - **Screenshots:** use Playwright's `chrome-headless-shell` with the conda-forge libs (`LD_LIBRARY_PATH=/tmp/ose-envs/chromelibs/lib`, flags `--use-angle=swiftshader --enable-unsafe-swiftshader --virtual-time-budget=…`). The viewer's URL hashes (`#live`, `#t=12`, `#dark`) set up states for screenshots.
 
-## Verified recipe
-See `robotics/README.md` for the commands, numbers and stamp.
+## Verified recipe (stamp: 2026-10-01, qBraid gpu-l4, driver 595)
+`train.py` (official config, seed 0) → `run_resume.sh` after the 40-min cap → `evaluate.py` (final + early) → `export_live.py` → `live_check.py` (twice, with the model solver and the default solver) → `make_bench.py` → `build_viewer.py`.
+
+| Metric | Value |
+|---|---|
+| Steps | 218M |
+| Training time | 37 min of GPU, $0.30 (42 min, $0.34 including evals and a failed start) |
+| Final eval reward | **28.1**, against ≈27 in Playground Fig. 11 |
+| Tracking RMSE | 0.082 m/s xy, 0.085 rad/s yaw |
+| Falls | 0 of 512 twenty-second episodes |
+| Sim-to-sim in CPU MuJoCo | 0.057 m/s, no fall |
+| With MuJoCo's default solver | 0.066 m/s |
+| JS network vs Brax | agrees to 1e-6 |
+
+Mid-training it lagged the reference by about 20M steps (20.3 vs ≈25 at 60M), with one seed and Adam reset at the resume.
+
+## Pitfalls
+- **Don't trust reward alone.** It's clipped at 0 per step, so a flailing policy reads as 0 rather than strongly negative. Report tracking RMSE and falls too.
+- **Viewer sandboxing:** the Agent Canvas is an origin-null srcdoc frame. MuJoCo WASM from jsDelivr loads there (CORS `*`); verified with a `sandbox="allow-scripts"` srcdoc wrapper in headless Chromium.
+- **After a time jump, snap the follow camera.** At software-rendering frame rates a lerping camera never catches up, and screenshots look wrong.

@@ -65,8 +65,8 @@ python3 build_viewer.py --run runs/go1_flat --geometry geometry.json --ghost ear
 
 ## Gotchas found on the way
 1. **Brax 0.14.2 vs JAX ≥ 0.10.** Brax still calls `jax.device_put_replicated`, which JAX has removed, and Flax 0.12.10 needs JAX ≥ 0.11.1, so downgrading isn't possible. `jax_compat.py` restores the single-host behaviour.
-2. **MuJoCo Warp prints from inside its GPU kernels** every time a world hits the line-search cap. With 8,192 worlds that produced **8 GB of log in 20 minutes** in our first run, filled the shared disk, and cost about 10× in wall-clock (Brax's in-epoch throughput was ~399k steps/s against ~40k end to end).
-   - `warp_quiet.py` clears only that warning bit at model creation.
+2. **MuJoCo Warp prints from inside its GPU kernels** every time a world hits the line-search cap. With 8,192 worlds that produced **8 GB of log in 20 minutes** in our first run, filled the shared disk, and cost about 10× in wall-clock (37k steps/s end to end in that run, against 183k once silenced).
+   - `warp_quiet.py` clears only those warning bits at model creation (the line-search and the solver-iterations warnings).
    - `logcap.py` filters and caps the log.
    - The physics is unchanged: the cap comes from the model XML, and MJX applies it silently.
 3. **The venv is 6.4 GB**, 4.5 GB of it CUDA wheels. Keep it on local disk. Playground's 2 GB Menagerie clone (`external_deps`) can live on the network filesystem via a symlink.
