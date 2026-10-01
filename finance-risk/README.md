@@ -70,9 +70,35 @@ sigma=0.2, T=1: 4.4867 vs 4.478). A Bermudan-50 FD price reproduces the table:
 FD grid is converged to 1e-5 (500 to 4000 nodes: 5.64117, 5.64121, 5.64122,
 5.64122), so the residual is in the published values.
 
-### 2. GPU Monte Carlo risk: see results below
+### 2. GPU Monte Carlo risk: reached
 
-MC_RESULTS_PLACEHOLDER
+**Validation on a linear book with a closed form.** 20 assets, $41.9M gross long/short, 10-day horizon, jointly normal P&L. Closed form: VaR 99% $1,409,332, ES 97.5% $1,416,749. There were 32 independent replications per N (8 at 1e8), on the NVIDIA L4 in FP64.
+
+| N | VaR bias vs closed form | SD / SE theory (VaR) | ES bias | SD / SE theory (ES) |
+|---|---|---|---|---|
+| 1e3 | +3,430 | 1.01 | +5,030 | 0.89 |
+| 1e4 | -1,354 | 0.95 | -939 | 0.96 |
+| 1e5 | +1,679 | 1.09 | +1,363 | 0.98 |
+| 1e6 | -558 | 0.86 | -342 | 0.77 |
+| 1e7 | -206 | 1.01 | -158 | 0.94 |
+| 1e8 | +124 | 0.68 | +135 | 0.79 |
+
+- The estimators converge on the closed form. The bias falls roughly like 1/sqrt(N) and is within about 2 standard errors of the replication mean at every N.
+- The ratio of observed spread to asymptotic SE ranges from 0.68 to 1.09 and averages 0.91. With 32 replications, the sampling uncertainty of an SD is about ±13%. At 1e8 there are only 8 replications (about ±27%), so the two low ratios (0.68, 0.77) are what this sample size allows rather than a mis-stated error bar.
+- The 1e8 point streams 10 chunks of 1e7 and keeps only the upper tail on the device. It takes 12 s per replication.
+
+**Option book, full revaluation.** 500 European options on 20 correlated underlyings. The book is net short options, a dealer-style short-volatility position, so the loss tail is fat. Every scenario reprices every option with Black-Scholes.
+
+| | Result |
+|---|---|
+| VaR 99%, 10-day | $685,658 |
+| ES 97.5% (FRTB) | $702,233 |
+| GPU throughput (L4, FP64, 2M scenarios) | 718k full revaluations/s |
+| CPU throughput (NumPy, 2 threads) | 47k/s |
+| Speedup | 15x |
+| Total GPU wall time (validation + book + path fan) | 32 s |
+
+The L4 is a weak FP64 part (about 1/64 of its FP32 rate), so 15x is a floor. An A100 or H100, or an FP32 run validated against FP64, moves this by another order of magnitude.
 
 ### 3. Portfolios: protocol reached, and 1/N still wins
 
@@ -138,4 +164,9 @@ directly.
 
 ## Verification stamp
 
-STAMP_PLACEHOLDER
+- Date: 2026-10-01 (UTC).
+- Machine: shared qBraid pool box `gpu-l4` (NVIDIA L4, driver 595.91, about 5 CPUs by cgroup). Viewer builds and screenshots ran on the subscription pod.
+- Environment: Python 3.12 venv, pinned in `requirements.lock`: QuantLib 1.43, CuPy 14.2 [ctk] (CUDA 12.9 runtime wheels), cvxpy 1.9.3 + Clarabel 0.11.1, NumPy 2.5.3, SciPy 1.18.1.
+- Wall times: `pricing.py` 194 s (1 core); `backtest.py` 23 s (1 core); `mc_risk.py` 32 s (L4); `vol_surface.py` under 5 s.
+- Compute cost: about 4.5 min of pool CPU plus 0.5 min of L4 GPU. At the gpu-l4 rate ($0.49/h for the whole box) this stream's share is **under $0.10**. Queue waits are not billed to the stream.
+- Data: Ken French Data Library (CRSP 202608 build) and CBOE index history to 2026-09-30, fetched 2026-10-01.
