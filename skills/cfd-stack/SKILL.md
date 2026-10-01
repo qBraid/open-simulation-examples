@@ -84,7 +84,7 @@ body, verified 2026-10-01, k-ω SST, wall functions, three levels at
 
 | Slant | Cd coarse / medium / fine | Experiment (Ahmed 1984) | Verdict |
 |---|---|---|---|
-| 35° | 0.276 / MED35 / 0.258 | 0.257 | fine within 0.4%: steady RANS is fit for this case |
+| 35° | 0.276 / 0.264 / 0.258 | 0.257 | fine within 0.4%, ladder still moving 2.2% per level: close (a fourth level would settle it) |
 | 25° | 0.270 / 0.264 / 0.259 | 0.285 | 9% low and still falling about 2% per level; the slant flow stays attached where the experiment separates and reattaches |
 
 The 25° slant is the textbook RANS failure. Say so instead of tuning toward

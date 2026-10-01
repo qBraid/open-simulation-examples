@@ -51,6 +51,7 @@ the method, not against a vendor's marketing numbers.
 | v1: inlet 10D, side walls ±30D, linearUpwind | 32.7k | 0.1685 | 1.381 | 1.5% / 2.3% above the band |
 | **v2: inlet 20D, side walls ±30D, linearUpwind** | 35.2k | **0.1655** | **1.346** | inside both bands |
 | v2: inlet 20D, ±30D, central differencing, Co 0.5 | 35.2k | 0.1652 | 1.341 | inside both bands |
+| v2: inlet 20D, ±30D, linearUpwind, the animated run (t = 70–115) | 35.2k | 0.1652 | 1.342 | inside both bands |
 | Reference | | 0.164–0.166 | 1.33–1.35 | |
 
 - **What changed:** the inlet distance. At 10D upstream, the inlet boundary
@@ -61,12 +62,25 @@ the method, not against a vendor's marketing numbers.
 - **Averaging window:** St and Cd are averaged over 6 shedding cycles,
   t = 80–120.
 
-### Ahmed body: **35° reached, 25° not reached** (see `results/ahmed_v2.json`)
+### Ahmed body: **35° close, 25° not reached** (see `results/ahmed_v2.json`)
 
-AHMED_TABLE
+| Slant | Mesh (half model) | Cells | Cd | Experiment | Error | Last refinement |
+|---|---|---|---|---|---|---|
+| 35° | coarse | 0.26M | 0.276 | 0.257 | +7.4% | |
+| 35° | medium | 0.59M | 0.264 | 0.257 | +2.6% | −4.4% |
+| **35°** | **fine** | **1.37M** | **0.258** | **0.257** | **+0.4%** | **−2.2%** |
+| 25° | coarse | 0.26M | 0.270 | 0.285 | −5.2% | |
+| 25° | medium | 0.59M | 0.264 | 0.285 | −7.4% | −2.4% |
+| **25°** | **fine** | **1.37M** | **0.259** | **0.285** | **−9.3%** | **−2.1%** |
 
-- **35°: reached.** On the fine mesh Cd is within 0.4% of the experiment,
-  inside the 5% band. The last refinement moved it by LADDER35.
+- **35°: close, effectively reached on accuracy.** On the fine mesh Cd is
+  within 0.4% of the experiment, comfortably inside the 5% band.
+  - The last refinement still moved Cd by 2.2%, just over the 2% convergence
+    criterion, so mesh independence is not yet demonstrated.
+  - The ladder is converging (−4.4%, then −2.2%), but a fourth level (about
+    3.2M cells, roughly 1.5 h on 2 ranks) would be needed to close it.
+  - Without it, the 0.4% should be read as "inside the band on a converging
+    mesh", not as a converged answer.
 - **25°: not reached.** Every level sits 5–10% below the experiment, Cd keeps
   falling as the mesh refines (about 2% per level), and the flow topology is
   wrong:
@@ -88,7 +102,16 @@ AHMED_TABLE
 
 ### Compute used
 
-COMPUTE
+| Where | What | Time | Cost |
+|---|---|---|---|
+| Shared `gpu-l4` pool box, CPU queue, 2 MPI ranks | cylinder ×3, Ahmed 35° coarse, medium and fine, Ahmed 25° fine, extraction | about 3.3 slot-hours (the box has 2 CPU slots and is shared by 10 streams) | ≤ **$0.80** share of a $0.49/h instance |
+| Subscription pod, serial lane | Ahmed 25° coarse and medium | about 1.7 h | $0 (subscription) |
+| GPU | none (XLB was not run, see below) | | |
+
+The pod restarted at about 03:40Z and lost the 25° coarse and medium run
+directories. Their forces were already collected into `results/ahmed_v2.json`,
+but their symmetry-plane slices are gone. In the viewer, those two levels show
+the Cd tag without a slice.
 
 ## The viewer
 
@@ -164,10 +187,13 @@ qbraid-canvas wind-tunnel/viewer.html --title "Virtual wind tunnel"
 - **`nproc` lies on qBraid instances.** The gpu-l4 box reports 48 CPUs, but its
   cgroup quota is 5.1 (`/sys/fs/cgroup/cpu/cpu.cfs_quota_us`). Size MPI runs from
   the quota.
-- **Headless screenshots on the pod** need Playwright's Chromium, the conda-forge
-  GUI libraries, and SwiftShader for WebGL:
+- **Headless screenshots on the pod** need Playwright's Chromium, SwiftShader
+  for WebGL, and these conda-forge GUI libraries in a private env:
+  `atk-1.0 at-spi2-atk at-spi2-core xorg-libxcomposite xorg-libxdamage xorg-libxfixes xorg-libxrandr libxkbcommon alsa-lib pango`.
+  Don't share that env path between concurrent workers: one worker's install
+  silently replaced another's, and pango vanished. Then run:
   ```
-  LD_LIBRARY_PATH=/tmp/ose-envs/chromelibs/lib chrome --headless=new --no-sandbox --use-angle=swiftshader --enable-unsafe-swiftshader --virtual-time-budget=15000 --screenshot=...
+  LD_LIBRARY_PATH=<env>/lib chrome --headless=new --no-sandbox --use-angle=swiftshader --enable-unsafe-swiftshader --virtual-time-budget=15000 --screenshot=...
   ```
   Headless Chrome enforces a minimum window width of about 500 px, so check
   phone layouts inside a 390 px iframe.

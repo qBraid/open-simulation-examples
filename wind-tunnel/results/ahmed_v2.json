@@ -63,10 +63,20 @@
      "ground": "fixed",
      "wall_min": 38.7,
      "run": "a35_fine"
+    },
+    "medium": {
+     "cells": 591870,
+     "Cd": 0.2638,
+     "Cd_std": 0.0,
+     "Cl": 0.0661,
+     "iters": 1000,
+     "ground": "fixed",
+     "wall_min": 11.6,
+     "run": "a35_medium"
     }
    },
    "best": "fine",
-   "ladder_change_pct": -6.59
+   "ladder_change_pct": -2.24
   }
  }
 }
