@@ -19,6 +19,7 @@ INITS = ["2020-01-15", "2020-02-05", "2020-03-15", "2020-04-15", "2020-05-17", "
 SCORE_VARS = ["z500", "t850", "t2m"]
 LEADS_H = [24, 72, 120]
 VIZ_VARS = ["z500", "t2m", "u850", "v850", "msl", "tcwv"]
+ERA5_VIZ = ["z500", "t2m", "u850", "v850", "tcwv", "msl"]
 
 
 def load_model(name):
@@ -88,8 +89,8 @@ def main():
             # matching ERA5 truth every 12 h for the swipe and error map
             for h in range(0, max(LEADS_H) + 1, 12):
                 vt = np.datetime64(init + timedelta(hours=h))
-                tr, _ = fetch_data(era5, time=np.array([vt]), variable=np.array(["z500", "t2m", "u850", "v850"]), device="cpu")
-                for k, v in enumerate(["z500", "t2m", "u850", "v850"]):
+                tr, _ = fetch_data(era5, time=np.array([vt]), variable=np.array(ERA5_VIZ), device="cpu")
+                for k, v in enumerate(ERA5_VIZ):
                     viz[f"era5_{v}_{h:03d}"] = tr[0, 0, k].numpy()
             np.savez_compressed(os.path.join(a.out, f"{a.model}_viz_{init:%Y%m%d%H}.npz"), lat=lat, lon=np.asarray(cs["lon"]),
                                 **{k: v.astype(np.float32) for k, v in viz.items()})

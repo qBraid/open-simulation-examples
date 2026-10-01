@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Global Weather Forecast</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#eef1f4;--panel:rgba(255,255,255,.86);--panel-solid:#fff;--ink:#16202a;--muted:#5b6876;--line:#d3dae1;
+  --accent:#0f6e8c;--accent-ink:#fff;--good:#1d7f56;--warn:#b26a06;--bad:#b3372b;
+  --c-model:#0f6e8c;--c-hres:#b3372b;--c-gc:#6b4fb3;--c-pangu:#8a6d1d;--space-top:#dfe6ee;--space-bot:#b9c6d4;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#05080c;--panel:rgba(14,20,27,.82);--panel-solid:#0e141b;--ink:#e3e9ee;--muted:#93a1ad;--line:#26323d;
+  --accent:#4cc3e6;--accent-ink:#04121a;--good:#4cc38a;--warn:#e7a640;--bad:#f07a6c;
+  --c-model:#4cc3e6;--c-hres:#f07a6c;--c-gc:#a78bfa;--c-pangu:#d9b54a;--space-top:#03060a;--space-bot:#0a121c;
+}}
+:root[data-theme="dark"]{
+  --bg:#05080c;--panel:rgba(14,20,27,.82);--panel-solid:#0e141b;--ink:#e3e9ee;--muted:#93a1ad;--line:#26323d;
+  --accent:#4cc3e6;--accent-ink:#04121a;--good:#4cc38a;--warn:#e7a640;--bad:#f07a6c;
+  --c-model:#4cc3e6;--c-hres:#f07a6c;--c-gc:#a78bfa;--c-pangu:#d9b54a;--space-top:#03060a;--space-bot:#0a121c;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:14px/1.45 "IBM Plex Sans",system-ui,sans-serif;overflow:hidden}
+#stage{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 40%,var(--space-top),var(--space-bot))}
+canvas#gl{width:100%;height:100%;display:block;touch-action:none}
+.mono{font-family:"IBM Plex Mono",monospace}
+.panel{position:absolute;background:var(--panel);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+#title{top:14px;left:14px;max-width:420px}
+#title h1{margin:0 0 2px;font-size:18px;font-weight:600;letter-spacing:-.01em}
+#title .sub{color:var(--muted);font-size:12.5px}
+#valid{margin-top:8px;font:500 13px "IBM Plex Mono",monospace}
+#valid b{color:var(--accent)}
+#controls{left:14px;right:14px;bottom:14px;display:grid;grid-template-columns:auto 1fr auto;gap:8px 14px;align-items:center}
+#controls .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;grid-column:1/-1}
+button,select{font:500 12.5px "IBM Plex Sans",sans-serif;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:8px;padding:5px 10px;cursor:pointer}
+button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+#play{width:38px;font-size:14px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.lbl{color:var(--muted);font-size:12px;margin:0 2px 0 8px}
+#ticks{display:flex;justify-content:space-between;font:11px "IBM Plex Mono",monospace;color:var(--muted);grid-column:2}
+#cbar{top:14px;right:14px;width:250px}
+#cbar canvas{width:100%;height:12px;border-radius:3px;display:block;margin:6px 0 3px}
+#cbar .ends{display:flex;justify-content:space-between;font:11px "IBM Plex Mono",monospace;color:var(--muted)}
+#cbar .name{font-weight:600;font-size:12.5px}
+#scores{top:116px;right:14px;width:250px}
+#scores h2,#stamp h2{margin:0 0 6px;font-size:12.5px;font-weight:600}
+#scores svg{width:100%;height:150px;display:block}
+#scores .tabs{display:flex;gap:4px;margin-bottom:6px}
+#scores .tabs button{padding:2px 8px;font-size:11.5px}
+.legend{display:grid;grid-template-columns:auto 1fr auto;gap:2px 6px;font-size:11.5px;align-items:center}
+.legend i{width:14px;height:3px;border-radius:2px;display:inline-block}
+.legend .v{font-family:"IBM Plex Mono",monospace;color:var(--muted)}
+#verdict{margin-top:8px;font-size:12px;padding:6px 8px;border-radius:8px;border:1px solid var(--line)}
+#stamp{left:14px;top:150px;width:300px;font-size:12px;color:var(--muted);display:none}
+#stamp.open{display:block}
+#caption{left:50%;transform:translateX(-50%);bottom:132px;max-width:560px;text-align:center;font-size:14px;display:none}
+#caption.show{display:block}
+#caption b{color:var(--accent)}
+#splitbar{position:absolute;top:0;bottom:0;width:2px;background:var(--accent);display:none;cursor:ew-resize}
+#splitbar::after{content:"\2194";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--accent);color:var(--accent-ink);border-radius:50%;width:30px;height:30px;display:grid;place-items:center;font-size:15px}
+#splitlbl{position:absolute;top:70px;display:none;font:600 12px "IBM Plex Sans";gap:0}
+#splitlbl span{position:absolute;white-space:nowrap;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:2px 8px}
+#loading{position:absolute;inset:0;display:grid;place-items:center;font:500 14px "IBM Plex Mono";color:var(--muted)}
+@media (max-width:760px){
+  #scores,#stamp{display:none!important}
+  #cbar{top:auto;bottom:150px;right:14px;left:14px;width:auto}
+  #title{right:14px;max-width:none}
+  #controls{grid-template-columns:auto 1fr}
+  #caption{bottom:220px;width:calc(100% - 28px)}
+}
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="gl"></canvas></div>
+<div id="loading">decoding forecast fields…</div>
+<div id="splitbar"></div>
+<div id="splitlbl"><span id="sl-l">Forecast</span><span id="sl-r">ERA5 truth</span></div>
+
+<div class="panel" id="title">
+  <h1>Five days of global weather, forecast in seconds</h1>
+  <div class="sub" id="subtitle"></div>
+  <div id="valid"></div>
+</div>
+
+<div class="panel" id="cbar">
+  <div class="name" id="cb-name"></div>
+  <canvas id="cb" width="256" height="12"></canvas>
+  <div class="ends"><span id="cb-lo"></span><span id="cb-mid"></span><span id="cb-hi"></span></div>
+</div>
+
+<div class="panel" id="scores">
+  <h2>Skill against ERA5 (global RMSE, lower is better)</h2>
+  <div class="tabs" id="stabs"></div>
+  <svg id="chart" viewBox="0 0 250 150" role="img" aria-label="RMSE against lead time"></svg>
+  <div class="legend" id="legend"></div>
+  <div id="verdict"></div>
+</div>
+
+<div class="panel" id="stamp"></div>
+<div class="panel" id="caption"></div>
+
+<div class="panel" id="controls">
+  <button id="play" aria-label="Play">▶</button>
+  <input id="lead" type="range" min="0" max="120" step="1" value="0" aria-label="Forecast lead time (hours)">
+  <span class="mono" id="leadlbl">+0 h</span>
+  <div id="ticks"></div>
+  <div class="row">
+    <span class="lbl">Field</span>
+    <button data-ov="tcwv" aria-pressed="true">Water vapour</button>
+    <button data-ov="t2m" aria-pressed="false">2 m temperature</button>
+    <button data-ov="msl" aria-pressed="false">Sea-level pressure</button>
+    <span class="lbl">View</span>
+    <button data-mode="fc" aria-pressed="true">Forecast</button>
+    <button data-mode="truth" aria-pressed="false">ERA5 truth</button>
+    <button data-mode="swipe" aria-pressed="false">Swipe</button>
+    <button data-mode="err" aria-pressed="false">Error</button>
+    <span class="lbl">Layers</span>
+    <button id="t-wind" aria-pressed="true">Winds 850 hPa</button>
+    <button id="t-z5" aria-pressed="true">z500 contours</button>
+    <button id="t-sun" aria-pressed="true">Day / night</button>
+    <button id="t-trk" aria-pressed="true">Storm tracks</button>
+    <span class="lbl"></span>
+    <button id="tour">▶ Guided tour</button>
+    <button id="t-stamp" aria-pressed="false">Run details</button>
+    <button id="theme" aria-label="Toggle theme">◐</button>
+  </div>
+</div>
+
+<script id="payload" type="application/json">__PAYLOAD__</script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+// ---------- data ----------
+const P = JSON.parse(document.getElementById('payload').textContent);
+async function inflate(b64){
+  const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  const ds = new Blob([bin]).stream().pipeThrough(new DecompressionStream('deflate'));
+  return new Uint8Array(await new Response(ds).arrayBuffer());
+}
+const NX = P.grid.nx, NY = P.grid.ny, FR = NX*NY;
+const raw = {};
+for (const k of Object.keys(P.blobs)) raw[k] = await inflate(P.blobs[k]);
+const asI16 = u8 => new Int16Array(u8.buffer, u8.byteOffset, u8.byteLength/2);
+const asI8 = u8 => new Int8Array(u8.buffer, u8.byteOffset, u8.byteLength);
+document.getElementById('loading').remove();
+
+const LEADS = P.leads;                 // forecast frames every 6 h
+const TLEADS = P.truth_leads;          // ERA5 frames every 12 h
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+// ---------- renderer / scene ----------
+const canvas = document.getElementById('gl');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true; controls.dampingFactor = .07; controls.enablePan = false;
+controls.minDistance = 1.35; controls.maxDistance = 8; controls.rotateSpeed = .5; controls.zoomSpeed = .7;
+function lonlatToVec(lon, lat, r=1){
+  const la = lat*Math.PI/180, lo = lon*Math.PI/180;
+  return new THREE.Vector3(r*Math.cos(la)*Math.sin(lo), r*Math.sin(la), r*Math.cos(la)*Math.cos(lo));
+}
+camera.position.copy(lonlatToVec(-60, 22, 3.9));
+
+// stars
+{
+  const n = 2500, pos = new Float32Array(n*3);
+  for (let i=0;i<n;i++){ const v = new THREE.Vector3().randomDirection().multiplyScalar(40+Math.random()*20); pos.set([v.x,v.y,v.z], i*3); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  const stars = new THREE.Points(g, new THREE.PointsMaterial({size:.08, color:0xffffff, transparent:true, opacity:.7, depthWrite:false}));
+  stars.name='stars'; scene.add(stars);
+}
+
+// ---------- base map (land mask drawn from Natural Earth rings) ----------
+const BW = 2048, BH = 1024;
+const baseCanvas = document.createElement('canvas'); baseCanvas.width = BW; baseCanvas.height = BH;
+{
+  const ctx = baseCanvas.getContext('2d');
+  ctx.fillStyle = '#000'; ctx.fillRect(0,0,BW,BH);
+  const pts = asI16(raw.land_pts), lens = P.land_lens;
+  ctx.fillStyle = '#fff';
+  let o = 0;
+  for (const L of lens){
+    ctx.beginPath();
+    let prevX = null;
+    for (let i=0;i<L;i++){
+      const lon = pts[2*(o+i)]/100, lat = pts[2*(o+i)+1]/100;
+      let x = (lon+180)/360*BW; const y = (90-lat)/180*BH;
+      if (prevX!==null && Math.abs(x-prevX) > BW/2) x += (x < prevX ? BW : -BW);
+      i ? ctx.lineTo(x,y) : ctx.moveTo(x,y); prevX = x;
+    }
+    ctx.closePath(); ctx.fill(); o += L;
+  }
+}
+const landTex = new THREE.CanvasTexture(baseCanvas);
+landTex.wrapS = THREE.RepeatWrapping; landTex.anisotropy = 8;
+
+// coastlines as line segments on the sphere
+let coast;
+{
+  const pts = asI16(raw.land_pts), lens = P.land_lens; const seg = [];
+  let o = 0;
+  for (const L of lens){
+    for (let i=0;i<L-1;i++){
+      const a = lonlatToVec(pts[2*(o+i)]/100, pts[2*(o+i)+1]/100, 1.0015);
+      const b = lonlatToVec(pts[2*(o+i+1)]/100, pts[2*(o+i+1)+1]/100, 1.0015);
+      seg.push(a.x,a.y,a.z,b.x,b.y,b.z);
+    }
+    o += L;
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(seg,3));
+  coast = new THREE.LineSegments(g, new THREE.LineBasicMaterial({color:0xffffff, transparent:true, opacity:.35, depthWrite:false}));
+  scene.add(coast);
+}
+
+// ---------- field textures ----------
+function makeTex(u8){
+  const t = new THREE.DataTexture(u8, NX, NY, THREE.RedFormat, THREE.UnsignedByteType);
+  t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearFilter; t.wrapS = THREE.RepeatWrapping;
+  t.unpackAlignment = 1; t.needsUpdate = true; return t;
+}
+const tex = {};      // tex[var].fc[i], tex[var].tr[j]
+for (const v of P.vars){
+  tex[v] = {fc: [], tr: []};
+  const f = raw['fc_'+v], t = raw['tr_'+v];
+  for (let i=0;i<LEADS.length;i++) tex[v].fc.push(makeTex(f.subarray(i*FR,(i+1)*FR)));
+  for (let j=0;j<TLEADS.length;j++) tex[v].tr.push(makeTex(t.subarray(j*FR,(j+1)*FR)));
+}
+// perceptual colour maps (256-entry LUTs from the payload)
+function lutTex(name){
+  const rgb = Uint8Array.from(atob(P.cmaps[name]), c=>c.charCodeAt(0));
+  const d = new Uint8Array(256*4); for (let i=0;i<256;i++){ d[4*i]=rgb[3*i]; d[4*i+1]=rgb[3*i+1]; d[4*i+2]=rgb[3*i+2]; d[4*i+3]=255; }
+  const t = new THREE.DataTexture(d, 256, 1); t.colorSpace = THREE.SRGBColorSpace; t.magFilter = THREE.LinearFilter; t.needsUpdate = true; return t;
+}
+const LUT = {}; for (const k of Object.keys(P.cmaps)) LUT[k] = lutTex(k);
+
+// ---------- globe shader ----------
+const globeMat = new THREE.ShaderMaterial({
+  uniforms: {
+    land:{value:landTex}, fa:{value:null}, fb:{value:null}, ta:{value:null}, tb:{value:null},
+    mixF:{value:0}, mixT:{value:0}, lut:{value:null}, elut:{value:LUT.diverging},
+    mode:{value:0}, split:{value:.5}, res:{value:new THREE.Vector2(1,1)},
+    sunDir:{value:new THREE.Vector3(1,0,0)}, useSun:{value:1}, opacity:{value:.9},
+    errScale:{value:1}, gamma:{value:1}
+  },
+  vertexShader: `
+    varying vec2 vUv; varying vec3 vN; varying vec3 vW;
+    void main(){ vUv = uv; vN = normalize(normal); vW = (modelMatrix*vec4(position,1.)).xyz;
+      gl_Position = projectionMatrix*viewMatrix*vec4(vW,1.); }`,
+  fragmentShader: `
+    uniform sampler2D land, fa, fb, ta, tb, lut, elut;
+    uniform float mixF, mixT, split, opacity, useSun, errScale, gamma; uniform int mode; uniform vec2 res; uniform vec3 sunDir;
+    varying vec2 vUv; varying vec3 vN; varying vec3 vW;
+    vec3 cmap(sampler2D L, float x){ return texture2D(L, vec2(clamp(x,0.,1.)*.996+.002,.5)).rgb; }
+    void main(){
+      // data grids are lon 0..360 (east), lat +90..-90; three's sphere uv.x=0 at lon -90... handled in uv remap
+      // three's sphere: u = (lon + 90)/360. Data grids start at lon 0 (u - .25), rows north->south;
+      // the land canvas starts at lon -180 (u + .25) and, as a CanvasTexture, is flipped (north at v = 1).
+      vec2 uv = vec2(fract(vUv.x - .25), 1. - vUv.y);
+      vec2 luv = vec2(fract(vUv.x + .25), vUv.y);
+      float landm = texture2D(land, luv).r;
+      vec3 ocean = vec3(.035,.07,.12), ground = vec3(.20,.22,.20);
+      vec3 base = mix(ocean, ground, landm);
+      float f = mix(texture2D(fa,uv).r, texture2D(fb,uv).r, mixF);
+      float t = mix(texture2D(ta,uv).r, texture2D(tb,uv).r, mixT);
+      vec3 col;
+      int m = mode;
+      if (m == 2) m = (gl_FragCoord.x/res.x < split) ? 0 : 1;
+      if (m == 0) col = mix(base, cmap(lut, pow(f,gamma)), opacity);
+      else if (m == 1) col = mix(base, cmap(lut, pow(t,gamma)), opacity);
+      else { float e = (f - t)*errScale; col = mix(base, cmap(elut, .5 + .5*e), mix(.25, .95, min(1.,abs(e)*3.))); }
+      // sun lighting with soft terminator, faint night glow
+      float ndl = dot(normalize(vN), normalize(sunDir));
+      float day = smoothstep(-.12, .18, ndl);
+      float light = mix(1., mix(.16, 1.05, day) * (.85 + .15*max(ndl,0.)), useSun);
+      vec3 night = col*.16 + vec3(.01,.015,.04);
+      vec3 outc = mix(col, mix(night, col*light, day), useSun);
+      // terminator rim
+      outc += useSun * vec3(1.,.55,.25) * .08 * exp(-pow(ndl*9.,2.));
+      gl_FragColor = vec4(outc, 1.);
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+    }`
+});
+const globe = new THREE.Mesh(new THREE.SphereGeometry(1, 192, 128), globeMat);
+scene.add(globe);
+
+// atmosphere: fresnel glow shell
+const atmo = new THREE.Mesh(new THREE.SphereGeometry(1.085, 96, 64), new THREE.ShaderMaterial({
+  uniforms:{sunDir:{value:new THREE.Vector3(1,0,0)}, useSun:{value:1}, tint:{value:new THREE.Color(0x5fb6ff)}},
+  vertexShader:`varying vec3 vN; varying vec3 vV; varying vec3 vW;
+    void main(){ vec4 w = modelMatrix*vec4(position,1.); vW = w.xyz; vN = normalize(mat3(modelMatrix)*normal);
+      vV = normalize(cameraPosition - w.xyz); gl_Position = projectionMatrix*viewMatrix*w; }`,
+  fragmentShader:`uniform vec3 sunDir, tint; uniform float useSun; varying vec3 vN; varying vec3 vV; varying vec3 vW;
+    void main(){ float fr = pow(1. - abs(dot(vN, vV)), 3.2);
+      float lit = mix(1., smoothstep(-.35,.45, dot(normalize(vW), normalize(sunDir))), useSun);
+      gl_FragColor = vec4(tint*fr*1.6*(.25+.75*lit), fr*.9); }`,
+  side:THREE.BackSide, blending:THREE.AdditiveBlending, transparent:true, depthWrite:false
+}));
+scene.add(atmo);
+const rim = new THREE.Mesh(new THREE.SphereGeometry(1.012, 96, 64), new THREE.ShaderMaterial({
+  uniforms:{tint:{value:new THREE.Color(0x7cc8ff)}},
+  vertexShader:`varying vec3 vN; varying vec3 vV; void main(){ vec4 w = modelMatrix*vec4(position,1.);
+    vN = normalize(mat3(modelMatrix)*normal); vV = normalize(cameraPosition - w.xyz); gl_Position = projectionMatrix*viewMatrix*w; }`,
+  fragmentShader:`uniform vec3 tint; varying vec3 vN; varying vec3 vV; void main(){ float fr = pow(1.-max(dot(vN,vV),0.),5.); gl_FragColor = vec4(tint, fr*.55); }`,
+  blending:THREE.AdditiveBlending, transparent:true, depthWrite:false
+}));
+scene.add(rim);
+
+// ---------- z500 contours (precomputed polylines per frame) ----------
+const z5 = {fc: [], tr: []};
+{
+  for (const kind of ['fc','tr']){
+    const pts = asI16(raw['z5_'+kind+'_pts']), meta = P['z5_'+kind];   // meta: per frame [ [len, level], ... ]
+    let o = 0;
+    for (const frame of meta){
+      const seg = [], col = [];
+      for (const [L, lev] of frame){
+        const strong = (lev % 120 === 0);
+        const c = strong ? 1 : .6;
+        for (let i=0;i<L-1;i++){
+          const lo1 = pts[2*(o+i)]/100, la1 = pts[2*(o+i)+1]/100, lo2 = pts[2*(o+i+1)]/100, la2 = pts[2*(o+i+1)+1]/100;
+          if (Math.abs(lo1-lo2) > 180) continue;
+          const a = lonlatToVec(lo1, la1, 1.004), b = lonlatToVec(lo2, la2, 1.004);
+          seg.push(a.x,a.y,a.z,b.x,b.y,b.z); col.push(c,c,c,c,c,c);
+        }
+        o += L;
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(seg,3));
+      g.setAttribute('color', new THREE.Float32BufferAttribute(col,3));
+      const l = new THREE.LineSegments(g, new THREE.LineBasicMaterial({vertexColors:true, transparent:true, opacity:.55, depthWrite:false}));
+      l.visible = false; scene.add(l); z5[kind].push(l);
+    }
+  }
+}
+
+// ---------- cyclone tracks: forecast vs ERA5 (from sea-level-pressure minima) ----------
+const trackGroup = new THREE.Group(); scene.add(trackGroup);
+for (const tr of P.tracks){
+  for (const [kind, colVar] of [['fc','--c-model'],['tr','--c-hres']]){
+    const pts = tr[kind].map(p => lonlatToVec(p[0], p[1], 1.008));
+    if (pts.length < 2) continue;
+    const curve = new THREE.CatmullRomCurve3(pts);
+    const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, pts.length*8, .0026, 6, false),
+      new THREE.MeshBasicMaterial({color:new THREE.Color(css(colVar)), transparent:true, opacity:.95, depthWrite:false}));
+    trackGroup.add(tube);
+    for (const p of pts){ const dot = new THREE.Mesh(new THREE.SphereGeometry(.0065, 12, 8), tube.material); dot.position.copy(p); trackGroup.add(dot); }
+  }
+}
+
+// ---------- wind particles (earth.nullschool-style trails, advected on the real forecast u/v) ----------
+const TW = 2048, TH = 1024;
+const trailCanvas = document.createElement('canvas'); trailCanvas.width = TW; trailCanvas.height = TH;
+const tctx = trailCanvas.getContext('2d');
+const trailTex = new THREE.CanvasTexture(trailCanvas); trailTex.wrapS = THREE.RepeatWrapping;
+const trails = new THREE.Mesh(new THREE.SphereGeometry(1.006, 160, 100), new THREE.ShaderMaterial({
+  uniforms:{map:{value:trailTex}, sunDir:{value:new THREE.Vector3()}, useSun:{value:1}},
+  vertexShader:`varying vec2 vUv; varying vec3 vN; void main(){ vUv = uv; vN = normalize(mat3(modelMatrix)*normal); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
+  fragmentShader:`uniform sampler2D map; uniform vec3 sunDir; uniform float useSun; varying vec2 vUv; varying vec3 vN;
+    void main(){ vec2 uv = vec2(fract(vUv.x - .25), vUv.y); float a = texture2D(map, uv).r;
+      float day = mix(1., .45 + .55*smoothstep(-.15,.2, dot(vN, normalize(sunDir))), useSun);
+      gl_FragColor = vec4(vec3(1.)*a*day, a*day); }`,
+  transparent:true, blending:THREE.AdditiveBlending, depthWrite:false
+}));
+scene.add(trails);
+const U = {fc: asI8(raw.fc_u850), tr: asI8(raw.tr_u850)}, V = {fc: asI8(raw.fc_v850), tr: asI8(raw.tr_v850)};
+const WS = P.wind_scale;   // m/s per int8 step
+const NP = innerWidth < 760 ? 4000 : 9000;
+const plon = new Float32Array(NP), plat = new Float32Array(NP), page = new Uint16Array(NP);
+function seed(i){ plon[i] = Math.random()*360; plat[i] = Math.asin(Math.random()*2-1)*180/Math.PI; page[i] = Math.random()*80|0; }
+for (let i=0;i<NP;i++) seed(i);
+function windAt(kind, fi, lon, lat){
+  const x = ((lon%360)+360)%360 / 360 * NX, y = (90-lat)/180*(NY-1);
+  const x0 = Math.floor(x), y0 = Math.min(NY-2, Math.max(0, Math.floor(y))), fx = x-x0, fy = y-y0, x1 = (x0+1)%NX, xa = x0%NX;
+  const base = fi*FR, u = U[kind], v = V[kind];
+  const g = (arr, xx, yy) => arr[base + yy*NX + xx];
+  const bil = arr => (g(arr,xa,y0)*(1-fx)+g(arr,x1,y0)*fx)*(1-fy) + (g(arr,xa,y0+1)*(1-fx)+g(arr,x1,y0+1)*fx)*fy;
+  return [bil(u)*WS, bil(v)*WS];
+}
+function stepParticles(kind, fi, dtScale){
+  tctx.globalCompositeOperation = 'destination-in';
+  tctx.fillStyle = 'rgba(0,0,0,0.93)'; tctx.fillRect(0,0,TW,TH);
+  tctx.globalCompositeOperation = 'source-over';
+  tctx.lineWidth = 1.3; tctx.lineCap = 'round';
+  const buckets = [[],[],[],[]];
+  for (let i=0;i<NP;i++){
+    const [u,v] = windAt(kind, fi, plon[i], plat[i]);
+    const spd = Math.hypot(u,v);
+    const coslat = Math.max(.15, Math.cos(plat[i]*Math.PI/180));
+    const nlon = plon[i] + u*dtScale/coslat, nlat = plat[i] + v*dtScale;
+    const x1 = plon[i]/360*TW, y1 = (90-plat[i])/180*TH;
+    const L = ((nlon%360)+360)%360, x2 = L/360*TW, y2 = (90-nlat)/180*TH;
+    if (Math.abs(x2-x1) < TW/4) buckets[Math.min(3, spd/9|0)].push(x1,y1,x2,y2);
+    plon[i] = L; plat[i] = nlat;
+    if (++page[i] > 90 || Math.abs(nlat) > 85) { seed(i); page[i] = 0; }
+  }
+  const alphas = [.35,.55,.8,1];
+  for (let b=0;b<4;b++){
+    const s = buckets[b]; if (!s.length) continue;
+    tctx.strokeStyle = `rgba(255,255,255,${alphas[b]})`; tctx.beginPath();
+    for (let k=0;k<s.length;k+=4){ tctx.moveTo(s[k],s[k+1]); tctx.lineTo(s[k+2],s[k+3]); }
+    tctx.stroke();
+  }
+  trailTex.needsUpdate = true;
+}
+
+// ---------- state & UI ----------
+const S = {lead:0, playing:false, ov:'tcwv', mode:'fc', wind:true, z5:true, sun:true, tracks:true, tour:null};
+const $ = id => document.getElementById(id);
+const fmtDate = d => d.toISOString().slice(0,16).replace('T',' ') + ' UTC';
+const init = new Date(P.init + 'Z');
+$('subtitle').innerHTML = `${P.model_label} from ERA5 at ${fmtDate(init)} · ${P.gpu} · ${P.step_s.toFixed(2)} s per 6 h step`;
+$('ticks').innerHTML = [0,24,48,72,96,120].map(h=>`<span>${h? 'day '+h/24 : 'init'}</span>`).join('');
+
+function subsolar(date){   // NOAA-style approximation, good to ~0.1 deg
+  const d = (date - Date.UTC(2000,0,1,12))/864e5;
+  const g = (357.529 + .98560028*d)*Math.PI/180, q = 280.459 + .98564736*d;
+  const L = (q + 1.915*Math.sin(g) + .020*Math.sin(2*g))*Math.PI/180, e = (23.439 - .00000036*d)*Math.PI/180;
+  const dec = Math.asin(Math.sin(e)*Math.sin(L));
+  const ra = Math.atan2(Math.cos(e)*Math.sin(L), Math.cos(L));
+  const gmst = ((18.697374558 + 24.06570982441908*d) % 24)*15;
+  let lon = (ra*180/Math.PI - gmst) % 360; if (lon < -180) lon += 360; if (lon > 180) lon -= 360;
+  return [lon, dec*180/Math.PI];
+}
+function drawCbar(){
+  const c = P.vmeta[S.ov], err = S.mode === 'err';
+  const lut = Uint8Array.from(atob(P.cmaps[err ? 'diverging' : c.cmap]), ch=>ch.charCodeAt(0));
+  const cx = $('cb').getContext('2d'), im = cx.createImageData(256,12);
+  for (let x=0;x<256;x++) for (let y=0;y<12;y++){ const o=(y*256+x)*4; im.data.set([lut[3*x],lut[3*x+1],lut[3*x+2],255], o); }
+  cx.putImageData(im,0,0);
+  if (err){ $('cb-name').textContent = `${c.label}: forecast − ERA5 (${c.units})`; $('cb-lo').textContent = (-c.err).toString(); $('cb-mid').textContent='0'; $('cb-hi').textContent='+'+c.err; }
+  else { $('cb-name').textContent = `${c.label} (${c.units})`; $('cb-lo').textContent = c.lo; $('cb-mid').textContent = ''; $('cb-hi').textContent = c.hi; }
+}
+function setOverlay(v){
+  S.ov = v; const m = P.vmeta[v];
+  globeMat.uniforms.lut.value = LUT[m.cmap]; globeMat.uniforms.gamma.value = m.gamma || 1;
+  globeMat.uniforms.errScale.value = (m.hi - m.lo)/m.err;  // normalized byte difference -> [-1,1] at ±err
+  document.querySelectorAll('[data-ov]').forEach(b=>b.setAttribute('aria-pressed', b.dataset.ov===v));
+  drawCbar();
+}
+function setMode(m){
+  S.mode = m; globeMat.uniforms.mode.value = {fc:0, truth:1, swipe:2, err:3}[m];
+  document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed', b.dataset.mode===m));
+  $('splitbar').style.display = $('splitlbl').style.display = m==='swipe' ? 'block' : 'none';
+  placeSplit(); drawCbar();
+}
+function toggle(id, key){ const b = $(id); b.onclick = () => { S[key] = !S[key]; b.setAttribute('aria-pressed', S[key]); }; }
+document.querySelectorAll('[data-ov]').forEach(b => b.onclick = () => setOverlay(b.dataset.ov));
+document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+toggle('t-wind','wind'); toggle('t-z5','z5'); toggle('t-sun','sun'); toggle('t-trk','tracks');
+$('t-stamp').onclick = () => { const o = $('stamp').classList.toggle('open'); $('t-stamp').setAttribute('aria-pressed', o); };
+$('theme').onclick = () => { const r = document.documentElement; const cur = r.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark':'light'); r.dataset.theme = cur==='dark'?'light':'dark'; drawChart(); };
+$('play').onclick = () => { S.playing = !S.playing; $('play').textContent = S.playing ? '❚❚' : '▶'; };
+$('lead').oninput = e => { S.lead = +e.target.value; };
+// swipe handle
+let split = .5;
+function placeSplit(){ const x = split*innerWidth; $('splitbar').style.left = (x-1)+'px';
+  $('sl-l').style.right = (innerWidth - x + 10)+'px'; $('sl-r').style.left = (x + 10)+'px'; globeMat.uniforms.split.value = split; }
+{ let drag = false; const sb = $('splitbar');
+  sb.addEventListener('pointerdown', e => { drag = true; sb.setPointerCapture(e.pointerId); });
+  sb.addEventListener('pointermove', e => { if (drag){ split = Math.min(.95, Math.max(.05, e.clientX/innerWidth)); placeSplit(); } });
+  sb.addEventListener('pointerup', () => drag = false); }
+
+// ---------- scores chart ----------
+let chartVar = 'z500';
+function drawChart(){
+  const sv = $('chart'), W = 250, H = 150, pad = {l:34, r:8, t:8, b:22};
+  const series = P.scores[chartVar];
+  const leads = [24,72,120];
+  const ymax = Math.max(...series.flatMap(s => s.vals.filter(x=>x!=null))) * 1.12;
+  const X = h => pad.l + (h-24)/(96)*(W-pad.l-pad.r), Y = v => H-pad.b - v/ymax*(H-pad.t-pad.b);
+  let g = '';
+  for (let k=0;k<=4;k++){ const v = ymax*k/4, y = Y(v); g += `<line x1="${pad.l}" x2="${W-pad.r}" y1="${y}" y2="${y}" stroke="${css('--line')}" stroke-width="1"/>`;
+    g += `<text x="${pad.l-4}" y="${y+3}" font-size="9" text-anchor="end" fill="${css('--muted')}" font-family="IBM Plex Mono">${v<10? v.toFixed(1): Math.round(v)}</text>`; }
+  for (const h of leads) g += `<text x="${X(h)}" y="${H-6}" font-size="9" text-anchor="middle" fill="${css('--muted')}" font-family="IBM Plex Mono">day ${h/24}</text>`;
+  for (const s of series){
+    const c = css(s.color), pts = leads.map((h,i)=> s.vals[i]==null? null : [X(h),Y(s.vals[i])]).filter(Boolean);
+    if (!pts.length) continue;
+    g += `<polyline fill="none" stroke="${c}" stroke-width="${s.bold?2.6:1.5}" ${s.dash?'stroke-dasharray="4 3"':''} points="${pts.map(p=>p.join(',')).join(' ')}"/>`;
+    for (const p of pts) g += `<circle cx="${p[0]}" cy="${p[1]}" r="${s.bold?3:2}" fill="${c}"/>`;
+    if (s.band) { /* per-init spread */
+      s.band.forEach((b,i)=>{ if(!b) return; g += `<line x1="${X(leads[i])}" x2="${X(leads[i])}" y1="${Y(b[0])}" y2="${Y(b[1])}" stroke="${c}" stroke-width="5" stroke-opacity=".25" stroke-linecap="round"/>`; });
+    }
+  }
+  sv.innerHTML = g;
+  $('legend').innerHTML = series.map(s => `<i style="background:${css(s.color)}"></i><span>${s.label}</span><span class="v">${s.vals[2]==null?'–':(s.vals[2]<10? s.vals[2].toFixed(2): Math.round(s.vals[2]))}</span>`).join('');
+  $('stabs').innerHTML = Object.keys(P.scores).map(k=>`<button data-sv="${k}" aria-pressed="${k===chartVar}">${P.score_labels[k]}</button>`).join('');
+  document.querySelectorAll('[data-sv]').forEach(b => b.onclick = () => { chartVar = b.dataset.sv; drawChart(); });
+  $('verdict').innerHTML = P.verdict_html;
+}
+drawChart();
+$('stamp').innerHTML = P.stamp_html;
+
+// ---------- guided tour ----------
+const tourStops = P.tour;
+function flyTo(stop, ms=2600){
+  const from = camera.position.clone(), to = lonlatToVec(stop.lon, stop.lat, stop.dist);
+  const leadFrom = S.lead, t0 = performance.now();
+  if (stop.ov) setOverlay(stop.ov); if (stop.mode) setMode(stop.mode);
+  return new Promise(res => {
+    function anim(t){
+      const k = Math.min(1, (t-t0)/ms), e = k<.5 ? 4*k*k*k : 1-Math.pow(-2*k+2,3)/2;
+      const dir = from.clone().normalize().lerp(to.clone().normalize(), e).normalize();
+      camera.position.copy(dir.multiplyScalar(THREE.MathUtils.lerp(from.length(), to.length(), e)));
+      S.lead = leadFrom + (stop.lead - leadFrom)*e; $('lead').value = S.lead;
+      if (k < 1 && S.tour) requestAnimationFrame(anim); else res();
+    }
+    requestAnimationFrame(anim);
+  });
+}
+$('tour').onclick = async () => {
+  if (S.tour){ S.tour = null; $('caption').classList.remove('show'); $('tour').textContent = '▶ Guided tour'; return; }
+  S.tour = {}; S.playing = false; $('play').textContent = '▶'; $('tour').textContent = '■ Stop tour'; controls.enabled = false;
+  for (const stop of tourStops){
+    if (!S.tour) break;
+    $('caption').innerHTML = stop.html; $('caption').classList.add('show');
+    await flyTo(stop);
+    const hold = performance.now();
+    while (S.tour && performance.now() - hold < (stop.hold || 4200)) {
+      if (stop.play_to != null) { S.lead = Math.min(stop.play_to, S.lead + .25); $('lead').value = S.lead; }
+      await new Promise(r => setTimeout(r, 16));
+    }
+  }
+  S.tour = null; controls.enabled = true; $('caption').classList.remove('show'); $('tour').textContent = '▶ Guided tour';
+};
+
+// ---------- frame loop ----------
+function resize(){ const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w/h; camera.updateProjectionMatrix();
+  globeMat.uniforms.res.value.set(w*renderer.getPixelRatio(), h*renderer.getPixelRatio()); placeSplit(); }
+addEventListener('resize', resize); resize();
+setOverlay('tcwv'); setMode('fc');
+let hidden = false; document.addEventListener('visibilitychange', () => { hidden = document.hidden; if (!hidden) requestAnimationFrame(loop); });
+let last = performance.now(), shownZ = null;
+function loop(now){
+  if (hidden) return;
+  const dt = Math.min(.05, (now-last)/1000); last = now;
+  if (S.playing){ S.lead += dt*8; if (S.lead > 120) S.lead = 0; $('lead').value = S.lead; }
+  const L = S.lead, fi = Math.min(LEADS.length-2, Math.floor(L/6)), ff = (L - LEADS[fi])/6;
+  const ti = Math.min(TLEADS.length-2, Math.floor(L/12)), tf = (L - TLEADS[ti])/12;
+  const tv = tex[S.ov], u = globeMat.uniforms;
+  if (S.mode === 'err'){ // error only where truth exists: compare at the same instant using 12 h frames on both sides
+    const j = Math.round(L/12); u.fa.value = u.fb.value = tv.fc[Math.min(LEADS.length-1, j*2)]; u.ta.value = u.tb.value = tv.tr[Math.min(TLEADS.length-1,j)]; u.mixF.value = u.mixT.value = 0;
+  } else { u.fa.value = tv.fc[fi]; u.fb.value = tv.fc[fi+1]; u.mixF.value = ff; u.ta.value = tv.tr[ti]; u.tb.value = tv.tr[ti+1]; u.mixT.value = tf; }
+  const valid = new Date(init.getTime() + L*3600e3);
+  const [slon, slat] = subsolar(valid), sd = lonlatToVec(slon, slat, 1);
+  u.sunDir.value.copy(sd); u.useSun.value = S.sun ? 1 : 0;
+  atmo.material.uniforms.sunDir.value.copy(sd); atmo.material.uniforms.useSun.value = S.sun?1:0;
+  trails.material.uniforms.sunDir.value.copy(sd); trails.material.uniforms.useSun.value = S.sun?1:0;
+  $('valid').innerHTML = `valid <b>${fmtDate(valid)}</b> · lead +${Math.round(L)} h${S.mode==='err' ? ` (error at +${Math.round(L/12)*12} h)` : ''}`;
+  $('leadlbl').textContent = `+${Math.round(L)} h`;
+  // contours
+  const zKind = S.mode==='truth' ? 'tr' : 'fc', zi = zKind==='fc' ? Math.round(L/6) : Math.round(L/12);
+  const want = S.z5 ? z5[zKind][Math.min(z5[zKind].length-1, zi)] : null;
+  if (shownZ !== want){ if (shownZ) shownZ.visible = false; if (want) want.visible = true; shownZ = want; }
+  // particles
+  trails.visible = S.wind;
+  if (S.wind){ const wk = S.mode==='truth' ? 'tr' : 'fc'; const wi = wk==='fc' ? Math.round(L/6) : Math.round(L/12); stepParticles(wk, Math.min(wk==='fc'?LEADS.length-1:TLEADS.length-1, wi), .012); }
+  coast.material.opacity = S.ov === 'tcwv' ? .3 : .45;
+  trackGroup.visible = S.tracks;
+  if (!S.tour && !S.playing && controls.enabled) globe.rotation.y += 0;  // keep geography fixed; camera orbits
+  controls.update(); renderer.render(scene, camera);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+// deep links: #tour starts the tour, #err opens the error view, #swipe the swipe view
+if (location.hash === '#err') setMode('err');
+if (location.hash === '#swipe') setMode('swipe');
+if (location.hash === '#tour') setTimeout(() => $('tour').click(), 600);
+window.__ready = true;
+</script>
+</body>
+</html>
