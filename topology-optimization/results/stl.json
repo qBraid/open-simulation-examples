@@ -1,0 +1,14 @@
+{
+ "file": "results/bracket_2mm.stl",
+ "triangles": 27696,
+ "watertight": true,
+ "voxel_mass_g": 88.2,
+ "iso_level": 0.4425,
+ "volume_mm3": 19906.7,
+ "mass_g_ti64": 88.2,
+ "bbox_mm": [
+  92.23,
+  48.23,
+  23.51
+ ]
+}

@@ -105,5 +105,17 @@
   "compliance": 2416.718906228606,
   "iterations": 200,
   "seconds": 232.99
+ },
+ "top88_mbb_300x100_ft2": {
+  "nelx": 300,
+  "nely": 100,
+  "volfrac": 0.5,
+  "penal": 3.0,
+  "rmin": 16.0,
+  "ft": 2,
+  "bc": "mbb",
+  "compliance": 260.8373835695599,
+  "iterations": 1236,
+  "seconds": 2775.04
  }
 }

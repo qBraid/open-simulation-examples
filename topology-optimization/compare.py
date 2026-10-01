@@ -66,8 +66,8 @@ def main():
                 compared_iterations=int(m), compliance_reference_at_last=float(rh[m - 1, 1]),
                 compliance_python_at_same_iter=float(ph[m - 1]), max_iterwise_rel_diff=float(rel.max()),
                 rel_diff_pct=float(100 * (ph[m - 1] - rh[m - 1, 1]) / rh[m - 1, 1]),
-                iterations_reference=int(rh[-1, 0]), layout_max_abs_diff=float("nan"),
-                layout_mean_abs_diff=float("nan"), layout_share_diff_gt_0p1=float("nan"),
+                iterations_reference=int(rh[-1, 0]), layout_max_abs_diff=None,
+                layout_mean_abs_diff=None, layout_share_diff_gt_0p1=None,
                 seconds_python=py_runs[name]["seconds"], reference_history=rh[:, 1].round(6).tolist(),
                 iterwise_rel_diff=rel.tolist(), identical_until_iter=int(np.argmax(rel > 1e-6)) if (rel > 1e-6).any() else int(m))
             print(f"{name:24s} PARTIAL: {m} common iterations, max iterwise rel diff {rel.max():.2e}")

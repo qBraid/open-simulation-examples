@@ -1,0 +1,45 @@
+{
+ "design_space_mm": [
+  96.0,
+  48.0,
+  36.0
+ ],
+ "elements": 20736,
+ "dofs": 69825,
+ "volfrac": 0.12,
+ "iterations": 160,
+ "seconds": 1284.8,
+ "mass_g": 88.2,
+ "full_block_mass_g": 734.9,
+ "grey_fraction": 0.00028935185185185184,
+ "compliance_Nmm": {
+  "LC1 vertical 8.0 kN": 3824.07,
+  "LC2 axial 6.0 kN": 376.87,
+  "LC3 45 deg 8.5 kN": 2467.36
+ },
+ "vm_p99_MPa": 219.3,
+ "vm_max_body_MPa": 237.9,
+ "vm_max_all_MPa": 380.0,
+ "safety_factor_p99": 4.01,
+ "tip_disp_mm": {
+  "LC1 vertical 8.0 kN": 0.5633,
+  "LC2 axial 6.0 kN": 0.0715,
+  "LC3 45 deg 8.5 kN": 0.4338
+ },
+ "loads_N": {
+  "LC1 vertical 8.0 kN": [
+   0.0,
+   -8000.0
+  ],
+  "LC2 axial 6.0 kN": [
+   6000.0,
+   0.0
+  ],
+  "LC3 45 deg 8.5 kN": [
+   6010.407640085655,
+   -6010.407640085655
+  ]
+ },
+ "material": "Ti-6Al-4V (E 113.8 GPa, nu 0.342, yield 880 MPa)",
+ "brick_mm": 2.0
+}

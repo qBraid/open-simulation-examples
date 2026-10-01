@@ -96,7 +96,7 @@ tr.sel td{background:var(--accent-soft)} tbody tr{cursor:pointer}
       <div class="colorbar hide" id="colorbar"><div id="cbTitle">von Mises stress (MPa)</div><canvas id="cbCanvas" width="256" height="12"></canvas><div class="ticks" id="cbTicks"></div></div>
       <div class="tourcard hide" id="tourcard"></div>
       <div class="timeline" id="timeline">
-        <button class="btn primary" id="play">▶ Play</button>
+        <button class="btn primary" id="play">Play</button>
         <input type="range" id="scrub" min="0" max="1000" value="1000" aria-label="Iteration">
         <span class="it" id="itLabel">final</span>
         <button class="btn" id="tour">Guided tour</button>
@@ -129,7 +129,8 @@ const vir = t => VIR[Math.max(0, Math.min(255, Math.round(t * 255)))];
 
 // ---------------------------------------------------------------- renderer
 const canvas = $('gl'), vp = $('viewport');
-const R = new THREE.WebGLRenderer({canvas, antialias: true, preserveDrawingBuffer: true});
+const R = new THREE.WebGLRenderer({canvas, antialias: true, alpha: true, preserveDrawingBuffer: true});
+R.setClearColor(0x000000, 0);  // transparent: the themed --scene colour shows through
 R.setPixelRatio(Math.min(devicePixelRatio, 2));
 R.outputColorSpace = THREE.SRGBColorSpace;
 R.toneMapping = THREE.ACESFilmicToneMapping; R.toneMappingExposure = 1.0;
@@ -189,7 +190,7 @@ function setChart(series, opts = {}) { // series: [{y:[], color, dash}], cursor 
   const X = i => pl + (W - pl - 6) * i / Math.max(1, n - 1), Y = v => pt + (H - pt - pb) * (1 - ((opts.log ? Math.log10(v) : v) - lo) / (hi - lo));
   let s = `<rect x="${pl}" y="${pt}" width="${W - pl - 6}" height="${H - pt - pb}" fill="none" stroke="${css('--line')}"/>`;
   for (const t of [0, 0.5, 1]) { const v = lo + (hi - lo) * t; const vv = opts.log ? 10 ** v : v; s += `<text x="${pl - 4}" y="${Y(vv) + 3}" text-anchor="end" font-size="9" fill="${css('--muted')}" font-family="IBM Plex Mono">${vv >= 1000 ? Math.round(vv) : vv.toPrecision(3)}</text>`; }
-  s += `<text x="${W - 6}" y="${H - 3}" text-anchor="end" font-size="9" fill="${css('--muted')}" font-family="IBM Plex Mono">iter ${n}</text>`;
+  s += `<text x="${W - 6}" y="${H - 3}" text-anchor="end" font-size="9" fill="${css('--muted')}" font-family="IBM Plex Mono">${opts.xlabel || 'iter ' + n}</text>`;
   for (const se of series) s += `<polyline fill="none" stroke="${se.color}" stroke-width="1.6" ${se.dash ? 'stroke-dasharray="4 3"' : ''} points="${se.y.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')}"/>`;
   s += `<line id="cursor" x1="0" x2="0" y1="${pt}" y2="${H - pb}" stroke="${css('--warm')}" stroke-width="1.2"/>`;
   if (opts.legend) s += opts.legend.map((l, i) => `<text x="${pl + 6}" y="${pt + 11 + 11 * i}" font-size="9.5" fill="${l.color}" font-family="IBM Plex Sans">${l.text}</text>`).join('');
@@ -237,7 +238,7 @@ function buildBracket() {
   const lcCols = ['--lc1', '--lc2', '--lc3'], arrows = [];
   B.loads.forEach((L, i) => {
     const f = new THREE.Vector3(L.f[0], L.f[1], 0), mag = f.length(), dir = f.clone().normalize();
-    const len = 14 + 26 * mag / 8500, tip = new THREE.Vector3(B.lug[0], B.lug[1], size.z + 10);
+    const len = 10 + 16 * mag / 8500, tip = new THREE.Vector3(B.lug[0], B.lug[1], size.z + 10);
     const a = arrow(tip.clone().addScaledVector(dir, 0), dir, len, new THREE.Color(css(lcCols[i])));
     const lb = label(L.name, 'lc' + (i + 1)); lb.position.copy(tip.clone().addScaledVector(dir, len + 6)); a.userData.label = lb; s.add(a, lb); arrows.push(a);
   });
@@ -276,7 +277,7 @@ function buildBracket() {
   function side() {
     const st = D.bracket.stl;
     $('side').innerHTML = `<h3>Titanium mounting bracket</h3>
-      <div class="note">Ti-6Al-4V · ${S.elements.toLocaleString()} hexahedra · ${S.dofs.toLocaleString()} unknowns · ${S.iterations} design iterations in ${Math.round(S.seconds / 60)} min on 2 CPU threads</div>
+      <div class="note">Ti-6Al-4V · ${S.brick_mm} mm bricks · ${S.elements.toLocaleString()} hexahedra · ${S.dofs.toLocaleString()} unknowns · ${S.iterations} design iterations in ${Math.round(S.seconds / 60)} min on one CPU thread</div>
       <h4>Display</h4><div class="seg" id="modeSeg"><button data-m="titanium" aria-pressed="true">Titanium</button><button data-m="stress" aria-pressed="false">Stress</button></div>
       <div class="seg"><button id="beforeBtn" aria-pressed="false">Before / after</button><button id="loadsBtn" aria-pressed="true">Loads</button></div>
       <h4>Result</h4><div class="kv">
@@ -312,7 +313,7 @@ function buildTop3d() {
   const nS = T.snap_iters.length;
   // arrays are [j][i][k] (MATLAB, rows from the top) flattened C-order
   const at = (arr, off) => (i, y, k) => arr[off + ((T.nely - 1 - y) * T.nelx + i) * T.nelz + k] / 255;
-  const mPy = fieldMC(T.nelx, T.nely, T.nelz, h, titanium(), 80000), mRef = fieldMC(T.nelx, T.nely, T.nelz, h, new THREE.MeshPhysicalMaterial({color: 0x7fb7ad, metalness: 0.6, roughness: 0.35}), 80000);
+  const mPy = fieldMC(T.nelx, T.nely, T.nelz, h, new THREE.MeshPhysicalMaterial({color: 0xc9c2b6, metalness: 0.55, roughness: 0.38, side: THREE.DoubleSide}), 80000), mRef = fieldMC(T.nelx, T.nely, T.nelz, h, new THREE.MeshPhysicalMaterial({color: 0x7fb7ad, metalness: 0.55, roughness: 0.38, side: THREE.DoubleSide}), 80000);
   const gA = new THREE.Group(), gB = new THREE.Group(); gA.add(mPy); gB.add(mRef); gB.position.z = -(T.nelz + gap); s.add(gA, gB);
   fillMC(mRef, at(ref, 0));
   const c = new THREE.Vector3(T.nelx / 2, T.nely / 2, -(gap) / 2); shadowGround(s, -1, 260); aimKey(s, c, 60);
@@ -324,9 +325,9 @@ function buildTop3d() {
     wall.position.set(-0.6, T.nely / 2, z0 + T.nelz / 2); s.add(wall);
     const a = arrow(new THREE.Vector3(T.nelx, 9, z0 + T.nelz / 2), new THREE.Vector3(0, -1, 0), 8, new THREE.Color(css('--lc1'))); s.add(a);
   }
-  const cam = new THREE.PerspectiveCamera(36, 1, 0.5, 2000); cam.position.set(58, 42, 52);
+  const cam = new THREE.PerspectiveCamera(36, 1, 0.5, 2000); cam.position.set(96, 70, 92);
   const ctl = new OrbitControls(cam, canvas); ctl.target.copy(c); ctl.enableDamping = true;
-  const B = D.benchmarks.top3d_60x20x4;
+  const B = D.benchmarks.top3d_60x20x4_200it, B0 = D.benchmarks.top3d_60x20x4;
   function setFrame(f) {
     const i0 = Math.floor(f), i1 = Math.min(nS - 1, i0 + 1), t = f - i0;
     fillMC(mPy, (i, y, k) => { const e = ((T.nely - 1 - y) * T.nelx + i) * T.nelz + k; return ((1 - t) * snaps[i0 * nE + e] + t * snaps[i1 * nE + e]) / 255; });
@@ -336,8 +337,8 @@ function buildTop3d() {
   return {
     scene: s, cam, ctl, frames: nS,
     tour: [
-      {p: [58, 42, 52], t: c.toArray(), title: 'Liu & Tovar (2014) default cantilever', text: '60 × 20 × 4 bricks, 30 % volume, penalization 3, filter radius 1.5. The left face is clamped and a line load is applied on the lower-right edge.'},
-      {p: [30, 18, 70], t: [30, 10, 2], title: 'Python port (front)', text: `Compliance ${fmt(B.compliance_python, 4)} after ${B.iterations_python} iterations.`},
+      {p: [96, 70, 92], t: c.toArray(), title: 'Liu & Tovar (2014) default cantilever', text: '60 × 20 × 4 bricks, 30 % volume, penalization 3, filter radius 1.5. The left face is clamped and a line load is applied on the lower-right edge.'},
+      {p: [30, 18, 70], t: [30, 10, 2], title: 'Python port (front)', text: `On the code's own stopping rule the port stops at iteration ${B0.iterations_python} (compliance ${fmt(B0.compliance_python, 4)}). Forced to the reference's 200 iterations it reaches ${fmt(B.compliance_python, 4)}.`},
       {p: [30, 18, -60], t: [30, 10, -16], title: 'Reference code (back)', text: `The published top3d.m, run unmodified in Octave, gives ${fmt(B.compliance_reference, 4)} after ${B.iterations_reference} iterations. Difference: ${B.rel_diff_pct.toExponential(1)} %.`},
     ],
     enter() {
@@ -345,8 +346,10 @@ function buildTop3d() {
       setChart([{y: T.ref_hist, color: css('--muted'), dash: true}, {y: T.hist, color: css('--accent')}], {legend: [{text: 'Python port', color: css('--accent')}, {text: 'top3d.m reference', color: css('--muted')}]});
       $('chartTitle').textContent = 'Compliance vs iteration';
       $('side').innerHTML = `<h3>3D benchmark: top3d</h3><div class="note">Liu &amp; Tovar, Struct Multidisc Optim 50 (2014) 1175–1196. The reference is the authors' code, downloaded from their repository and run in Octave 10.3 with only the plotting removed.</div>
-        <h4>Agreement</h4><div class="kv"><span>Compliance, port</span><span>${fmt(B.compliance_python, 4)}</span><span>Compliance, reference</span><span>${fmt(B.compliance_reference, 4)}</span><span>Relative difference</span><span>${B.rel_diff_pct.toExponential(2)} %</span>
-        <span>Iterations</span><span>${B.iterations_python} / ${B.iterations_reference}</span><span>max |Δx| (layout)</span><span>${B.layout_max_abs_diff.toExponential(2)}</span><span>Elements differing &gt; 0.1</span><span>${(B.layout_share_diff_gt_0p1 * 100).toFixed(2)} %</span></div>
+        <h4>Agreement at matched iterations (200)</h4><div class="kv"><span>Compliance, port</span><span>${fmt(B.compliance_python, 4)}</span><span>Compliance, reference</span><span>${fmt(B.compliance_reference, 4)}</span><span>Relative difference</span><span>${B.rel_diff_pct.toExponential(2)} %</span>
+        <span>Identical (to 1e-6) through</span><span>iteration ${B.identical_until_iter}</span><span>Elements differing &gt; 0.1</span><span>${(B.layout_share_diff_gt_0p1 * 100).toFixed(1)} %</span></div>
+        <div class="note" style="margin-top:6px">The iterates match the reference to about 1e-8 for the first ${B.identical_until_iter} iterations. After that the optimality-criteria update starts to oscillate (change ≈ 0.016, never below the 0.01 stop rule), round-off differences between the two sparse solvers grow, and ${(B.layout_share_diff_gt_0p1 * 100).toFixed(1)} % of the elements end up in a different place. The topology and the compliance (Δ ${B.rel_diff_pct.toExponential(1)} %) are the same.</div>
+        <h4>On the code's own stop rule</h4><div class="kv"><span>Port stops at</span><span>iteration ${B0.iterations_python}</span><span>Compliance</span><span>${fmt(B0.compliance_python, 4)} (${B0.rel_diff_pct.toExponential(1)} %)</span></div>
         <h4>Why it matters</h4><div class="note">Matching the published code element by element shows that the 3D machinery under the bracket is the textbook algorithm, not an approximation of it: the same H8 element (identical to 1.7e-16), filter and optimality-criteria update.</div>`;
       setFrame(nS - 1); $('scrub').value = 1000;
     },
@@ -389,8 +392,8 @@ function buildTop88() {
     cur = k;
   }
   function table() {
-    const rows = D.designs2d.map((d, k) => { const b = D.benchmarks[d.name]; return `<tr data-k="${k}" class="${k === sel ? 'sel' : ''}"><td>${d.name.replace('top88_', '').replace('_ft1', ' · sens').replace('_ft2', ' · dens')}</td><td class="n">${fmt(b.compliance_python, 3)}</td><td class="n">${b.rel_diff_pct.toExponential(1)}%</td><td class="n">${b.iterations_python}/${b.iterations_reference}</td></tr>`; }).join('');
-    $('side').innerHTML = `<h3>2D benchmarks: top88</h3><div class="note">Andreassen et al., Struct Multidisc Optim 43 (2011). MBB beam at the paper's three meshes (filter radius 0.04 × width), plus Sigmund's (2001) cantilever. Sensitivity (sens) and density (dens) filtering are both shown.</div>
+    const rows = D.designs2d.map((d, k) => { const b = D.benchmarks[d.name]; return `<tr data-k="${k}" class="${k === sel ? 'sel' : ''}"><td>${d.name.replace('top88_', '').replace('_ft1', ' S').replace('_ft2', ' D')}</td><td class="n">${fmt(b.compliance_python, 2)}</td><td class="n">${b.rel_diff_pct.toExponential(0)}%</td><td class="n">${b.iterations_python === b.iterations_reference ? b.iterations_python : b.iterations_python + '/' + b.iterations_reference}</td></tr>`; }).join('');
+    $('side').innerHTML = `<h3>2D benchmarks: top88</h3><div class="note">Andreassen et al., Struct Multidisc Optim 43 (2011). MBB beam at the paper's three meshes (filter radius 0.04 × width), plus Sigmund's (2001) cantilever. S = sensitivity filter, D = density filter. Iterations are the same in both codes for every case.</div>
       <h4>Port vs published code</h4><table><thead><tr><th>case</th><th>compliance</th><th>Δ</th><th>iters</th></tr></thead><tbody id="tb">${rows}</tbody></table>
       <div class="note" style="margin-top:8px">Δ is the relative compliance difference from the reference code run in Octave. The layouts are compared element by element in <code>results/benchmarks.json</code>.</div>`;
     document.querySelectorAll('#tb tr').forEach(tr => tr.onclick = () => { sel = +tr.dataset.k; table(); enterCase(); });
@@ -420,7 +423,7 @@ function buildValidation() {
   const dTim = V.analytic.timoshenko, EI = 1 / 12, GAk = V.analytic.kappa * (1 / 2.6);
   const w = x => (x * x * (3 * 10 - x) / (6 * EI) + x / GAk); // tip load P = 1, Timoshenko deflection at x
   const cam = new THREE.PerspectiveCamera(34, 1, 0.1, 500); cam.position.set(8, 6, 15); const ctl = new OrbitControls(cam, canvas); ctl.target.set(0, -1, 0); ctl.enableDamping = true;
-  let t = 0;
+  let t = 1.3;  // start near full load
   function deform(amp) {
     for (let v = 0; v < p.count; v++) { const x = base[3 * v] + 5, dy = -w(x) / dTim * 2.2 * amp; p.setY(v, base[3 * v + 1] + dy); const c = vir(w(x) / dTim * amp); col[3 * v] = c.r; col[3 * v + 1] = c.g; col[3 * v + 2] = c.b; }
     p.needsUpdate = true; g.attributes.color.needsUpdate = true; g.computeVertexNormals(); ar.position.y = 3.6 - 2.2 * amp;
@@ -432,7 +435,7 @@ function buildValidation() {
       $('cbTicks').innerHTML = '<span>0</span><span>0.5</span><span>1</span>';
       const ys = [...V.h8.map(r => Math.abs(r.err_vs_continuum_pct))];
       $('chartTitle').textContent = '|error| vs 3D continuum, H8 (log)';
-      setChart([{y: ys, color: css('--accent')}, {y: V.p2.map(r => Math.abs(100 * (r.deflection - V.continuum_3d.deflection) / V.continuum_3d.deflection)), color: css('--warm')}], {log: true, legend: [{text: 'H8 (optimizer element), n = 1…', color: css('--accent')}, {text: 'P2 tetrahedra', color: css('--warm')}]});
+      setChart([{y: ys, color: css('--accent')}, {y: V.p2.map(r => Math.abs(100 * (r.deflection - V.continuum_3d.deflection) / V.continuum_3d.deflection)), color: css('--warm')}], {log: true, xlabel: 'mesh refinement →', legend: [{text: 'H8 bricks, n = 1, 2, 4, 8', color: css('--accent')}, {text: 'P2 tetrahedra, n = 1…4', color: css('--warm')}]});
       const c3 = V.continuum_3d;
       $('side').innerHTML = `<h3>FE validation</h3><div class="note">A clamped cantilever, L = 10, square 1 × 1 section, E = 1, ν = 0.3, unit tip shear. The deformation is drawn exaggerated.</div>
         <h4>Analytic</h4><div class="kv"><span>Euler–Bernoulli</span><span>${fmt(V.analytic.euler_bernoulli, 1)}</span><span>Timoshenko (κ Cowper)</span><span>${fmt(V.analytic.timoshenko, 1)}</span></div>
@@ -447,7 +450,7 @@ function buildValidation() {
 
 // ---------------------------------------------------------------- method pane (HTML)
 function methodPane() {
-  const b = D.benchmarks, rows = Object.entries(b).map(([k, v]) => `<tr><td>${k}</td><td class="n">${fmt(v.compliance_python, 4)}</td><td class="n">${fmt(v.compliance_reference, 4)}</td><td class="n">${v.rel_diff_pct.toExponential(2)} %</td><td class="n">${v.layout_max_abs_diff.toExponential(1)}</td></tr>`).join('');
+  const b = D.benchmarks, rows = Object.entries(b).map(([k, v]) => v.status && v.status !== 'complete' ? `<tr><td>${k}</td><td class="n">${fmt(v.compliance_python, 4)}</td><td class="n" colspan="3">reference stopped by the compute cap at iteration ${v.iterations_reference}; identical to ${v.max_iterwise_rel_diff.toExponential(1)} over all ${v.compared_iterations} common iterations</td></tr>` : `<tr><td>${k}</td><td class="n">${fmt(v.compliance_python, 4)}</td><td class="n">${fmt(v.compliance_reference, 4)}</td><td class="n">${v.rel_diff_pct.toExponential(2)} %</td><td class="n">${v.layout_max_abs_diff.toExponential(1)}</td></tr>`).join('');
   $('methodPane').innerHTML = `<h3>What "top 10 %" means here</h3>
   <p>For a design method, the field's bar is the published reference implementations that everyone else is measured against. We reproduce the optimal compliance of <b>top88</b> (Andreassen et al. 2011) and <b>top3d</b> (Liu &amp; Tovar 2014) to within 1 % with the same layouts. The papers print designs, not compliance values, so the numerical reference is the authors' own code, run unmodified in Octave.</p>
   <table><thead><tr><th>case</th><th>Python port</th><th>published code</th><th>Δ compliance</th><th>max |Δx|</th></tr></thead><tbody>${rows}</tbody></table>
@@ -459,13 +462,13 @@ function methodPane() {
 // ---------------------------------------------------------------- tabs, loop
 views.bracket = buildBracket(); views.top3d = buildTop3d(); views.top88 = buildTop88(); views.validation = buildValidation();
 methodPane();
-const S0 = D.bracket.summary, B3 = D.benchmarks.top3d_60x20x4, worst2d = Math.max(...D.designs2d.map(d => Math.abs(D.benchmarks[d.name].rel_diff_pct)));
-$('chips').innerHTML = [`<span class="chip good">top88: ${D.designs2d.length} cases within ${worst2d.toExponential(0)} %</span>`, `<span class="chip good">top3d: Δ ${B3.rel_diff_pct.toExponential(0)} %</span>`,
+const S0 = D.bracket.summary, B3 = D.benchmarks.top3d_60x20x4_200it, worst2d = Math.max(...D.designs2d.map(d => Math.abs(D.benchmarks[d.name].rel_diff_pct)));
+$('chips').innerHTML = [`<span class="chip good">top88: ${D.designs2d.length} cases, compliance within ${worst2d.toExponential(0)} %</span>`, `<span class="chip good">top3d: Δ ${B3.rel_diff_pct.toExponential(0)} % at 200 it.</span>`,
   `<span class="chip good">FE: H8 vs 3D continuum ${D.validation.h8_richardson.err_vs_continuum_pct.toFixed(2)} %</span>`, `<span class="chip">bracket ${S0.mass_g} g · SF ${S0.safety_factor_p99}</span>`].join('');
 if (D.stamp && D.stamp.date) $('stamp').textContent = `Verified ${D.stamp.date} · ${D.stamp.env} · ${D.stamp.machine} · ${D.stamp.wall} · ${D.stamp.cost}`;
 
 function switchTo(name) {
-  active = name; playing = false; $('play').textContent = '▶ Play'; endTour();
+  active = name; playing = false; $('play').textContent = 'Play'; endTour();
   document.querySelectorAll('#tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === name));
   const isMethod = name === 'method'; $('stage').classList.toggle('hide', isMethod); $('methodPane').classList.toggle('hide', !isMethod);
   if (isMethod) return;
@@ -475,8 +478,8 @@ function switchTo(name) {
   views[name].enter(); resize();
 }
 document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => switchTo(b.dataset.tab));
-$('scrub').oninput = e => { playing = false; $('play').textContent = '▶ Play'; views[active].scrub(+e.target.value); };
-$('play').onclick = () => { playing = !playing; $('play').textContent = playing ? '❚❚ Pause' : '▶ Play'; if (playing && +$('scrub').value >= 1000) $('scrub').value = 0; };
+$('scrub').oninput = e => { playing = false; $('play').textContent = 'Play'; views[active].scrub(+e.target.value); };
+$('play').onclick = () => { playing = !playing; $('play').textContent = playing ? 'Pause' : 'Play'; if (playing && +$('scrub').value >= 1000) $('scrub').value = 0; };
 
 // guided tour: eased camera flights between annotated stops
 const tmpP = new THREE.Vector3(), tmpT = new THREE.Vector3();
@@ -496,7 +499,7 @@ function loop(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   if (document.hidden || active === 'method') return;
   const v = views[active];
-  if (playing) { frameAcc += dt; if (frameAcc > 1 / 20) { frameAcc = 0; const step = 1000 / Math.max(30, (v.frames - 1) * 6); let val = Math.min(1000, +$('scrub').value + step); $('scrub').value = val; v.scrub(val); if (val >= 1000) { playing = false; $('play').textContent = '▶ Play'; } } }
+  if (playing) { frameAcc += dt; if (frameAcc > 1 / 20) { frameAcc = 0; const step = 1000 / Math.max(30, (v.frames - 1) * 6); let val = Math.min(1000, +$('scrub').value + step); $('scrub').value = val; v.scrub(val); if (val >= 1000) { playing = false; $('play').textContent = 'Play'; } } }
   if (tourOn && from) { tourT = Math.min(1, tourT + dt / 2.2); const st = v.tour[tourIdx], e = ease(tourT); v.cam.position.lerpVectors(from.p, tmpP.fromArray(st.p), e); v.ctl.target.lerpVectors(from.t, tmpT.fromArray(st.t), e); }
   v.tick(dt); v.ctl.update(); R.render(v.scene, v.cam); L2.render(v.scene, v.cam);
 }
