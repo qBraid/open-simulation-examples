@@ -19,6 +19,12 @@
    "verdict": "match"
   },
   {
+   "label": "3D mesh refinement: edge elements 1.0 -> 0.5 um (Design A)",
+   "ours": "+2.0 %",
+   "ref": "< 5 %",
+   "verdict": "match"
+  },
+  {
    "label": "Edge band x0 = 4 vs 8 um (same 3D mesh)",
    "ours": "+19 %",
    "ref": "0 % ideal",

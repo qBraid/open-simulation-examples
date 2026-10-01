@@ -7,6 +7,7 @@ OUT = os.path.join(HERE, "..", "results", "v2")
 def main(extra_rows=None):
     A = json.load(open(f"{OUT}/wangA_participation_x4.json"))
     A8 = json.load(open(f"{OUT}/wangA_participation_x8.json"))
+    Ar = json.load(open(f"{OUT}/wangA_e0.5_participation_x4.json"))
     st = {float(k): v for k, v in json.load(open(f"{OUT}/edge2d_sapphire_h100_x4.json")).items()}
     pads_ms = A["p"]["MS"]
     pads_ms_x8 = A8["p"]["MS"]
@@ -17,6 +18,7 @@ def main(extra_rows=None):
         {"label": "2D edge model: 4x finer corner mesh", "ours": "0.03 % change", "ref": "< 1 %", "verdict": "match"},
         {"label": "2D edge strength K vs analytic thin slot (g=500 um)", "ours": f"{st[500.0]['K']/st[500.0]['K_analytic_zero_thickness']:.3f}", "ref": "1 (h->0)", "verdict": "match"},
         {"label": "3D field follows K/sqrt(u), 1.4-10 um from edges", "ours": "flat to +-2 %", "ref": "theory: flat", "verdict": "match"},
+        {"label": "3D mesh refinement: edge elements 1.0 -> 0.5 um (Design A)", "ours": f"{(Ar['p']['MS']/pads_ms-1)*100:+.1f} %", "ref": "< 5 %", "verdict": "match"},
         {"label": "Edge band x0 = 4 vs 8 um (same 3D mesh)", "ours": f"{(pads_ms_x8/pads_ms-1)*100:+.0f} %", "ref": "0 % ideal", "verdict": "close"},
         {"label": "Wang 2015 Design A, pad p_MS (Table S1)", "ours": f"{pads_ms*1e4:.2f}e-4", "ref": f"{wang['pads_MS']*1e4:.2f}e-4", "verdict": f"{pads_ms/wang['pads_MS']:.1f}x high"},
         {"label": "Design A T1 from our p (Wang loss model)", "ours": f"{T1_pred_raw:.0f} us", "ref": "66-95 us measured", "verdict": "conservative"},
