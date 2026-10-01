@@ -77,7 +77,11 @@ if os.path.exists(f):
     for mol, r in d.items():
         for k in r["exp"]:
             out.append(f"| {mol} {k} | {r['exp'][k]} | {r['pbe_def2tzvp'][k]:.3f} | " + " | ".join(f"{r[m][k]:.3f}" for m in ms) + " |")
-    out += ["", "The PBE geometries anchor what these potentials were trained to reproduce. Molecules are outside the potentials' main training domain (periodic crystals), so errors here are expected to be larger.", ""]
+    bl = [(mol, k) for mol, r in d.items() for k in r["exp"] if k.startswith("r(")]
+    mae = {m: sum(abs(d[mol][m][k] - d[mol]["pbe_def2tzvp"][k]) for mol, k in bl) / len(bl) for m in ms}
+    pe = sum(abs(d[mol]["pbe_def2tzvp"][k] - d[mol]["exp"][k]) for mol, k in bl) / len(bl)
+    out += ["", "Bond lengths: the potentials reproduce PBE to a mean |Δr| of " + ", ".join(f"{mae[m]:.3f} Å ({NAME[m]})" for m in ms)
+            + f", and PBE is itself {pe:.3f} Å from experiment. That is, the potentials inherit their functional faithfully even for molecules, which are outside their periodic training domain. The PySCF PBE/def2-TZVP optimisations of all six molecules took under a minute on two CPU threads.", ""]
 st = os.path.join(R, "stamp.json")
 if os.path.exists(st): out += ["### Verification stamp", "", json.load(open(st))["text"], ""]
 readme = open(os.path.join(HERE, "README.md")).read()

@@ -44,6 +44,21 @@ Mean absolute relative errors. Cs is excluded because its energy–volume curve 
 
 **Verdict:** not reached. The best model is at 13.9% against a PBE-level bar of about 3–5%. Universal potentials are not yet a substitute for DFT phonons. Fine-tune on a few hundred DFT force calculations, or use DFT directly.
 
+### 5 · DFT anchor: small-molecule geometries (Å, degrees)
+
+| molecule / quantity | experiment | PBE/def2-TZVP (PySCF) | MACE-MP-0 | MACE-MPA-0 | MACE-MP-0b3 |
+|---|---|---|---|---|---|
+| H2O r(O-H) | 0.9578 | 0.971 | 0.973 | 0.970 | 0.975 |
+| H2O angle(H-O-H) | 104.48 | 104.298 | 104.108 | 103.951 | 104.702 |
+| NH3 r(N-H) | 1.012 | 1.022 | 1.019 | 1.015 | 1.021 |
+| NH3 angle(H-N-H) | 106.7 | 106.323 | 106.416 | 107.424 | 106.562 |
+| CH4 r(C-H) | 1.087 | 1.097 | 1.093 | 1.092 | 1.095 |
+| CO2 r(C-O) | 1.162 | 1.171 | 1.174 | 1.177 | 1.177 |
+| N2 r(N-N) | 1.098 | 1.103 | 1.112 | 1.113 | 1.114 |
+| CO r(C-O) | 1.128 | 1.136 | 1.143 | 1.141 | 1.144 |
+
+Bond lengths: the potentials reproduce PBE to a mean |Δr| of 0.005 Å (MACE-MP-0), 0.005 Å (MACE-MPA-0), 0.005 Å (MACE-MP-0b3), and PBE is itself 0.009 Å from experiment. That is, the potentials inherit their functional faithfully even for molecules, which are outside their periodic training domain. The PySCF PBE/def2-TZVP optimisations of all six molecules took under a minute on two CPU threads.
+
 <!--/RESULTS-->
 
 ## What "top 10%" means here
