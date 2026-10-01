@@ -17,6 +17,12 @@ Universal machine-learned interatomic potentials (MLIPs) do in seconds per struc
 | ORB v3 conservative-inf-mpa | `orb-models` (`pretrained.orb_v3_conservative_inf_mpa`) | 0.905 | Apache-2.0 | **Best open model that is easy to run**; screening |
 | EquiformerV3+DeNS-OAM | research fairchem fork, torch 2.4 | 0.931 (#1) | MIT | Top accuracy; needs its own environment (see below) |
 
+**Licences checked 2026-10-01 against the weights, not just the code.**
+- MACE-MP-0, MP-0b3 and MPA-0: MIT (ACEsuit/mace-foundations table).
+- ORB v3: Apache-2.0 (orb-models LICENSE covers the models).
+- EquiformerV3 checkpoints: MIT (Hugging Face `mirror-physics/equiformer_v3` card). Its training data, OMat24, sAlex and MPtrj, is CC-BY-4.0, which only requires attribution.
+- Meta's own eSEN and eqV2 OMat checkpoints carry Meta's research licence. They are not used here.
+
 **Do not use the ASL-licensed MACE models (OMAT-0, MATPES-*, MH-*) for commercial work.** The ASL is an academic licence. Check `ACEsuit/mace-foundations` before adopting a new checkpoint.
 
 ## Install (verified)
