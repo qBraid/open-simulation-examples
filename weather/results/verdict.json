@@ -1,77 +1,77 @@
 {
  "html": "<b>Verdict: not reached.</b> Day 5 z500 RMSE 407 vs IFS HRES 299 on the same 12 starts (+36%); T850 2.39 vs 1.93 K (+24%). SFNO beats HRES on 2 of 9 variable\u2013lead pairs. GraphCast (non-commercial weights) is the WB2 leader at 276.",
- "stamp_html": "<h2>Run details</h2>Model: NVIDIA SFNO 73-ch (Earth2Studio 0.19.0), weights via Earth2Studio, NVIDIA licence.<br>Initial conditions and truth: ERA5 (ARCO public zarr). IFS HRES: WeatherBench2 public zarr.<br>12 starts in 2020 (WB2's test year, outside SFNO training), 00 UTC, leads 1/3/5 days, latitude-weighted RMSE at 0.25\u00b0.<br>Machine: qBraid gpu-l4 (NVIDIA L4), 1.21 s per 6 h step, model load 18.3 s.<br>Wall time 17 min \u00b7 compute cost \u2248 $0.40 \u00b7 2026-10-01.",
+ "stamp_html": "<h2>Run details</h2>Model: NVIDIA SFNO 73-ch (Earth2Studio 0.19.0), weights via Earth2Studio, NVIDIA licence.<br>Initial conditions and truth: ERA5 (ARCO public zarr). IFS HRES: WeatherBench2 public zarr.<br>12 starts in 2020 (WB2's test year, outside SFNO training), 00 UTC, leads 1/3/5 days, latitude-weighted RMSE at 0.25\u00b0.<br>Machine: qBraid gpu-l4 (NVIDIA L4), 1.21 s per 6 h step, model load 18.3 s.<br>Wall time 17 min \u00b7 compute cost \u2248 $0.15 \u00b7 2026-10-01.",
  "tour": [
   {
    "lon": -40,
    "lat": 15,
    "dist": 4.8,
    "lead": 0,
-   "html": "<b>One GPU, five days of weather.</b> NVIDIA SFNO steps the whole atmosphere 6 h at a time from the ERA5 state of 24 Aug 2020, 00 UTC.",
-   "ov": "tcwv",
-   "mode": "fc",
-   "hold": 4500
-  },
-  {
-   "lon": -78,
-   "lat": 21,
-   "dist": 2.3,
-   "lead": 0,
-   "html": "<b>Hurricane Laura</b> is a tropical storm over Hispaniola at the start. Water vapour shows its moisture core; winds are the model's own 850 hPa field.",
-   "ov": "tcwv",
-   "mode": "fc",
-   "hold": 3500
-  },
-  {
-   "lon": -90,
-   "lat": 26,
-   "dist": 2.1,
-   "lead": 0,
-   "html": "Play forward: Laura crosses the Gulf and intensifies. <b>Cyan</b> is the forecast track, <b>red</b> is ERA5.",
-   "ov": "msl",
-   "mode": "fc",
-   "play_to": 78,
-   "hold": 9000
-  },
-  {
-   "lon": -93.0,
-   "lat": 28.25,
-   "dist": 1.9,
-   "lead": 72,
-   "html": "At +72 h the forecast centre is <b>462 km</b> from ERA5's, with 977 hPa vs 978 hPa. Drag the divider to compare against the reanalysis. Coarse 0.25\u00b0 models underestimate peak intensity.",
-   "ov": "msl",
-   "mode": "swipe",
-   "hold": 6500
-  },
-  {
-   "lon": 127,
-   "lat": 33,
-   "dist": 2.4,
-   "lead": 72,
-   "html": "<b>Typhoon Bavi</b> in the Yellow Sea on the same run, half a world away, from the same single forward pass.",
+   "html": "<b>One GPU, five days of weather.</b> NVIDIA SFNO steps the whole atmosphere 6 h at a time from the ERA5 state of 24 Aug 2020, 00 UTC. Moisture, winds at 850 hPa and 500 hPa height contours are all model output.",
    "ov": "tcwv",
    "mode": "fc",
    "hold": 5000
   },
   {
+   "lon": -74,
+   "lat": 19,
+   "dist": 2.3,
+   "lead": 0,
+   "html": "<b>Hurricane Laura</b> starts as a tropical storm near Hispaniola. Its moisture core is the bright plume, and the particles trace the model's own winds.",
+   "ov": "tcwv",
+   "mode": "fc",
+   "hold": 4000
+  },
+  {
+   "lon": -86,
+   "lat": 24,
+   "dist": 2.2,
+   "lead": 0,
+   "html": "Play forward. <b>Cyan</b> is the forecast track, <b>red</b> is ERA5. For two days they agree to within about 170 km.",
+   "ov": "msl",
+   "mode": "fc",
+   "play_to": 48,
+   "hold": 7000
+  },
+  {
+   "lon": -90,
+   "lat": 26,
+   "dist": 2.0,
+   "lead": 72,
+   "html": "At +72 h the forecast centre is <b>462 km</b> from ERA5's, with 977 vs 978 hPa. The real Laura recurves north into Louisiana, but SFNO keeps it heading west. Drag the divider to compare.",
+   "ov": "msl",
+   "mode": "swipe",
+   "hold": 7500
+  },
+  {
+   "lon": 127,
+   "lat": 31,
+   "dist": 2.5,
+   "lead": 72,
+   "html": "<b>Typhoon Bavi</b> in the Yellow Sea, half a world away, comes out of the same forward pass. Here the forecast holds the track to about 110 km at +72 h.",
+   "ov": "tcwv",
+   "mode": "fc",
+   "hold": 5500
+  },
+  {
    "lon": 20,
-   "lat": -50,
-   "dist": 3.2,
+   "lat": -45,
+   "dist": 3.4,
    "lead": 120,
-   "html": "Day 5 error in 2 m temperature: the Southern Ocean storm track and continents carry most of it.",
+   "html": "Day-5 error in 2 m temperature. Most of the error sits in the Southern Ocean storm track and over the continents, where small-scale weather has been smoothed out.",
    "ov": "t2m",
    "mode": "err",
-   "hold": 6000
+   "hold": 6500
   },
   {
    "lon": -30,
-   "lat": 30,
+   "lat": 25,
    "dist": 4.8,
    "lead": 120,
    "html": "<b>Skill vs ECMWF: not reached.</b> Day 5 z500 RMSE 407 vs IFS HRES 299 on the same 12 starts (+36%); T850 2.39 vs 1.93 K (+24%). SFNO beats HRES on 2 of 9 variable\u2013lead pairs. GraphCast (non-commercial weights) is the WB2 leader at 276.",
    "ov": "tcwv",
    "mode": "fc",
-   "hold": 7000
+   "hold": 8000
   }
  ],
  "table": [

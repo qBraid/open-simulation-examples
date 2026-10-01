@@ -28,7 +28,17 @@ STORMS = [  # name, approx position at init (lon, lat), search radius deg
 
 
 def b64z(arr):
-    return base64.b64encode(zlib.compress(np.ascontiguousarray(arr).tobytes(), 9)).decode()
+    return np.ascontiguousarray(arr).tobytes()  # raw bytes; packed and deflated once in pack_blobs
+
+
+def pack_blobs(blobs):
+    """One deflate stream for every array (one DecompressionStream in the page). Offsets are
+    2-byte aligned so int16 views work."""
+    buf, index, off = bytearray(), {}, 0
+    for k, b in blobs.items():
+        if off % 2: buf += b"\0"; off += 1
+        index[k] = [off, len(b)]; buf += b; off += len(b)
+    return base64.b64encode(zlib.compress(bytes(buf), 9)).decode(), index
 
 
 def b64z_rows(arr):
@@ -47,6 +57,10 @@ def b64z_pts(p):
 
 def down(a):  # 0.25 deg (721 x 1440, lon 0..359.75) -> 1 deg (181 x 360)
     return a[::4, ::4]
+
+
+def down2(a):  # 0.25 deg -> 2 deg (91 x 180) for the wind particles
+    return a[::8, ::8]
 
 
 def q8(a, lo, hi):
@@ -103,9 +117,9 @@ def main():
         tr = np.stack([q8(CONV[v](down(Z[f"era5_{v}_{h:03d}"])), m["lo"], m["hi"]) for h in tleads])
         blobs[f"fc_{v}"] = b64z_rows(fc); blobs[f"tr_{v}"] = b64z_rows(tr); vmeta[v] = m
     for c in ("u850", "v850"):
-        blobs[f"fc_{c}"] = b64z_rows(np.stack([np.clip(np.round(down(Z[f"{c}_{h:03d}"]) / WIND_SCALE), -127, 127).astype(np.int8) for h in leads]))
-        blobs[f"tr_{c}"] = b64z_rows(np.stack([np.clip(np.round(down(Z[f"era5_{c}_{h:03d}"]) / WIND_SCALE), -127, 127).astype(np.int8) for h in tleads]))
-    levels = list(range(4800, 6001, 60))
+        blobs[f"fc_{c}"] = b64z_rows(np.stack([np.clip(np.round(down2(Z[f"{c}_{h:03d}"]) / WIND_SCALE), -127, 127).astype(np.int8) for h in leads]))
+        blobs[f"tr_{c}"] = b64z_rows(np.stack([np.clip(np.round(down2(Z[f"era5_{c}_{h:03d}"]) / WIND_SCALE), -127, 127).astype(np.int8) for h in tleads]))
+    levels = list(range(4800, 6001, 80))
     z5 = {}
     for kind, keyf, ls in (("fc", "z500_{:03d}", leads), ("tr", "era5_z500_{:03d}", tleads)):
         metas, allp = [], []
@@ -142,18 +156,20 @@ def main():
     verdict = json.load(open(os.path.join(a.results, "verdict.json"))) if os.path.exists(os.path.join(a.results, "verdict.json")) else {}
     payload = {
         "model_label": "NVIDIA SFNO (FourCastNet v2, 73 ch)", "init": init.isoformat()[:16], "gpu": S.get("gpu", "NVIDIA L4"),
-        "step_s": float(np.mean(S["step_s"])), "grid": {"nx": 360, "ny": 181}, "leads": leads, "truth_leads": tleads,
+        "step_s": float(np.mean(S["step_s"])), "grid": {"nx": 360, "ny": 181, "wnx": 180, "wny": 91}, "leads": leads, "truth_leads": tleads,
         "vars": list(VMETA), "vmeta": vmeta, "wind_scale": WIND_SCALE,
         "cmaps": {"ice": lut("ice"), "thermal": lut("thermal"), "deep_r": lut("deep_r"), "diverging": lut("balance")},
         "z5_fc": z5["fc"], "z5_tr": z5["tr"], "land_lens": land_lens.tolist(), "tracks": tracks,
         "scores": {v: series(v) for v in ("z500", "t850", "t2m")},
         "score_labels": {"z500": "z500 (m²/s²)", "t850": "T850 (K)", "t2m": "T2m (K)"},
         "verdict_html": verdict.get("html", ""), "stamp_html": verdict.get("stamp_html", ""),
-        "tour": verdict.get("tour", []), "rel_day5_vs_hres_pct": rel, "blobs": blobs,
+        "tour": verdict.get("tour", []), "rel_day5_vs_hres_pct": rel,
     }
+    sizes = {k: round(len(v) / 1e6, 2) for k, v in blobs.items()}
+    payload["pack"], payload["index"] = pack_blobs(blobs)
     html = open(os.path.join(HERE, "viewer_template.html")).read().replace("__PAYLOAD__", json.dumps(payload, separators=(",", ":")))
     open(a.out, "w").write(html)
-    print(a.out, round(len(html) / 1e6, 2), "MB", {k: round(len(v) / 1e6, 2) for k, v in blobs.items()})
+    print(a.out, round(len(html) / 1e6, 2), "MB (raw MB per array:", sizes, ")")
     print("tracks", [(t["name"], len(t["fc"]), len(t["tr"])) for t in tracks])
 
 
