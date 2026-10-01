@@ -268,8 +268,9 @@ const sA = new THREE.Scene(); const camA = new THREE.PerspectiveCamera(35,1,0.01
 sA.add(new THREE.HemisphereLight(0xdfe9ff,0x1b2030,0.6)); const keyA=new THREE.DirectionalLight(0xffffff,0.55); keyA.position.set(-4,4,1.2); sA.add(keyA);
 const chipKeys = Object.keys(D.chip);
 const chipSel=$("chipSel"); chipKeys.forEach(k=>{const o=document.createElement("option"); o.value=k; o.textContent=D.chip[k].info.label; chipSel.appendChild(o);});
+if(D.chip.final) chipSel.value="final"; if(params0("chip")) chipSel.value=params0("chip");
 const chipGroup = new THREE.Group(); sA.add(chipGroup);
-let fieldMat=null, chipScale=1;
+let fieldMat=null, chipScale=1; const qubitPos=new THREE.Vector3();
 function buildChip(key){
   chipGroup.clear();
   const c=D.chip[key]; const P=new Float32Array(c.pos); const lo=c.lo, hi=c.hi;
@@ -279,6 +280,7 @@ function buildChip(key){
   g.setAttribute("f0", new THREE.BufferAttribute(new Float32Array(c.fields[0].map(v=>v/255)),1));
   g.setAttribute("f1", new THREE.BufferAttribute(new Float32Array(c.fields[1].map(v=>v/255)),1));
   const metal=new THREE.Mesh(g, metalMat()); chipGroup.add(metal);
+  let im=0; c.fields[0].forEach((v,i)=>{ if(v>c.fields[0][im]) im=i; }); qubitPos.set(P[3*im],P[3*im+1],0);
   fieldMat=new THREE.ShaderMaterial({ transparent:true, depthWrite:false, blending:THREE.AdditiveBlending, side:THREE.DoubleSide,
     uniforms:{mixv:{value:0},time:{value:0},gain:{value:1.0}},
     vertexShader:`attribute float f0; attribute float f1; uniform float mixv; varying float v; void main(){ v=mix(f0,f1,mixv); vec3 p=position; p.z+=0.0015; gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.0);} `,
@@ -356,7 +358,7 @@ new ResizeObserver(resize).observe($("stage"));
 const fin = D.designs.length-1;
 const TOUR=[
  ["chip",[0.4,-3.6,3.2],[0,0,0],0,"<b>The chip.</b> Readout resonator (meander), feedline and the transmon island, in tantalum on sapphire. Colour shows the qubit mode's electric field on the metal, from a Palace 3D eigenmode solve."],
- ["chip",[0.9,-0.7,1.0],[0.9,0.35,0],0,"<b>Qubit mode.</b> The field concentrates in the trench around the island. That is where the stored energy, and the surface loss, lives."],
+ ["chip","Q1","Q0",0,"<b>Qubit mode.</b> The field concentrates in the trench around the island. That is where the stored energy, and the surface loss, lives."],
  ["chip",[-0.6,-1.8,1.8],[-0.4,0.2,0],1,"<b>Resonator mode.</b> Morphing to the readout mode: its energy sits along the meander, and only a little leaks onto the qubit through the claw."],
  ["loss",[250,-650,900],[0,350,0],0,"<b>Where the loss is.</b> Each bead is a piece of metal edge; brightness is how much of the qubit's energy sits in the 3-nm lossy layers there. The v1 island is thin with a tight trench, so its edges are hot."],
  ["loss",[120,-120,260],[40,30,0],0,"<b>Edges dominate.</b> Fields diverge near thin-film edges; the trench walls and island corners carry most of the surface participation."],
@@ -365,7 +367,9 @@ const TOUR=[
 let tour=-1, tourT=0, camFrom=null;
 function tourStep(k){ tour=k; if(k>=TOUR.length){ tour=-1; $("caption").style.display="none"; $("tourBtn").textContent="▶ Guided tour"; return; }
   const [s,pos,tgt,v,txt]=TOUR[k]; setScene(s); const cam=s==="chip"?camA:camB, ctl=s==="chip"?controlsA:controlsB;
-  camFrom={p:cam.position.clone(),t:ctl.target.clone(),P:new THREE.Vector3(...pos),T:new THREE.Vector3(...tgt),cam,ctl,v,s}; tourT=0;
+  const P = pos==="Q1"? qubitPos.clone().add(new THREE.Vector3(0.05,-0.85,0.75)) : new THREE.Vector3(...pos);
+  const T = tgt==="Q0"? qubitPos.clone() : new THREE.Vector3(...tgt);
+  camFrom={p:cam.position.clone(),t:ctl.target.clone(),P,T,cam,ctl,v,s}; tourT=0;
   if(s==="chip") $("modeAuto").setAttribute("aria-pressed","false");
   $("caption").innerHTML=txt+`<div class="note">step ${k+1} / ${TOUR.length} · click to continue</div>`; $("caption").style.display="block"; $("tourBtn").textContent="■ stop tour"; }
 $("tourBtn").onclick=()=> tour>=0? tourStep(TOUR.length): tourStep(0);
