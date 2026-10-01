@@ -409,6 +409,24 @@ function drawGait(frame){
   g.fillStyle=css('--muted');g.fillText('stance ■  swing □   window 3 s',L,Hh-1);
 }
 
+
+// ---------- touchdown dust (pooled points) + live footprints ----------
+const DN=400,dPos=new Float32Array(DN*3),dVel=new Float32Array(DN*3),dAge=new Float32Array(DN).fill(9);let dHead=0;
+const dGeo=new THREE.BufferGeometry();dGeo.setAttribute('position',new THREE.BufferAttribute(dPos,3));
+function dustTex(){const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');const r=g.createRadialGradient(32,32,0,32,32,32);r.addColorStop(0,'rgba(255,255,255,0.9)');r.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=r;g.fillRect(0,0,64,64);return new THREE.CanvasTexture(c);}
+const dMat=new THREE.PointsMaterial({size:0.05,map:dustTex(),transparent:true,depthWrite:false,opacity:0.55,color:0xb9b2a6});
+const dust=new THREE.Points(dGeo,dMat);dust.frustumCulled=false;scene.add(dust);
+function puff(x,y){for(let n=0;n<6;n++){const i=dHead++%DN,a=Math.random()*6.283,sp=0.15+Math.random()*0.25;dPos[i*3]=x;dPos[i*3+1]=y;dPos[i*3+2]=0.01;dVel[i*3]=Math.cos(a)*sp;dVel[i*3+1]=Math.sin(a)*sp;dVel[i*3+2]=0.12+Math.random()*0.15;dAge[i]=0;}}
+function stepDust(dt){for(let i=0;i<DN;i++){if(dAge[i]>1.2){dPos[i*3+2]=-10;continue;}dAge[i]+=dt;dPos[i*3]+=dVel[i*3]*dt;dPos[i*3+1]+=dVel[i*3+1]*dt;dPos[i*3+2]+=dVel[i*3+2]*dt;dVel[i*3+2]-=0.25*dt;dVel[i*3]*=0.96;dVel[i*3+1]*=0.96;}
+  dGeo.attributes.position.needsUpdate=true;dMat.opacity=0.5;}
+let lastPuffFrame=-1;
+function replayPuffs(frame){if(frame<lastPuffFrame){lastPuffFrame=frame;return;}for(const p of TOUCH){if(p.i>lastPuffFrame&&p.i<=frame)puff(p.x,p.y);}lastPuffFrame=frame;}
+// live footprints: ring buffer in its own instanced mesh
+const lPrints=new THREE.InstancedMesh(printGeo,printMat,PR);lPrints.count=0;lPrints.renderOrder=2;lPrints.visible=false;scene.add(lPrints);
+let lHead=0;const lContact=FEET.map(()=>0),lfw=new THREE.Vector3(),lq=new THREE.Quaternion();
+function liveFeet(){const xp=mjd.xpos,xq=mjd.xquat;FEET.forEach((f,k)=>{const b=f.body;lq.set(xq[b*4+1],xq[b*4+2],xq[b*4+3],xq[b*4]);lfw.copy(f.local).applyQuaternion(lq);lfw.x+=xp[b*3];lfw.y+=xp[b*3+1];lfw.z+=xp[b*3+2];
+  const c=lfw.z<f.r+0.012?1:0;if(c&&!lContact[k]){mtx.makeTranslation(lfw.x,lfw.y,0.0045);lPrints.setMatrixAt(lHead%PR,mtx);lHead++;lPrints.count=Math.min(lHead,PR);lPrints.instanceMatrix.needsUpdate=true;puff(lfw.x,lfw.y);}lContact[k]=c;});}
+
 // ---------- live mode: MuJoCo WASM + JS policy ----------
 const LV=D.live; const live={on:false,ready:false,acc:0,cmd:[0,0,0],last:null,trail:[],kickT:0};
 function f32b64(s){return b64f32(s);}
@@ -427,7 +445,7 @@ async function initLive(){
     resetLive();live.ready=true;st.textContent='ready · MuJoCo '+(mj.mj_versionString?mj.mj_versionString():'3.14')+' · '+LV.mjb_bytes+' B model';return true;
   }catch(e){console.error(e);st.textContent='could not start live mode: '+e.message;return false;}
 }
-function resetLive(){mj.mj_resetDataKeyframe(mjm,mjd,LV.home_key);mj.mj_forward(mjm,mjd);live.last=new Float32Array(LV.nu);live.trail=[];live.acc=0;}
+function resetLive(){mj.mj_resetDataKeyframe(mjm,mjd,LV.home_key);mj.mj_forward(mjm,mjd);live.last=new Float32Array(LV.nu);live.trail=[];live.acc=0;if(typeof lPrints!=='undefined'){lHead=0;lPrints.count=0;}}
 const H=[new Float32Array(512),new Float32Array(256),new Float32Array(128),new Float32Array(24)];
 function policyAct(obs){
   let x=new Float32Array(obs.length);for(let i=0;i<obs.length;i++)x[i]=(obs[i]-MEAN[i])/STD[i];
@@ -489,7 +507,7 @@ function drawLive(){
 }
 $('#live').onclick=async()=>{
   live.on=!live.on;$('#live').setAttribute('aria-pressed',live.on);$('#pad').style.display=live.on?'block':'none';
-  ghost.root.visible=false;ribbon.mesh.visible=!live.on;prints.visible=!live.on;liveTrail.visible=live.on;Object.values(ghostTrails).forEach(l=>l.visible=false);
+  ghost.root.visible=false;ribbon.mesh.visible=!live.on;prints.visible=!live.on;lPrints.visible=live.on;liveTrail.visible=live.on;Object.values(ghostTrails).forEach(l=>l.visible=false);
   $('#tl').style.opacity=live.on?0.35:1;if(live.on){stopTour();setCam('follow');if(!(await initLive())){live.on=false;$('#live').setAttribute('aria-pressed','false');}}
 };
 
@@ -510,13 +528,14 @@ function updateArrows(){
 function loop(now){
   if(hidden)return;
   const dt=Math.min((now-last)/1000,0.05);last=now;
-  if(live.on&&live.ready){liveStep(dt);drawLive();}
+  if(live.on&&live.ready){liveStep(dt);drawLive();liveFeet();}
   else if(!live.on){
   if(playing){t+=dt*speed;if(t>T_END){t=0;}}
   applyPose(robot,MAIN,t);
   const gk=ghostSel.value;ghost.root.visible=!!gk;Object.entries(ghostTrails).forEach(([k,l])=>l.visible=(k===gk));
   if(gk)applyPose(ghost,R[gk],Math.min(t,(R[gk].n-1)*DT));
-  updateArrows();const fr=Math.min(Math.round(t/DT),MAIN.n-1);updatePrints(fr);drawGait(fr);}
+  updateArrows();const fr=Math.min(Math.round(t/DT),MAIN.n-1);updatePrints(fr);drawGait(fr);if(playing)replayPuffs(fr);else lastPuffFrame=fr;}
+  stepDust(dt);
   $('#scrub').value=Math.round(1000*t/T_END);$('#time').textContent=t.toFixed(2)+' s / '+T_END.toFixed(0)+' s';
   // shadow camera follows the robot
   const b=robot.bodies[TRUNK].position;sun.position.set(b.x+3.5,b.y-2.5,6.5);sun.target.position.copy(b);
