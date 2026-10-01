@@ -37,7 +37,8 @@ for d in a.inits.split(","):
     for m in range(a.members):
         model.set_rng(seed=1000 + m, reset=True)
         ts = time.time()
-        for step, (xs, cs) in enumerate(model.create_iterator(x, coords)):
+        # the iterator modifies its input in place: give every member a fresh copy
+        for step, (xs, cs) in enumerate(model.create_iterator(x.clone(), coords.copy())):
             h = step * 6
             if h in LEADS_H:
                 vn = list(cs["variable"])

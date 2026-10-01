@@ -333,7 +333,7 @@ const z5 = {fc: {}, tr: []};
     for (const frame of meta){
       const seg = [], col = [];
       for (const [L, lev] of frame){
-        const strong = (lev % 240 === 0);
+        const strong = (lev % 360 === 0);
         const c = strong ? 1 : .6;
         for (let i=0;i<L-1;i++){
           const lo1 = pts[2*(o+i)]/100, la1 = pts[2*(o+i)+1]/100, lo2 = pts[2*(o+i+1)]/100, la2 = pts[2*(o+i+1)+1]/100;

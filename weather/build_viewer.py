@@ -84,7 +84,7 @@ def contours(z, levels):
     for lev in levels:
         for line in gen.lines(lev):
             if len(line) < 4: continue
-            line = line[:: max(1, len(line) // 160)]  # cap points per line (1 deg grid: smooth enough)
+            line = line[:: max(1, len(line) // 110)]  # cap points per line (1 deg grid: smooth enough)
             lo = np.where(line[:, 0] > 180, line[:, 0] - 360, line[:, 0])
             pts.append(np.stack([lo, line[:, 1]], 1)); meta.append([len(line), int(lev)])
     p = np.round(np.concatenate(pts) * 100).astype(np.int16) if pts else np.zeros((0, 2), np.int16)
@@ -118,7 +118,7 @@ def main():
     step = 6 if len(specs) == 1 else 12            # keep the page under ~5 MB with two models
     leads = list(range(0, 121, step)); tleads = list(range(0, 121, 12))
     blobs, vmeta, z5, models, tracks_fc = {}, {}, {}, {}, {}
-    levels = list(range(4800, 6001, 80))
+    levels = list(range(4800, 6001, 120))
     Z0 = None
     for m, path in specs:
         Z = np.load(path)
@@ -144,7 +144,7 @@ def main():
     for h in tleads:
         m_, p_ = contours(down(Z0[f"era5_z500_{h:03d}"]) / 9.80665, levels); metas.append(m_); allp.append(p_)
     z5["tr"] = metas; blobs["z5_tr_pts"] = b64z_pts(np.concatenate(allp))
-    land_pts, land_lens = pack(os.path.join(HERE, "data", "land-50m.json"))
+    land_pts, land_lens = pack(os.path.join(HERE, "data", "land-110m.json" if len(specs) > 1 else "land-50m.json"))
     blobs["land_pts"] = b64z_pts(land_pts)
     lat, lon = Z0["lat"], Z0["lon"]
     tracks = []

@@ -1,13 +1,13 @@
 {
- "html": "<b>Verdict: not reached.</b> Day 5 z500 RMSE 407 vs IFS HRES 299 on the same 12 starts (+36%); T850 2.39 vs 1.93 K (+24%). SFNO beats HRES on 2 of 9 variable\u2013lead pairs. GraphCast (non-commercial weights) is the WB2 leader at 276.",
- "stamp_html": "<h2>Run details</h2>Model: NVIDIA SFNO 73-ch (Earth2Studio 0.19.0), weights via Earth2Studio, NVIDIA licence.<br>Initial conditions and truth: ERA5 (ARCO public zarr). IFS HRES: WeatherBench2 public zarr.<br>12 starts in 2020 (WB2's test year, outside SFNO training), 00 UTC, leads 1/3/5 days, latitude-weighted RMSE at 0.25\u00b0.<br>Machine: qBraid gpu-l4 (NVIDIA L4), 1.21 s per 6 h step, model load 18.3 s.<br>Wall time 17 min \u00b7 compute cost \u2248 $0.15 \u00b7 2026-10-01.",
+ "html": "<b>Verdict (FourCastNet 3): close.</b> FCN3 is a probabilistic model. Its 4-member mean scores 299 vs IFS HRES 296 on day-5 z500 (+1%) and 1.74 vs 1.91 K on T850 (-9%) on the same 6 starts, beating HRES on 7 of 9 variable\u2013lead pairs. A single member (394) matches an IFS ensemble member (WB2 397).",
+ "stamp_html": "<h2>Run details</h2>Model: NVIDIA FourCastNet 3 via Earth2Studio 0.19.0, NVIDIA weights (commercially usable).<br>Initial conditions and truth: ERA5 (ARCO public zarr). IFS HRES: WeatherBench2 public zarr.<br>12 starts in 2020 (WB2's test year, outside training), 00 UTC, leads 1/3/5 days, latitude-weighted RMSE at 0.25\u00b0.<br>Machine: qBraid gpu-a100-sxm (NVIDIA A100 80GB PCIe), 2.64 s per 6 h step, model load 54.1 s.<br>Ensemble: 4 members (seeds 1000+) on 6 of the starts.<br>Wall time 21 min \u00b7 compute cost \u2248 $1.80 \u00b7 2026-10-01.",
  "tour": [
   {
    "lon": -40,
    "lat": 15,
    "dist": 4.8,
    "lead": 0,
-   "html": "<b>One GPU, five days of weather.</b> NVIDIA SFNO steps the whole atmosphere 6 h at a time from the ERA5 state of 24 Aug 2020, 00 UTC. Moisture, winds at 850 hPa and 500 hPa height contours are all model output.",
+   "html": "<b>One GPU, five days of weather.</b> NVIDIA FourCastNet 3 steps the whole atmosphere 6 h at a time from the ERA5 state of 24 Aug 2020, 00 UTC. Moisture, winds at 850 hPa and 500 hPa height contours are all model output.",
    "ov": "tcwv",
    "mode": "fc",
    "hold": 5000
@@ -38,7 +38,7 @@
    "lat": 26,
    "dist": 2.0,
    "lead": 72,
-   "html": "At +72 h the forecast centre is <b>462 km</b> from ERA5's, with 977 vs 978 hPa. The real Laura recurves north into Louisiana, but SFNO keeps it heading west. Drag the divider to compare.",
+   "html": "At +72 h the forecast centre is <b>185 km</b> from ERA5's, with 983 vs 978 hPa. The real Laura recurves north into Louisiana; FourCastNet 3 follows it. Drag the divider to compare.",
    "ov": "msl",
    "mode": "swipe",
    "hold": 7500
@@ -48,7 +48,7 @@
    "lat": 31,
    "dist": 2.5,
    "lead": 72,
-   "html": "<b>Typhoon Bavi</b> in the Yellow Sea, half a world away, comes out of the same forward pass. Here the forecast holds the track to about 110 km at +72 h.",
+   "html": "<b>Typhoon Bavi</b> in the Yellow Sea, half a world away, comes out of the same forward pass. Here the forecast centre is 153 km from ERA5's at +72 h.",
    "ov": "tcwv",
    "mode": "fc",
    "hold": 5500
@@ -68,7 +68,7 @@
    "lat": 25,
    "dist": 4.8,
    "lead": 120,
-   "html": "<b>Skill vs ECMWF: not reached.</b> Day 5 z500 RMSE 407 vs IFS HRES 299 on the same 12 starts (+36%); T850 2.39 vs 1.93 K (+24%). SFNO beats HRES on 2 of 9 variable\u2013lead pairs. GraphCast (non-commercial weights) is the WB2 leader at 276.",
+   "html": "<b>Skill vs ECMWF (FourCastNet 3): close.</b> FCN3 is a probabilistic model. Its 4-member mean scores 299 vs IFS HRES 296 on day-5 z500 (+1%) and 1.74 vs 1.91 K on T850 (-9%) on the same 6 starts, beating HRES on 7 of 9 variable\u2013lead pairs. A single member (394) matches an IFS ensemble member (WB2 397).",
    "ov": "tcwv",
    "mode": "fc",
    "hold": 8000
@@ -78,11 +78,12 @@
   {
    "var": "z500",
    "lead_h": 24,
-   "sfno": 66.2372656774097,
+   "model": "fcn3",
+   "rmse": 59.39492409534969,
    "hres_paired": 48.98721264959074,
-   "diff": 17.25005302781896,
-   "diff_se": 1.87917703957431,
-   "sfno_better_inits": 0,
+   "diff": 10.407711445758949,
+   "diff_se": 1.311765081614718,
+   "better_inits": 0,
    "n": 12,
    "wb2_hres": 48.558,
    "wb2_graphcast": 41.161,
@@ -91,11 +92,12 @@
   {
    "var": "z500",
    "lead_h": 72,
-   "sfno": 208.19090650232394,
+   "model": "fcn3",
+   "rmse": 179.61286214762262,
    "hres_paired": 134.4942379646255,
-   "diff": 73.69666853769844,
-   "diff_se": 4.431587640581601,
-   "sfno_better_inits": 0,
+   "diff": 45.118624182997166,
+   "diff_se": 3.5399846096345056,
+   "better_inits": 0,
    "n": 12,
    "wb2_hres": 139.013,
    "wb2_graphcast": 125.807,
@@ -104,11 +106,12 @@
   {
    "var": "z500",
    "lead_h": 120,
-   "sfno": 407.4053041930235,
+   "model": "fcn3",
+   "rmse": 394.05626963335504,
    "hres_paired": 299.0997666793684,
-   "diff": 108.30553751365507,
-   "diff_se": 16.75707817937049,
-   "sfno_better_inits": 1,
+   "diff": 94.95650295398666,
+   "diff_se": 9.305253281274206,
+   "better_inits": 0,
    "n": 12,
    "wb2_hres": 307.561,
    "wb2_graphcast": 276.068,
@@ -117,11 +120,12 @@
   {
    "var": "t850",
    "lead_h": 24,
-   "sfno": 0.8228980318968143,
+   "model": "fcn3",
+   "rmse": 0.8767580852548327,
    "hres_paired": 0.8462193404237368,
-   "diff": -0.02332130852692227,
-   "diff_se": 0.009355301506392499,
-   "sfno_better_inits": 8,
+   "diff": 0.030538744831095838,
+   "diff_se": 0.00697715236610543,
+   "better_inits": 1,
    "n": 12,
    "wb2_hres": 0.857,
    "wb2_graphcast": 0.601,
@@ -130,11 +134,12 @@
   {
    "var": "t850",
    "lead_h": 72,
-   "sfno": 1.5303025843368945,
+   "model": "fcn3",
+   "rmse": 1.481697887958972,
    "hres_paired": 1.2792702209161242,
-   "diff": 0.2510323634207702,
-   "diff_se": 0.01858108427723924,
-   "sfno_better_inits": 0,
+   "diff": 0.20242766704284798,
+   "diff_se": 0.015074488014336323,
+   "better_inits": 0,
    "n": 12,
    "wb2_hres": 1.296,
    "wb2_graphcast": 1.031,
@@ -143,11 +148,12 @@
   {
    "var": "t850",
    "lead_h": 120,
-   "sfno": 2.3940479825086363,
+   "model": "fcn3",
+   "rmse": 2.2673891013190666,
    "hres_paired": 1.9303153490978635,
-   "diff": 0.46373263341077325,
-   "diff_se": 0.06712960536334951,
-   "sfno_better_inits": 0,
+   "diff": 0.33707375222120345,
+   "diff_se": 0.04413749021098602,
+   "better_inits": 0,
    "n": 12,
    "wb2_hres": 1.939,
    "wb2_graphcast": 1.631,
@@ -156,11 +162,12 @@
   {
    "var": "t2m",
    "lead_h": 24,
-   "sfno": 0.8868642542505837,
+   "model": "fcn3",
+   "rmse": 0.9941356628518685,
    "hres_paired": 1.117101566319351,
-   "diff": -0.2302373120687676,
-   "diff_se": 0.02372461026788735,
-   "sfno_better_inits": 12,
+   "diff": -0.1229659034674831,
+   "diff_se": 0.01634283726112539,
+   "better_inits": 12,
    "n": 12,
    "wb2_hres": 1.136,
    "wb2_graphcast": 0.632,
@@ -169,11 +176,12 @@
   {
    "var": "t2m",
    "lead_h": 72,
-   "sfno": 1.4253061508072593,
+   "model": "fcn3",
+   "rmse": 1.3888392043831974,
    "hres_paired": 1.3497301560646624,
-   "diff": 0.07557599474259726,
-   "diff_se": 0.028568618884452075,
-   "sfno_better_inits": 2,
+   "diff": 0.03910904831853521,
+   "diff_se": 0.019158568402834576,
+   "better_inits": 2,
    "n": 12,
    "wb2_hres": 1.366,
    "wb2_graphcast": 0.943,
@@ -182,15 +190,135 @@
   {
    "var": "t2m",
    "lead_h": 120,
-   "sfno": 2.01225245365978,
+   "model": "fcn3",
+   "rmse": 1.9095278216169456,
    "hres_paired": 1.7289265315793545,
-   "diff": 0.28332592208042623,
-   "diff_se": 0.04929665089847213,
-   "sfno_better_inits": 1,
+   "diff": 0.1806012900375912,
+   "diff_se": 0.03322943839305727,
+   "better_inits": 1,
    "n": 12,
    "wb2_hres": 1.729,
    "wb2_graphcast": 1.358,
    "wb2_pangu": 1.516
+  }
+ ],
+ "ens_table": [
+  {
+   "var": "z500",
+   "lead_h": 24,
+   "ens_mean": 46.171451163719894,
+   "hres_paired": 49.64494205946473,
+   "diff": -3.4734908957448405,
+   "diff_se": 1.2454664889542735,
+   "better": 5,
+   "n": 6,
+   "members": 4,
+   "wb2_ens_mean_50": 46.798,
+   "wb2_hres": 48.558
+  },
+  {
+   "var": "z500",
+   "lead_h": 72,
+   "ens_mean": 139.67238324463253,
+   "hres_paired": 133.26696907671953,
+   "diff": 6.405414167913013,
+   "diff_se": 2.229590840005415,
+   "better": 1,
+   "n": 6,
+   "members": 4,
+   "wb2_ens_mean_50": 134.791,
+   "wb2_hres": 139.013
+  },
+  {
+   "var": "z500",
+   "lead_h": 120,
+   "ens_mean": 298.50469011212743,
+   "hres_paired": 296.29625522073354,
+   "diff": 2.2084348913938876,
+   "diff_se": 12.02532694432973,
+   "better": 2,
+   "n": 6,
+   "members": 4,
+   "wb2_ens_mean_50": 280.162,
+   "wb2_hres": 307.561
+  },
+  {
+   "var": "t850",
+   "lead_h": 24,
+   "ens_mean": 0.6978485614785689,
+   "hres_paired": 0.8507528723793939,
+   "diff": -0.15290431090082515,
+   "diff_se": 0.010702170941110804,
+   "better": 6,
+   "n": 6,
+   "members": 4,
+   "wb2_ens_mean_50": 0.805,
+   "wb2_hres": 0.857
+  },
+  {
+   "var": "t850",
+   "lead_h": 72,
+   "ens_mean": 1.172851461159326,
+   "hres_paired": 1.2927540680189298,
+   "diff": -0.11990260685960379,
+   "diff_se": 0.015936147596260608,
+   "better": 6,
+   "n": 6,
+   "members": 4,
+   "wb2_ens_mean_50": 1.183,
+   "wb2_hres": 1.296
+  },
+  {
+   "var": "t850",
+   "lead_h": 120,
+   "ens_mean": 1.7427632271053517,
+   "hres_paired": 1.911669659489074,
+   "diff": -0.1689064323837225,
+   "diff_se": 0.03543662075583207,
+   "better": 6,
+   "n": 6,
+   "members": 4,
+   "wb2_ens_mean_50": 1.689,
+   "wb2_hres": 1.939
+  },
+  {
+   "var": "t2m",
+   "lead_h": 24,
+   "ens_mean": 0.7893664863585816,
+   "hres_paired": 1.1255856708028293,
+   "diff": -0.33621918444424786,
+   "diff_se": 0.03141318813466698,
+   "better": 6,
+   "n": 6,
+   "members": 4,
+   "wb2_ens_mean_50": 0.982,
+   "wb2_hres": 1.136
+  },
+  {
+   "var": "t2m",
+   "lead_h": 72,
+   "ens_mean": 1.096016291245091,
+   "hres_paired": 1.3383663459445234,
+   "diff": -0.2423500546994326,
+   "diff_se": 0.045981636931160995,
+   "better": 6,
+   "n": 6,
+   "members": 4,
+   "wb2_ens_mean_50": 1.201,
+   "wb2_hres": 1.366
+  },
+  {
+   "var": "t2m",
+   "lead_h": 120,
+   "ens_mean": 1.4657786086049598,
+   "hres_paired": 1.69481447905118,
+   "diff": -0.22903587044621984,
+   "diff_se": 0.014199857367191555,
+   "better": 6,
+   "n": 6,
+   "members": 4,
+   "wb2_ens_mean_50": 1.502,
+   "wb2_hres": 1.729
   }
  ],
  "tracks": {
@@ -202,89 +330,104 @@
      1002.7
     ],
     [
-     -78.5,
+     -78.25,
      20.75,
-     1004.7
+     1002.4
     ],
     [
      -80.0,
      21.0,
-     1002.7
+     1003.1
     ],
     [
      -81.5,
      21.5,
-     1001.8
+     1002.2
     ],
     [
-     -82.75,
-     22.0,
-     997.8
-    ],
-    [
-     -84.5,
+     -83.0,
      22.25,
-     995.9
+     1000.0
+    ],
+    [
+     -84.75,
+     22.75,
+     997.7
     ],
     [
      -86.0,
-     22.75,
-     992.2
+     23.0,
+     994.5
     ],
     [
      -87.5,
-     23.0,
-     990.5
+     23.5,
+     992.0
     ],
     [
-     -89.0,
-     23.25,
-     986.1
+     -88.75,
+     24.25,
+     985.5
     ],
     [
      -90.5,
-     23.5,
-     984.1
+     25.0,
+     987.1
     ],
     [
      -92.0,
-     24.0,
-     980.4
-    ],
-    [
-     -93.75,
-     24.25,
-     981.2
-    ],
-    [
-     -95.0,
-     24.5,
-     976.7
-    ],
-    [
-     -96.5,
-     25.0,
-     978.0
-    ],
-    [
-     -97.75,
-     25.25,
-     979.7
-    ],
-    [
-     -99.0,
-     25.5,
-     987.4
-    ],
-    [
-     -100.0,
      25.75,
-     997.0
+     984.7
     ],
     [
-     -101.0,
-     26.0,
-     1005.7
+     -93.5,
+     26.5,
+     984.0
+    ],
+    [
+     -94.5,
+     27.25,
+     982.6
+    ],
+    [
+     -95.75,
+     28.5,
+     976.4
+    ],
+    [
+     -96.25,
+     29.75,
+     983.0
+    ],
+    [
+     -96.75,
+     31.5,
+     986.9
+    ],
+    [
+     -96.75,
+     33.0,
+     990.1
+    ],
+    [
+     -97.0,
+     34.25,
+     996.5
+    ],
+    [
+     -96.0,
+     35.75,
+     997.9
+    ],
+    [
+     -94.75,
+     36.5,
+     1002.5
+    ],
+    [
+     -92.5,
+     37.0,
+     1001.1
     ]
    ],
    "tr": [
@@ -354,50 +497,62 @@
     {
      "lead_h": 12,
      "km": 28,
-     "p_fc": 1002.7,
+     "p_fc": 1003.1,
      "p_era5": 1004.1
     },
     {
      "lead_h": 24,
-     "km": 52,
-     "p_fc": 997.8,
+     "km": 38,
+     "p_fc": 1000.0,
      "p_era5": 1001.1
     },
     {
      "lead_h": 36,
-     "km": 83,
-     "p_fc": 992.2,
+     "km": 56,
+     "p_fc": 994.5,
      "p_era5": 995.5
     },
     {
      "lead_h": 48,
-     "km": 169,
-     "p_fc": 986.1,
+     "km": 56,
+     "p_fc": 985.5,
      "p_era5": 988.9
     },
     {
      "lead_h": 60,
-     "km": 282,
-     "p_fc": 980.4,
+     "km": 97,
+     "p_fc": 984.7,
      "p_era5": 984.8
     },
     {
      "lead_h": 72,
-     "km": 462,
-     "p_fc": 976.7,
+     "km": 185,
+     "p_fc": 982.6,
      "p_era5": 978.2
     },
     {
      "lead_h": 84,
-     "km": 813,
-     "p_fc": 979.7,
+     "km": 353,
+     "p_fc": 983.0,
      "p_era5": 982.0
     },
     {
      "lead_h": 96,
-     "km": 1189,
-     "p_fc": 997.0,
+     "km": 417,
+     "p_fc": 990.1,
      "p_era5": 996.1
+    },
+    {
+     "lead_h": 108,
+     "km": 453,
+     "p_fc": 997.9,
+     "p_era5": 1002.2
+    },
+    {
+     "lead_h": 120,
+     "km": 406,
+     "p_fc": 1001.1,
+     "p_era5": 1004.3
     }
    ]
   },
@@ -410,103 +565,103 @@
     ],
     [
      126.5,
-     28.0,
-     981.1
-    ],
-    [
-     126.5,
-     28.25,
-     981.1
-    ],
-    [
-     126.25,
-     28.75,
-     978.4
-    ],
-    [
-     126.0,
-     29.25,
-     978.7
-    ],
-    [
-     125.5,
-     29.75,
-     976.1
-    ],
-    [
-     125.25,
-     30.25,
-     977.5
-    ],
-    [
-     124.75,
-     31.0,
-     976.8
-    ],
-    [
-     124.5,
-     31.75,
-     979.4
-    ],
-    [
-     124.25,
-     33.25,
-     977.3
-    ],
-    [
-     124.25,
-     34.5,
-     981.6
-    ],
-    [
-     124.0,
-     36.5,
-     979.6
-    ],
-    [
-     123.5,
-     38.5,
-     982.2
-    ],
-    [
-     124.0,
-     41.0,
-     986.9
-    ],
-    [
-     125.5,
-     43.5,
-     990.8
+     27.75,
+     980.4
     ],
     [
      126.75,
-     45.5,
-     992.5
+     28.25,
+     980.5
     ],
     [
-     127.75,
-     46.25,
-     998.0
+     126.75,
+     28.75,
+     979.1
     ],
     [
-     131.75,
-     46.75,
-     1000.1
+     126.5,
+     29.5,
+     981.4
     ],
     [
-     132.5,
+     126.0,
+     30.25,
+     978.9
+    ],
+    [
+     125.5,
+     30.75,
+     976.2
+    ],
+    [
+     124.75,
+     31.75,
+     973.8
+    ],
+    [
+     124.5,
+     32.75,
+     972.2
+    ],
+    [
+     124.25,
+     34.25,
+     968.7
+    ],
+    [
+     124.0,
+     35.75,
+     973.3
+    ],
+    [
+     123.75,
+     37.75,
+     974.7
+    ],
+    [
+     124.0,
+     40.0,
+     982.0
+    ],
+    [
+     124.25,
+     42.75,
+     989.3
+    ],
+    [
+     124.25,
+     44.5,
+     992.2
+    ],
+    [
+     124.25,
+     45.75,
+     993.2
+    ],
+    [
+     124.25,
      46.5,
-     1002.7
+     995.8
     ],
     [
-     133.25,
-     46.0,
-     1003.2
+     124.0,
+     47.5,
+     996.8
     ],
     [
-     130.75,
-     42.0,
-     1004.7
+     123.5,
+     47.75,
+     1000.7
+    ],
+    [
+     122.75,
+     47.75,
+     1002.2
+    ],
+    [
+     122.0,
+     48.75,
+     1003.8
     ]
    ],
    "tr": [
@@ -570,60 +725,60 @@
     },
     {
      "lead_h": 12,
-     "km": 0,
-     "p_fc": 981.1,
+     "km": 24,
+     "p_fc": 980.5,
      "p_era5": 978.8
     },
     {
      "lead_h": 24,
-     "km": 0,
-     "p_fc": 978.7,
+     "km": 56,
+     "p_fc": 981.4,
      "p_era5": 976.2
     },
     {
      "lead_h": 36,
-     "km": 24,
-     "p_fc": 977.5,
+     "km": 73,
+     "p_fc": 976.2,
      "p_era5": 968.8
     },
     {
      "lead_h": 48,
      "km": 56,
-     "p_fc": 979.4,
+     "p_fc": 972.2,
      "p_era5": 968.7
     },
     {
      "lead_h": 60,
-     "km": 28,
-     "p_fc": 981.6,
+     "km": 113,
+     "p_fc": 973.3,
      "p_era5": 969.1
     },
     {
      "lead_h": 72,
-     "km": 112,
-     "p_fc": 982.2,
+     "km": 153,
+     "p_fc": 982.0,
      "p_era5": 982.1
     },
     {
      "lead_h": 84,
-     "km": 148,
-     "p_fc": 990.8,
+     "km": 196,
+     "p_fc": 992.2,
      "p_era5": 998.9
     },
     {
      "lead_h": 96,
-     "km": 417,
-     "p_fc": 998.0,
+     "km": 284,
+     "p_fc": 995.8,
      "p_era5": 1002.6
     },
     {
      "lead_h": 108,
-     "km": 568,
-     "p_fc": 1002.7,
+     "km": 342,
+     "p_fc": 1000.7,
      "p_era5": 1005.5
     }
    ]
   }
  },
- "verdict": "not reached"
+ "verdict": "close"
 }
