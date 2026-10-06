@@ -3,8 +3,7 @@ name: cfd-stack
 description: Run computational fluid dynamics on qBraid with open-source solvers (OpenFOAM v2412, gmsh, pyvista; SU2 and XLB by decision rule). Use when a user wants airflow, drag/lift, pressure or wake results for a body or duct, a mesh-convergence or validation study, a CFD parameter sweep, an open alternative to Ansys Fluent or STAR-CCM+, or a three.js flow visualisation. Covers the verified install recipe and its traps, solver and machine choice by mesh size, the mandatory validation case, and hand-off to cloud orchestration for sweeps.
 metadata:
   version: "0.3.0"
-  layer: "tool"
-  status: "draft"
+  status: "provisional"
   verified: "2026-10-01"
 ---
 

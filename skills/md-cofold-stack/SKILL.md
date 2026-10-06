@@ -3,8 +3,7 @@ name: md-cofold-stack
 description: Protein-ligand pose prediction and affinity ranking on qBraid GPUs with open models (Boltz-2, Chai-1) plus classical anchors (Vina/GOLD docking results, FEP+ reference values, OpenMM). Use for co-folding a protein with a small molecule, ranking a congeneric series, benchmarking against PoseBusters or the FEP+ sets, rendering poses in three.js, or an open alternative to Glide / FEP+ triage. Covers install, weights caching, MSA handling, GPU memory limits, the pocket-aligned RMSD + PoseBusters scoring protocol, honest comparison rules, and where quantum computing fits.
 metadata:
   version: "0.3.0"
-  layer: "tool"
-  status: "draft"
+  status: "provisional"
   verified: "2026-10-01"
 ---
 

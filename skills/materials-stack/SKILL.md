@@ -3,8 +3,7 @@ name: materials-stack
 description: Run materials simulations on qBraid with universal machine-learned interatomic potentials (MACE-MP/MPA, ORB v3, EquiformerV3) plus a PySCF DFT anchor. Use for crystal stability screening (Matbench Discovery protocol), lattice constants and bulk moduli, phonons, MD of ionic conductors such as battery electrolytes, or an open alternative to VASP / Materials Studio screening. Covers model choice and weight licences, the exact benchmark protocol, the known failure modes (phonon softening, cutoff artefacts), GPU and disk sizing, and where quantum computing honestly fits.
 metadata:
   version: "0.3.0"
-  layer: "tool"
-  status: "draft"
+  status: "provisional"
   verified: "2026-10-01"
 ---
 

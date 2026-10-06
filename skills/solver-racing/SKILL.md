@@ -3,8 +3,7 @@ name: solver-racing
 description: Race several optimization solvers on the same problem under one time budget (as local processes, or one per qBraid instance), keep the best answer, and certify it with a lower bound. Use when a routing, MIP, LP or scheduling answer must be good and on time, when no single open-source solver is reliably best, or when a user asks how open-source can compete with Gurobi.
 metadata:
   version: "0.3.0"
-  layer: "method"
-  status: "draft"
+  status: "provisional"
   verified: "2026-10-01"
 ---
 
@@ -27,8 +26,8 @@ git clone --depth 1 https://github.com/qBraid/open-simulation-examples
 cd open-simulation-examples/fleet-routing
 ```
 
-The environment is the one in **optimization-stack**: check `qbraid envs available`
-first, otherwise build it from `requirements.txt` (and `requirements-gpu.txt` for
+The environment is the one in **optimization-stack**: `qbraid envs install optimi_84bd83`
+(CPU racers) or `optimi_2bgc8m` (adds cuOpt for a GPU racer); otherwise build it from `requirements.txt` (and `requirements-gpu.txt` for
 cuOpt), and package it with the **manage-environments** skill for reuse.
 
 ## Shape
@@ -62,7 +61,8 @@ formulations and HiGHS simplex against IPM.
 - Put the CPU racers on `cpu-8v-32g` or `cpu-32v-128g`, and cuOpt on `gpu-l4`
   ($0.49/h) or `gpu-h100-sxm` ($5.37/h). Launch them through
   **qbraid-cloud-orchestration**, set `qbraid compute instances set <label> --auto-stop <min>`,
-  and terminate when done.
+  and terminate when done. State the estimate (instances x hours x rate) and get
+  the user's OK before launching.
 - A `gpu-l4` instance's cgroup allows about 5 CPUs even though `nproc` shows 48.
   Size CPU racers on it to the cgroup, not to `nproc`.
 - Share incumbents through files that come back to the coordinator; do not stream

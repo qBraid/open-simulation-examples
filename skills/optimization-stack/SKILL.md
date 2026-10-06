@@ -3,8 +3,7 @@ name: optimization-stack
 description: Solve LP, MIP, vehicle-routing and scheduling problems on qBraid with open-source solvers (HiGHS, PyVRP, OR-Tools CP-SAT/routing, SCIP, NVIDIA cuOpt). Use when a user brings an optimization, routing, scheduling, supply-chain or planning problem, asks for a Gurobi/CPLEX alternative, or wants to know where QUBO/QAOA fits. Gives the which-solver decision rules, the known-answer check to run first, verified benchmark numbers and costs, the traps, and an honest, runnable quantum readiness test.
 metadata:
   version: "0.3.0"
-  layer: "tool"
-  status: "draft"
+  status: "provisional"
   verified: "2026-10-01"
 ---
 
@@ -31,8 +30,16 @@ All script references below are relative to that directory.
 
 ## Environment
 
-No qBraid environment carries this stack yet. Check `qbraid envs available`
-for one first. Otherwise build it from the example's pinned files:
+Install the qBraid environment (kernel included):
+
+- `qbraid envs install optimi_84bd83`: **optimization** (CPU): PyVRP 0.14.0, OR-Tools 9.15,
+  HiGHS 1.15.1, cvxpy, Pyomo, OSMnx. 1.1 GB.
+- `qbraid envs install optimi_2bgc8m`: **optimization-gpu**: the same plus NVIDIA cuOpt 26.8.0
+  and cuDF (needs an NVIDIA GPU, CUDA 12, driver 535+). 7.2 GB. Import `pyomo` before `cuopt`.
+
+Both verified from a fresh install on a `gpu-l4` instance on 2026-10-06 (E-n22-k4 and
+A-n32-k5 proven optimal; cuOpt reached X-n101-k25's best-known 27591). Without qBraid,
+build it from the example's pinned files:
 
 ```bash
 python3.12 -m venv .venv && . .venv/bin/activate
@@ -49,8 +56,8 @@ rather than pip-installing into system Python.
 
 | Problem | First choice | Also race | Notes |
 |---|---|---|---|
-| LP, any size | HiGHS | cuOpt (GPU PDLP) above ~1M nonzeros | On Mittelmann LPfeas (Jun 2026), cuOpt 26.06 ranked first. HiGHS solved 86% at 17x the leader's time. |
-| MIP, general | HiGHS | SCIP | **This is a real gap.** On Mittelmann MIPLIB2017 (Apr 2026) HiGHS is 7.4x slower than the commercial leader and solves 68% vs 91%. Do not promise Gurobi-class MIP. |
+| LP, any size | HiGHS | cuOpt (GPU PDLP) above ~1M nonzeros | cuOpt ranked first on the Mittelmann LPfeas benchmark in June 2026 ([plots](https://mattmilten.github.io/mittelmann-plots/)); check the current table before quoting a ratio. |
+| MIP, general | HiGHS | SCIP | **This is a real gap.** On Mittelmann MIPLIB2017 (Apr 2026; [plots](https://mattmilten.github.io/mittelmann-plots/)) HiGHS is 7.4x slower than the commercial leader and solves 68% vs 91%. Do not promise Gurobi-class MIP. |
 | CVRP / VRPTW / routing | PyVRP | cuOpt (GPU), OR-Tools routing | Racing PyVRP with cuOpt beats either alone (benchmark below). OR-Tools routing is several percent behind on CVRPLIB X. |
 | Scheduling, rostering, packing | OR-Tools CP-SAT | Timefold | CP-SAT is multi-threaded; give it the cores. |
 | Convex (QP, SOCP) | CVXPY with Clarabel or HiGHS | cuOpt QP (beta) | |
@@ -100,7 +107,7 @@ instance):
 
 Verdict: **close, not reached** (bar 0.22%). The gap is on the largest instances;
 one seed and an uncalibrated CPU speed add noise. At 10% of the budget the race
-gives 0.49% (PyVRP 0.60%, cuOpt on an L4 0.99%, OR-Tools 7.96%). All 100
+gives 0.49% (PyVRP 0.60%, cuOpt on an L4 0.99%, OR-Tools 7.96%, with no plan on 4 tight instances). All 100
 instances at 3 seeds costs about $5 on `cpu-32v-128g`; `fullbench.py --cores <range>`
 runs one instance per pinned core, longest first. See `fleet-routing/README.md`
 for every number.
@@ -118,9 +125,11 @@ for every number.
   process.** Each one's bundled HiGHS breaks the other's shared library
   (undefined symbol at import). Run them in separate processes (the racing
   harness does this).
-- **`overpass-api.de` returns HTTP 406 to cloud IPs.** Use the
-  `maps.mail.ru/osm/tools/overpass/api/interpreter` mirror (`OVERPASS_URL`
-  overrides it), or a city open-data portal for buildings.
+- **`overpass-api.de` returns HTTP 406 to cloud IPs.** Set `OVERPASS_URL` to
+  another public Overpass mirror (the example used
+  `maps.mail.ru/osm/tools/overpass/api/interpreter`), a self-hosted Overpass,
+  or use a city open-data portal for buildings. Check the user's data-sourcing
+  policy before picking a third-party mirror.
 
 ## Compute
 
@@ -129,24 +138,29 @@ for every number.
 - Benchmarks and long races: `cpu-32v-128g`, one instance per pinned core.
 - cuOpt: `gpu-l4` ($0.49/h) or `gpu-h100-sxm` for very large instances.
 - Launch through **qbraid-cloud-orchestration** with `--auto-stop`, copy results
-  back, and terminate when done. State the estimate before launching.
+  back, and terminate when done. State the estimate and get the user's OK before launching.
 
 ## Quantum: the short answer
 
 **Runnable test today.** QUBO/QAOA fits sub-problems of about 16-20 binary
 variables, as a *readiness experiment* scored against the brute-force or MIP
-optimum, never as an advantage claim. Measured here (`qaoa_tsp.py`, one 4-stop
-route, 16 qubits, p = 1-3, 1000 shots): P(optimal) 0.11-0.14%, which is 70-90x
+optimum, never as an advantage claim. Measured here in noiseless simulation
+(`qaoa_tsp.py`, one 4-stop route, 16 qubits, p = 1-3, 1000 shots): P(optimal) 0.11-0.14%, which is 70-90x
 better than a random bitstring but 30-40x *below* picking a random valid tour,
 because 97% of shots break the one-hot constraints. The next step is a
 constraint-preserving (XY) mixer or tuned penalties, in simulation, before buying
-QPU time. For more than ~20 binaries prefer IonQ Forte (36 qubits, all-to-all) or
-IBM Heron (156 qubits; needs the user's IBM token). Price it with
-`qbraid devices get <qrn>` and confirm with the user: IQM Garnet is 30 credits
-per task + 0.145 per shot, so p = 1-3 at 1000 shots each is about 525 credits
-($5.25). No annealer is online on qBraid today.
+QPU time; hardware will do worse than this noiseless figure. Price every route
+with `qbraid devices get <qrn>` and confirm with the user (credits; 1 credit =
+$0.01). Up to 20 binaries, IQM Garnet (`aws:iqm:qpu:garnet`): 30 per task + 0.145
+per shot, so p = 1-3 at 1000 shots each is 525 credits ($5.25). Up to about 50,
+IQM Emerald at 0.16 per shot. Dense QUBOs without SWAPs, IonQ Forte
+(`aws:ionq:qpu:forte-1`, 36 qubits, all-to-all) costs 8 per shot: the same three
+runs are 24,090 credits ($240.90), so price it before suggesting it. Larger
+problems: IBM Heron (156 qubits, billed to the user's IBM account). No quantum
+annealer is online on qBraid today.
 
-For the full answer and the experiment protocol, use the **quantum-readiness**
+For QAOA on IBM hardware and QOBLIB benchmarking, start from `quantum-optimization/`
+in the same repository (environment `qiskit_zngl3z`). For the full answer and the experiment protocol, use the **quantum-readiness**
 skill (section "Optimization").
 
 ## Verification stamp

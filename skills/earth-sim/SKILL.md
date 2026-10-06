@@ -3,8 +3,7 @@ name: earth-sim
 description: Run and score AI global weather forecasts (NVIDIA Earth2Studio with SFNO / FourCastNet 3) on qBraid GPUs from ERA5 initial conditions, benchmark against WeatherBench2 and ECMWF IFS HRES, and render an interactive globe. Use for medium-range forecasting, forecast verification, weather or climate demos, or comparing AI weather models with operational NWP.
 metadata:
   version: "0.3.0"
-  layer: "tool"
-  status: "draft"
+  status: "provisional"
   verified: "2026-10-01"
 ---
 

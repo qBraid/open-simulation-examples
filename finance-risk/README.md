@@ -134,7 +134,7 @@ for look-ahead bias first.
   artefacts; the classical MC and convex solvers above win outright.
 - **Future:** quantum amplitude estimation improves MC error from 1/sqrt(N) to
   1/N. Chakrabarti et al. (2021, *Quantum* 5, 463, "A threshold for quantum
-  advantage in derivative pricing") estimate about **7.5k logical qubits** and a
+  advantage in derivative pricing") estimate about **8k logical qubits** and a
   **T-depth of about 5.4e7** to price a benchmark autocallable and TARF at useful
   accuracy within a second. That is fault-tolerant hardware that does not exist
   yet. The practical step now is to get the classical pipeline (payoffs, models,

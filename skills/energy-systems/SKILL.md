@@ -3,8 +3,7 @@ name: energy-systems
 description: Run power-system studies on qBraid with open-source tools: AC optimal power flow (Egret/Pyomo + Ipopt, PGLib-OPF benchmarks), power flow and grid studies (pandapower), and capacity-expansion and dispatch planning on real networks (PyPSA + HiGHS). Use when a user brings an OPF, unit-commitment, grid-expansion, renewable-integration or energy-planning problem, or asks for a PSS/E, PowerWorld or PLEXOS alternative. Gives the tool decision rules, the PGLib known-answer check, the certification step (SOC lower bound), verified costs and the gotchas.
 metadata:
   version: "0.3.0"
-  layer: "tool"
-  status: "draft"
+  status: "provisional"
   verified: "2026-10-01"
 ---
 
@@ -32,10 +31,16 @@ the steps.
 
 ## Environment
 
-No qBraid environment carries this stack yet. Check `qbraid envs available`
-for one first. Otherwise build it with conda-forge (Ipopt needs it):
+Install the qBraid environment (kernel included): `qbraid envs install energy_5zvlz6`
+(**energy-systems**: Pyomo 6.10.1, Egret 0.6.2, PyPSA 1.2.4, HiGHS 1.15.1, pandapower 3.5.5,
+and a bundled Ipopt 3.14.20 that Pyomo finds with no PATH setup). Verified from a fresh
+install on 2026-10-06: case118_ieee and case300_ieee match PGLib to 4e-6. Without qBraid,
+build it with conda-forge (Ipopt needs it):
 
 ```bash
+# micromamba is not in the Lab image: fetch the static binary first
+curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj -C /tmp bin/micromamba
+export PATH=/tmp/bin:$PATH
 export MAMBA_ROOT_PREFIX=/tmp/mamba ENV=/tmp/envs/energy   # local disk; /tmp resets on restart
 micromamba create -y -p $ENV -c conda-forge python=3.12 ipopt=3.14 pyomo pypsa highspy networkx scipy pandas numpy netcdf4
 $ENV/bin/pip install gridx-egret "pandapower>=3"
@@ -73,7 +78,7 @@ Run before any claim, on the same code path:
   solves in under 20 s and its AC power flow converges in 24/24 hours (with the PV-control recipe below).
 
 ```bash
-python opf/acopf_pglib.py pglib-opf out case118_ieee case1354_pegase case2869_pegase case118_ieee__api
+python opf/acopf_pglib.py pglib-opf out case118_ieee case300_ieee case1354_pegase case2869_pegase case118_ieee__api
 python -c "import pypsa; pypsa.examples.scigrid_de().export_to_netcdf('scigrid_de.nc')"
 python expansion/expansion.py scigrid_de.nc exp w1.0_s1.0_c0 --pf
 ```
@@ -109,7 +114,7 @@ of the reference. The full table is in `energy-grid/README.md`.
   in seconds to minutes: the subscription pod or a `cpu-8v-32g` instance is enough.
 - Scenario ensembles and multi-day expansion: one scenario per core on
   `cpu-32v-128g`, launched through **qbraid-cloud-orchestration** with `--auto-stop`,
-  terminated when done.
+  terminated when done. State the estimate and get the user's OK before launching.
 
 ## Quantum: the short answer
 
