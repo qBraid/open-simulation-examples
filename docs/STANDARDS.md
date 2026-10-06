@@ -1,5 +1,7 @@
 # Standards for every use case
 
+The bar each example in this repo meets, and the checklist for contributing a new one.
+
 ## 1. The benchmark bar ("top-10% for this field")
 Each example states up front, in its README, what top-10% means in its field and why:
 - The **public benchmark or reference set**: published leaderboard, workshop, standard test set, or analytic or experimental reference.
@@ -17,10 +19,10 @@ Every viewer is a single self-contained `viewer.html`. Data is inlined, three.js
 - **Performance.** 60 fps on a laptop GPU. Use instancing and BufferGeometry, and decimate to keep the page at 8 MB or less. Pause rendering when the tab is hidden.
 - **Both themes.** Light and dark via CSS tokens and `prefers-color-scheme`. Responsive down to phone width.
 - **Sandbox-safe.** The qBraid Agent Canvas renders pages in a sandboxed `about:srcdoc` frame with origin `null`. Wrap `history.pushState`/`replaceState`, `localStorage`, clipboard and `alert`/`confirm` in try/catch, and never let a failed optional call stop the viewer from starting. Test by rendering with `qbraid-canvas <viewer.html>`, not just by opening the file.
-- **Verification.** Take headless-Chromium screenshots of key states in both themes and commit them as `results/viewer_*.png`. On the pod, Chromium needs conda-forge system libs. Build a private copy per stream (for example `<scratchpad>/<stream>-chromelibs`, never a shared path; `/tmp` is wiped on pod restart), using the recipe in `wind-tunnel/README.md`. Run one screenshot session at a time.
+- **Verification.** Take headless-Chromium screenshots of key states in both themes and commit them as `results/viewer_*.png`. On a qBraid instance, headless Chromium needs system libraries from conda-forge; the recipe is in `wind-tunnel/README.md`. Run one screenshot session at a time.
 
 ## 3. Verification stamp
-Every result records the date, environment spec, machine (pod or pool L4 box), wall time and cost. No stamp, no claim.
+Every result records the date, environment spec, machine (pod or instance profile), wall time and cost. No stamp, no claim.
 
-## 4. Pushing
-Commit and push your branch after every milestone, at least every ~45 minutes of work. That includes the draft skill in `skills/<name>/SKILL.md`. Never leave work only on a pool box or in `/tmp`.
+## 4. Contributing
+Work on a branch per example and open a pull request. Copy results off on-demand instances as you go: an instance's `/tmp` and anything not pushed is lost when it is terminated. A new example ships with its README (benchmark bar, verdict, stamp, limits), `results/`, `viewer.html` with screenshots, and a draft skill in `skills/<name>/SKILL.md`.

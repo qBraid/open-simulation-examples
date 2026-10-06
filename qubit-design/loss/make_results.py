@@ -4,7 +4,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(__file__))
 import design_v2 as D, run_post, analyze_sweep
 
-RUN = os.environ.get("QD_RUNS", "/tmp/ose-qd")
+RUN = os.environ.get("QD_RUNS", "/tmp/runs/qubit-design")
 OUT = os.path.join(os.path.dirname(__file__), "..", "results", "v2")
 K_CAL = 0.83 / 1.643          # Wang Table S1 Design A pads p_MS / ours (validation run)
 LEADS = {"MS": 0.17e-4, "SA": 0.20e-4, "MA": 0.02e-4}  # Wang 2015 Design A leads (1-10 um + far), their pipeline

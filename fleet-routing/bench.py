@@ -44,7 +44,7 @@ def main():
     ap.add_argument("--out", default="results/xbench")
     ap.add_argument("--start", type=int, default=0)
     ap.add_argument("--stop", type=int, default=10**9)
-    ap.add_argument("--host", default="qBraid pool gpu-l4 box (cgroup ~5 CPUs), 1 thread per solver")
+    ap.add_argument("--host", default="qBraid gpu-l4 instance (cgroup ~5 CPUs), 1 thread per solver")
     ap.add_argument("--sequential", action="store_true",
                     help="run the solvers one after another (same per-solver budget) on a single core")
     a = ap.parse_args()

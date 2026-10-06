@@ -99,12 +99,12 @@ td.n{font-family:"IBM Plex Mono",monospace;white-space:nowrap;font-size:12.5px}
 <body>
 <div class="wrap">
 <header>
-  <div class="eyebrow">qBraid · sector skills survey · 30 September 2026 · internal draft</div>
+  <div class="eyebrow">qBraid · sector skills survey · 30 September 2026</div>
   <h1>Open Simulation Pathway</h1>
   <p class="lede">What qBraid can offer engineers and scientists today with open-source solvers run by agents on on-demand compute, where quantum fits now, and where it could fit later. It also covers which skills to build first, and where the open-source tools really match the commercial ones and where they don't.</p>
   <nav class="toc">
     <a href="#horizons">1 · Three horizons</a><a href="#demo">2 · Live demo</a><a href="#why">3 · Why orchestration closes the gap</a>
-    <a href="#sectors">4 · Sector map</a><a href="#cost">5 · Cost picture</a><a href="#skills">6 · Skill architecture</a><a href="#plan">7 · Build order</a><a href="#decide">8 · Decisions for you</a>
+    <a href="#sectors">4 · Sector map</a><a href="#cost">5 · Cost picture</a><a href="#skills">6 · Skill architecture</a><a href="#plan">7 · Build order</a>
   </nav>
 </header>
 
@@ -193,34 +193,23 @@ td.n{font-family:"IBM Plex Mono",monospace;white-space:nowrap;font-size:12.5px}
 <section id="sectors">
   <div class="eyebrow">4 · sector by sector</div>
   <h2>The sector map</h2>
-  <p>For each sector: the commercial tools, the open-source stack (GitHub stars and licences pulled live today), how close the open tools really are, the compute it needs, the visual hook, and the honest quantum story.</p>
+  <p>For each sector: the commercial tools, the open-source stack (GitHub stars and licences as of 30 September 2026), how close the open tools really are, the compute it needs, the visual hook, and the honest quantum story.</p>
   <div class="tabs" role="tablist" id="tabs"></div>
   <div id="sector" class="card sector"></div>
-  <p class="note" style="margin-top:8px">Parity is a judgement of solver quality for typical industrial use, not a benchmark result. Every parity claim needs a verified run before it is published. Commercial prices are order-of-magnitude figures from public reports. The vendors quote privately.</p>
+  <p class="note" style="margin-top:8px">Parity is a judgement of solver quality for typical industrial use, not a benchmark result. Every parity claim needs a verified run before it is published.</p>
 </section>
 
 <section id="cost">
-  <div class="eyebrow">5 · the price argument</div>
+  <div class="eyebrow">5 · the cost picture</div>
   <h2>What a design study costs</h2>
-  <p>A worked example: an aerodynamic sweep of 20 OpenFOAM cases at about 2 hours each on <code>cpu-64v-256g</code>, plus training a surrogate on <code>gpu-h100-sxm</code>. Compute prices are live from <code>qbraid compute list</code>. AI agent usage comes from the same credit pool and has to be counted too.</p>
-  <div class="grid g2" style="margin-top:10px">
+  <p>A worked example: an aerodynamic sweep of 20 OpenFOAM cases at about 2 hours each on <code>cpu-64v-256g</code>, plus training a surrogate on <code>gpu-h100-sxm</code>. Compute prices are from <code>qbraid compute list</code> on 30 September 2026. AI agent usage comes from the same credit pool and has to be counted too.</p>
+  <div class="grid" style="margin-top:10px">
     <div class="card">
       <div class="bar hl"><span>20 × 2 h on 64 vCPU</span><span class="t"><i style="width:62%"></i></span><span class="v">$153.60</span></div>
       <div class="bar hl"><span>Surrogate, 4 h on H100</span><span class="t"><i style="width:9%"></i></span><span class="v">$21.48</span></div>
       <div class="bar hl"><span>Agent usage (estimate)</span><span class="t"><i style="width:12%"></i></span><span class="v">~$25–50</span></div>
       <div class="bar"><span><b>Study total</b></span><span class="t"><i style="width:100%;background:var(--ink)"></i></span><span class="v"><b>~$200–225</b></span></div>
-      <p class="note" style="margin-top:8px">The agent-usage line is a placeholder until a verified run measures it. That run is the first job of the CFD skill.</p>
-    </div>
-    <div class="card">
-      <table>
-        <tr><th>Commercial seat (indicative)</th><th>Order of magnitude</th></tr>
-        <tr><td>CFD (Fluent / STAR-CCM+) + HPC packs</td><td class="n">$20k–60k+/yr</td></tr>
-        <tr><td>Multiphysics (COMSOL + modules)</td><td class="n">$10k–40k</td></tr>
-        <tr><td>MIP solver (Gurobi / CPLEX commercial)</td><td class="n">$10k–50k+/yr</td></tr>
-        <tr><td>EM (HFSS / CST)</td><td class="n">$30k–80k+/yr</td></tr>
-        <tr><td>Drug discovery suite (Schrödinger)</td><td class="n">$50k–250k+/yr</td></tr>
-      </table>
-      <p class="note" style="margin-top:8px">The fair comparison is not licence versus compute. It is "a year of seat plus an engineer's setup time" versus "pay per study, with setup done by the agent." Check these ranges with sales before any of them appear in public copy.</p>
+      <p class="note" style="margin-top:8px">The agent-usage line is an estimate, not a measured figure.</p>
     </div>
   </div>
 </section>
@@ -228,11 +217,11 @@ td.n{font-family:"IBM Plex Mono",monospace;white-space:nowrap;font-size:12.5px}
 <section id="skills">
   <div class="eyebrow">6 · how this lands in the skills architecture</div>
   <h2>Fits the existing layers, with one new cross-cutting skill</h2>
-  <p>This plugs straight into the design record's four layers. Environments stay tool-specific (a <code>cfd-stack</code>, not an "aerospace env"), and sector skills stay thin routers. What's new is a family of <b>simulation method skills</b> that every sector shares. The one I'd build first is <code>sim-viz</code>, because it's where the wow comes from.</p>
+  <p>This plugs into qBraid's four-layer skills architecture. Environments stay tool-specific (a <code>cfd-stack</code>, not an "aerospace env"), and sector skills stay thin routers. What's new is a family of <b>simulation method skills</b> that every sector shares. <code>sim-viz</code> is the one with the most visible payoff.</p>
   <div class="grid g3" style="margin-top:12px">
     <div class="card"><div class="skills"><b style="font-size:13px">Layer 1 · env + skill pairs</b><br>
       <span class="l1">optimization-stack</span><span class="l1">cfd-stack</span><span class="l1">fea-stack</span><span class="l1">em-qhw-stack</span><span class="l1">md-cofold-stack</span><span class="l1">chemistry-stack</span><span class="l1">robotics-sim</span><span class="l1">energy-systems</span><span class="l1">earth-sim</span><span class="l1">quant-finance</span></div>
-      <p class="note" style="margin-top:8px">The C++ ones (OpenFOAM, SU2, MOOSE, Palace, GROMACS) use the <code>qbraid_3ob4vi</code> packaging skill for relocatable native environments, which is the same path as the QGSS C++ and Intel SDK work.</p></div>
+      <p class="note" style="margin-top:8px">The C++ ones (OpenFOAM, SU2, MOOSE, Palace, GROMACS) are packaged as relocatable native qBraid environments, the same path used for other C++ stacks in the catalog.</p></div>
     <div class="card"><div class="skills"><b style="font-size:13px">Layer 2 · shared simulation methods</b><br>
       <span class="l2">sim-viz</span><span class="l2">geometry-to-mesh</span><span class="l2">verification-and-validation</span><span class="l2">sweep-and-surrogate</span><span class="l2">solver-racing</span><span class="l2">qubo-formulation</span><span class="l2">benchmarking-discipline</span></div>
       <p class="note" style="margin-top:8px"><code>sim-viz</code> covers a VTK/glTF export feeding a three.js page, or trame on an instance exposed through the Lab proxy, and either one ends up in the canvas. <code>sweep-and-surrogate</code> covers running a sweep across instances, training a PhysicsNeMo surrogate, and exporting it to ONNX so it responds to sliders in real time in the browser.</p></div>
@@ -245,12 +234,12 @@ td.n{font-family:"IBM Plex Mono",monospace;white-space:nowrap;font-size:12.5px}
 <section id="plan">
   <div class="eyebrow">7 · recommended order</div>
   <h2>Build order: flagship demos first</h2>
-  <p>Each wave follows the design record's process: run it for real on qBraid, write the skill from that run with a verification stamp, have a cold agent test it, then publish through the signed release path. Every verified run also doubles as a showcase for the Explore page.</p>
+  <p>Each wave follows the same process: run it for real on qBraid, write the skill from that run with a verification stamp, have a cold agent test it, then publish through the signed release path.</p>
   <div class="grid g3" style="margin-top:12px">
     <div class="card wave" style="--c:var(--h1)"><b>Wave 1 · three flagships</b>
       <ol>
         <li><b>Virtual wind tunnel.</b> cfd-stack (OpenFOAM + XLB), sim-viz, and V&amp;V against the Re=100 cylinder and the lid-driven cavity.</li>
-        <li><b>Fleet routing on a live map.</b> optimization-stack (cuOpt, PyVRP, HiGHS) with solver-racing, then the same small instance run as QAOA. This lines up with the IBM webinar.</li>
+        <li><b>Fleet routing on a live map.</b> optimization-stack (cuOpt, PyVRP, HiGHS) with solver-racing, then the same small instance run as QAOA.</li>
         <li><b>Design a qubit, then run it.</b> Palace + Qiskit Metal → Hamiltonian → CUDA-Q simulation → compared with real device calibrations. Nobody else can tell this story.</li>
       </ol></div>
     <div class="card wave" style="--c:var(--h2)"><b>Wave 2 · breadth</b>
@@ -266,18 +255,6 @@ td.n{font-family:"IBM Plex Mono",monospace;white-space:nowrap;font-size:12.5px}
         <li>Finance (QuantLib and Riskfolio with GPU Monte Carlo), plus materials (MLIP pre-screening → DFT).</li>
       </ol></div>
   </div>
-</section>
-
-<section id="decide">
-  <div class="eyebrow">8 · where I need you</div>
-  <h2>Decisions for you</h2>
-  <ul>
-    <li><b>Wave 1:</b> are these the right three? I'd keep "design a qubit" in, because it's the one only qBraid can do.</li>
-    <li><b>Environment size:</b> one <code>cfd-stack</code> with OpenFOAM, SU2 and XLB together, or one environment per solver? Per solver is cleaner but gives the catalog more entries.</li>
-    <li><b>Where the pathway goes:</b> this page is an internal draft. A public version needs marketing copy, the verified numbers, and a legal check on prices and licences.</li>
-    <li><b>Licence rules:</b> skills recommend only OSI-licensed code and commercially usable weights. That excludes FluidX3D and the GraphCast weights, and the AGPL tools (OpenBB) get a warning.</li>
-    <li><b>Home disk</b> is at 96% (2 GB free). Solver builds need to go on an on-demand instance or the overlay, not <code>$HOME</code>.</li>
-  </ul>
 </section>
 </div>
 

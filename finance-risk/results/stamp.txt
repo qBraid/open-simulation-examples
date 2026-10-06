@@ -1,1 +1,1 @@
-Verified 2026-10-01 · QuantLib 1.43, CuPy 14.2, cvxpy 1.9.3 · pool gpu-l4 (NVIDIA L4) + pod · pricing 194 s, backtest 23 s, GPU MC 32 s · compute < $0.10 · data: Ken French (CRSP 202608), CBOE to 2026-09-30
+Verified 2026-10-01 · QuantLib 1.43, CuPy 14.2, cvxpy 1.9.3 · gpu-l4 instance (NVIDIA L4) + pod · pricing 194 s, backtest 23 s, GPU MC 32 s · compute < $0.10 · data: Ken French (CRSP 202608), CBOE to 2026-09-30

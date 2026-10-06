@@ -31,9 +31,9 @@ open stack means: **within the published PyVRP gap at the published budget**.
 ## Results
 
 Verification stamp, **2026-10-01**:
-- CPU solvers ran one thread each with the same per-solver budget: 21 instances on the qBraid subscription pod, and the 9 largest on the shared qBraid L4 pool box after a pod restart.
-- The full-budget check and the 900 s Chicago bound ran on the pool box.
-- cuOpt ran on the shared qBraid L4 pool box.
+- CPU solvers ran one thread each with the same per-solver budget: 21 instances on the qBraid subscription pod, and the 9 largest on the shared qBraid gpu-l4 instance after a pod restart.
+- The full-budget check and the 900 s Chicago bound ran on the shared instance.
+- cuOpt ran on the shared qBraid gpu-l4 instance.
 - Envs: `requirements.txt` and `requirements-gpu.txt`.
 - The full-budget run used a dedicated 32-vCPU box shared by three streams (cores 20–29 here).
 - Total compute charged to this example: ~0 credits directly (the boxes are owned by the coordinator).
@@ -124,7 +124,7 @@ come from three separators:
 - **exact fractional-capacity separation**: one max-flow per customer seed,
   Harche–Rinaldi style.
 
-That gives 2,804 cuts, then a MIP phase seeded with PyVRP's routes (900 s, 2 threads on the pool box; a 300 s single-thread run gives 137.9 km / 5.33%). Capacity is
+That gives 2,804 cuts, then a MIP phase seeded with PyVRP's routes (900 s, 2 threads on the shared instance; a 300 s single-thread run gives 137.9 km / 5.33%). Capacity is
 95% utilised (1,240 units of demand on 13 vehicles of 100), which keeps
 bin-packing tight.
 

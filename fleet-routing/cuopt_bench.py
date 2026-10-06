@@ -111,7 +111,7 @@ def main():
         rec = {"instance": name, "n": n, "bks": bks, "time_limit_s": tlim, **r,
                "gap_pct": round(100 * (r["cost"] - bks) / bks, 4) if r.get("cost") else None,
                "stamp": {"date": date.today().isoformat(),
-                         "host": "qBraid pool gpu-l4 box (NVIDIA L4 24 GB)",
+                         "host": "qBraid gpu-l4 instance (NVIDIA L4 24 GB)",
                          "solver": "cuopt-cu12 26.08", "python": platform.python_version(),
                          "protocol": f"Tmax = {a.factor} x 2.4 n s, 1 seed"}}
         with open(out_path, "w") as f:

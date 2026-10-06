@@ -93,8 +93,8 @@ URL hash options: `#dark`, `#light`, `#opf`, `#tour`, combinable (`viewer.html#o
 ## Reproduce
 
 ```bash
-# on a qBraid instance (here: the shared L4 pool box, ~5 cgroup CPUs)
-export MAMBA_ROOT_PREFIX=/tmp/ose/mamba ENV=/tmp/ose/energy-grid/env
+# on a qBraid instance (here: the shared gpu-l4 instance, ~5 cgroup CPUs)
+export MAMBA_ROOT_PREFIX=/tmp/mamba ENV=/tmp/energy-grid/env
 micromamba create -y -p $ENV -c conda-forge python=3.12 ipopt=3.14 pyomo pypsa highspy networkx scipy pandas numpy netcdf4
 $ENV/bin/pip install gridx-egret "pandapower>=3"
 export PATH=$ENV/bin:$PATH OMP_NUM_THREADS=1
@@ -137,9 +137,9 @@ python build_viewer.py
 
 ```
 energy-grid · verified 2026-10-01 (UTC)
-machine: qBraid gpu-l4 pool box (shared; cgroup ~5 CPUs, 62 GB), CPU only, jobs via /tmp/ose/cpu-run (1 thread per solve)
+machine: qBraid gpu-l4 instance (shared; cgroup ~5 CPUs, 62 GB), CPU only, 1 thread per solve
 env: conda-forge python 3.12, ipopt 3.14.20 (MUMPS), pyomo 6.10.1, gridx-egret, pypsa 1.2.4, highspy, pandapower 3.5.5, numpy 2.4.6
 AC-OPF: PGLib-OPF v23.07 (commit dc6be4b), 16 cases (TYP 10, API 3, SAD 3), 3 formulations raced + SOC relaxation each: ~25 min wall in total
 expansion: PyPSA SciGrid-DE (2011-01-01, 24 h), 4 scenarios, HiGHS simplex vs IPM raced: 58-124 s per scenario (IPM won all 4)
-cost: ~0.8 slot-hours on the shared pool box (≈ $0.20 of its $0.49/h); $0 on the subscription pod
+cost: ~0.8 slot-hours on the shared instance (≈ $0.20 of its $0.49/h); $0 on the subscription pod
 ```

@@ -72,7 +72,7 @@ Bond lengths: the potentials reproduce PBE to a mean |Δr| of 0.005 Å (MACE-MP-
 
 ### Verification stamp
 
-Verified 2026-10-01 on a shared qBraid gpu-l4 pool box (cgroup: 5 CPUs, 62 GB; NVIDIA L4, driver 595). This stream used 112 GPU-minutes in 7 jobs, 1 queued CPU-minutes, and about 10 single-core minutes for EOS and phonons; at $0.49/h for the box that is about $0.92. EquiformerV3 ran in its own environment (torch 2.7.1+cu128, the authors' fairchem fork). Versions: torch 2.14.1+cu126, mace-torch 0.3.16, orb-models 0.7.0, ase 3.29.0, phonopy 4.7.2, pyscf 2.14.0.
+Verified 2026-10-01 on a shared qBraid gpu-l4 instance (cgroup: 5 CPUs, 62 GB; NVIDIA L4, driver 595). This stream used 112 GPU-minutes in 7 jobs, 1 queued CPU-minutes, and about 10 single-core minutes for EOS and phonons; at $0.49/h for the box that is about $0.92. EquiformerV3 ran in its own environment (torch 2.7.1+cu128, the authors' fairchem fork). Versions: torch 2.14.1+cu126, mace-torch 0.3.16, orb-models 0.7.0, ase 3.29.0, phonopy 4.7.2, pyscf 2.14.0.
 
 <!--/RESULTS-->
 

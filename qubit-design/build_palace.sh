@@ -6,8 +6,8 @@
 #             superbuild peaks at ~1.5 GB RSS per job)
 set -euo pipefail
 PALACE_VERSION=${PALACE_VERSION:-v0.18.1}
-PREFIX=${PREFIX:-/tmp/ose-envs/palace}
-BUILD=${BUILD:-/tmp/ose-build}
+PREFIX=${PREFIX:-/tmp/envs/palace}
+BUILD=${BUILD:-/tmp/build/palace}
 JOBS=${JOBS:-3}
 
 export PATH="$PREFIX/bin:$PATH"

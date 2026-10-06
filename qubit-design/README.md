@@ -302,9 +302,9 @@ publish frequency or anharmonicity (n/p).
 
 ```bash
 # 1. toolchain + Palace (about 24 min with -j3; about 5-8 min with -j16 on cpu-32v-128g)
-export MAMBA_ROOT_PREFIX=/tmp/ose-mamba
-micromamba create -y -p /tmp/ose-envs/palace -f environment.yml
-PREFIX=/tmp/ose-envs/palace BUILD=/tmp/ose-build JOBS=3 ./build_palace.sh
+export MAMBA_ROOT_PREFIX=/tmp/mamba
+micromamba create -y -p /tmp/envs/palace -f environment.yml
+PREFIX=/tmp/envs/palace BUILD=/tmp/build/palace JOBS=3 ./build_palace.sh
 
 # 2. everything else: run, validate, derive, simulate, compare, build viewer
 NP=3 ./run_all.sh
@@ -322,7 +322,7 @@ Build gotchas, all handled in `build_palace.sh`:
   about 2.1 GB. On qBraid, use `/tmp` (overlay), not `$HOME`.
 
 **Packaging as a qBraid environment (not done yet).** The installed
-`palace-x86_64.bin` has an absolute RPATH (`/tmp/ose-envs/palace/lib`). It must
+`palace-x86_64.bin` has an absolute RPATH (`/tmp/envs/palace/lib`). It must
 be rewritten to `$ORIGIN/../lib` (`patchelf --set-rpath`) before the env can
 be relocated. The env has to ship its own Open MPI, because `palace -np N`
 calls `mpirun` from `PATH`. The compilers can be dropped from the runtime env.

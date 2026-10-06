@@ -31,8 +31,22 @@ instance profile, wall time and cost.
 - `<example>/README.md` gives the problem, how to run it, the verified results and the known limits.
 - `<example>/results/` holds small JSON results that the viewers read.
 - `<example>/viewer.html` is a self-contained three.js viewer.
-- `skills/` holds draft agent skills distilled from the verified runs.
-- `docs/pathway.html` is the sector survey these examples came from.
+- `skills/` holds draft agent skills distilled from the verified runs. They are being published through the qBraid skills registry (`qbraid skills search <topic>`); until then, read them here.
+- `docs/pathway.html` is the sector survey these examples came from: open-source alternatives by sector, their licences, and where quantum fits.
+
+## Third-party data and licences
+
+The code here is Apache-2.0. Some examples bundle or derive from third-party data, which keeps its own terms:
+
+- **Fleet routing:** CVRP instances and best-known solutions from [CVRPLIB](http://vrp.galgos.inf.puc-rio.br/) (Uchoa et al. 2017 X set; Christofides/Augerat E and A sets), redistributed for benchmarking with citation. Chicago street network and buildings © OpenStreetMap contributors, [ODbL](https://www.openstreetmap.org/copyright).
+- **Energy grids:** test cases are fetched at run time from [PGLib-OPF](https://github.com/power-grid-lib/pglib-opf) (CC-BY-4.0); the SciGrid-DE network ships with PyPSA.
+- **Weather:** contains modified Copernicus Climate Change Service information (ERA5), 2026; neither the European Commission nor ECMWF is responsible for any use of it. IFS HRES and ensemble reference scores come from [WeatherBench 2](https://sites.research.google/weatherbench/). Coastlines from [Natural Earth](https://www.naturalearthdata.com/) (public domain).
+- **Drug discovery:** protein structures from the [RCSB PDB](https://www.rcsb.org/) (CC0). Benchmark complexes, and per-complex Vina and GOLD results, from the PoseBusters benchmark (Buttenschoen et al. 2024). FEP+ reference predictions from Schrödinger's public FEP+ benchmark repository (MIT).
+- **Materials:** structures from the [Materials Project](https://next-gen.materialsproject.org/) (CC-BY-4.0) and the WBM set via [Matbench Discovery](https://matbench-discovery.materialsproject.org/) (CC-BY-4.0 data, MIT code). Experimental lattice constants and bulk moduli from Csonka et al. (2009).
+- **Finance:** Ken French Data Library and CBOE index history are downloaded at run time by `finance-risk/fetch_data.sh` and are not redistributed here.
+- **Robotics:** Unitree Go1 model from [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie) (BSD-3-Clause).
+- **Topology optimization:** the reference codes `top88.m` (Andreassen et al. 2011) and `top3d.m` (Liu and Tovar 2014) are fetched at run time and not redistributed; only a headless driver is included.
+- **Qubit design:** the transmon example and regression reference come from [AWS Palace](https://github.com/awslabs/palace) (Apache-2.0).
 
 ## License
 

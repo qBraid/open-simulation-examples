@@ -1,9 +1,9 @@
 ---
 name: optimization-stack
-description: Solve LP, MIP, vehicle-routing and scheduling problems on qBraid with open-source solvers (HiGHS, PyVRP, OR-Tools CP-SAT/routing, SCIP, NVIDIA cuOpt). Use when a user brings an optimization, routing, scheduling, supply-chain or planning problem, or asks for a Gurobi/CPLEX alternative. Gives the which-solver decision rules, the known-answer check to run first, verified costs, and where quantum (QUBO/QAOA) fits honestly.
+description: Solve LP, MIP, vehicle-routing and scheduling problems on qBraid with open-source solvers (HiGHS, PyVRP, OR-Tools CP-SAT/routing, SCIP, NVIDIA cuOpt). Use when a user brings an optimization, routing, scheduling, supply-chain or planning problem, asks for a Gurobi/CPLEX alternative, or wants to know where QUBO/QAOA fits. Gives the which-solver decision rules, the known-answer check to run first, verified benchmark numbers and costs, the traps, and an honest, runnable quantum readiness test.
 metadata:
-  version: "0.2.0"
-  layer: "1"
+  version: "0.3.0"
+  layer: "tool"
   status: "draft"
   verified: "2026-10-01"
 ---
@@ -11,8 +11,39 @@ metadata:
 # Optimization stack on qBraid
 
 Open-source solvers, chosen by problem class, checked against a known answer
-before any claim. Pair with **solver-racing** when the answer matters and time
+before any claim. Pair it with **solver-racing** when the answer matters and time
 is bounded, and with **qbraid-cloud-orchestration** for instances.
+
+Start from the user's goal: if it is unclear whether they want the best solution
+or the best quantum solution, ask (see solution-router).
+
+## Get the scripts
+
+The worked example lives in `fleet-routing/` of
+https://github.com/qBraid/open-simulation-examples:
+
+```bash
+git clone --depth 1 https://github.com/qBraid/open-simulation-examples
+cd open-simulation-examples/fleet-routing
+```
+
+All script references below are relative to that directory.
+
+## Environment
+
+No qBraid environment carries this stack yet. Check `qbraid envs available`
+for one first. Otherwise build it from the example's pinned files:
+
+```bash
+python3.12 -m venv .venv && . .venv/bin/activate
+pip install -r requirements.txt          # CPU: PyVRP, OR-Tools, HiGHS, Qiskit, osmnx
+# GPU racer, separate venv, on a gpu-l4 or gpu-h100-sxm instance:
+pip install --extra-index-url https://pypi.nvidia.com -r requirements-gpu.txt   # cuopt-cu12 26.8.0
+```
+
+To reuse it across instances, package it as a qBraid environment with the
+**manage-environments** skill and install it with `qbraid envs install <slug>`,
+rather than pip-installing into system Python.
 
 ## Pick the solver (decision rules)
 
@@ -20,15 +51,15 @@ is bounded, and with **qbraid-cloud-orchestration** for instances.
 |---|---|---|---|
 | LP, any size | HiGHS | cuOpt (GPU PDLP) above ~1M nonzeros | On Mittelmann LPfeas (Jun 2026), cuOpt 26.06 ranked first. HiGHS solved 86% at 17x the leader's time. |
 | MIP, general | HiGHS | SCIP | **This is a real gap.** On Mittelmann MIPLIB2017 (Apr 2026) HiGHS is 7.4x slower than the commercial leader and solves 68% vs 91%. Do not promise Gurobi-class MIP. |
-| CVRP / VRPTW / routing | PyVRP | cuOpt (GPU), OR-Tools routing | On 30 CVRPLIB X instances at 10% of the published budget: PyVRP 0.60%, cuOpt (L4) 0.99%, OR-Tools 7.96% (no plan on 4 tight instances). Racing PyVRP + cuOpt: **0.49%**. |
+| CVRP / VRPTW / routing | PyVRP | cuOpt (GPU), OR-Tools routing | Racing PyVRP with cuOpt beats either alone (benchmark below). OR-Tools routing is several percent behind on CVRPLIB X. |
 | Scheduling, rostering, packing | OR-Tools CP-SAT | Timefold | CP-SAT is multi-threaded; give it the cores. |
-| Convex (QP, SOCP) | CVXPY → Clarabel/HiGHS | cuOpt QP (beta) | |
+| Convex (QP, SOCP) | CVXPY with Clarabel or HiGHS | cuOpt QP (beta) | |
 | Modelling layer | Pyomo or CVXPY; plain highspy for cut loops | | |
 
 Size thresholds, from verified runs: an exact two-index CVRP MIP with greedy
 capacity cuts **proves optimality up to ~30 customers in seconds** (A-n32-k5
-in 13 s alone). At 100 customers it leaves a ~5–6% certified gap. Closing that
-needs branch-cut-and-price, which the open stack doesn't have in a ready-made form.
+in 13 s alone). At 100 customers it leaves a ~5-6% certified gap. Closing that
+needs branch-cut-and-price, which no open-source package offers ready-made.
 
 ## Baseline first (mandatory)
 
@@ -40,88 +71,88 @@ code path:
 - A heuristic result is reported with a **lower bound** from HiGHS, never as
   "optimal".
 
-## Benchmark (CVRPLIB X, verified 2026-10-01)
-
-The field's bar is the published gap to best-known solutions at Tmax = 2.4·n s:
-HGS-CVRP 0.11%, PyVRP 0.22%. Measured here on 30 stratified instances
-(n 100–1000), one seed, at **0.1 × that budget**:
-
-| Size | Race (CPU + GPU) | PyVRP | cuOpt (L4) |
-|---|---|---|---|
-| n 100–299 (13) | 0.35% | 0.47% | 0.63% |
-| n 300–599 (10) | 0.42% | 0.54% | 0.91% |
-| n 600–1000 (7) | 0.87% | 0.92% | 1.78% |
-| all 30 | **0.49%** | 0.60% | 0.99% |
-
-**At the full published budget** (2.4·n s, one pinned core per instance, one seed;
-dedicated 32-vCPU box, 54 min wall for all 30): PyVRP averages **0.34%**, and racing
-the 10%-time cuOpt runs gives **0.31%**. By size:
-- n < 300: 0.14%, beats the bar;
-- n 300–599: 0.27%;
-- n 600–1000: 0.69%.
-
-Verdict: **close, not reached** (bar 0.22%). The gap is on the largest instances; one
-seed and an uncalibrated CPU speed add noise. All 100 instances × 3 seeds costs
-about $5 on `cpu-32v-128g`.
-
-**Recipe:** `fullbench.py --cores 20-29` runs one instance per pinned core,
-longest first.
-
-**cuOpt trap.** cuOpt minimises **fleet size first**, then distance. On distance-only
-benchmarks its default lost 13% on X-n101. Setting `min_vehicles = k_min + 1` reached
-the best-known solution; an explicit zero fleet cost gave +0.2%. Choose the setting on
-one instance, then freeze it. For real fleet-cost problems the default is the right one.
-
-## Environment
-
-`fleet-routing/requirements.txt` in `qBraid/open-simulation-examples` (Python 3.12,
-CPU-only). cuOpt is GPU-only: `requirements-gpu.txt`
-(`cuopt-cu12==26.8.0`, `--extra-index-url https://pypi.nvidia.com`), on
-`gpu-l4` or `gpu-h100-sxm`. Not yet packaged as a qBraid env; when it is, install
-it with `qbraid envs install <slug>`, not with pip into system Python.
-
-**Trap:** for asymmetric (road) distances, bound the **directed** model. A symmetric
-`min(d_ij, d_ji)` relaxation is valid but loose: 8.4% against 5.15% on Chicago.
-
-**Trap:** `overpass-api.de` returns HTTP 406 to cloud IPs. Use the
-`maps.mail.ru/osm/tools/overpass/api/interpreter` mirror, or a city open-data portal
-for buildings.
-
-**Trap:** `highspy` 1.15 and `ortools` 9.15 cannot be imported into the same
-Python process. Each one's bundled HiGHS breaks the other's shared library
-(undefined symbol at import). Run them in separate processes (the racing harness
-does this).
-
-## Verified recipe
-
-Verified 2026-09-30 on the qBraid subscription pod: 3 processes × 1 thread,
-60 s per race, 0 credits.
+```bash
+./run_all.sh     # anchors, Chicago race, QAOA readiness test (~10 min on 4 vCPU)
+python race.py data/A-n32-k5.vrp --time 60 --bks 784 --out results/a-n32-k5.json
+```
 
 | Instance | Known | Best found | Lower bound | Status |
 |---|---|---|---|---|
 | E-n22-k4 | 375 | 375 | 375 | proven optimal |
 | A-n32-k5 | 784 | 784 (PyVRP, <1 s) | 784 | proven optimal |
 | X-n101-k25 | 27591 | 27591 (PyVRP, 30 s) | 26034 | certified gap 5.6% |
-| Chicago, 80 stops, OSM roads | none | 145.7 km (PyVRP) | 138.2 km (directed ACVRP, `bound.py`, 900 s) | certified gap 5.15% (was 8.4% with a symmetric bound) |
+| Chicago, 80 stops, OSM roads | none | 145.7 km (PyVRP) | 138.2 km (directed bound, `bound.py`, 900 s) | certified gap 5.15% |
 
-```
-python race.py data/A-n32-k5.vrp --time 60 --bks 784 --out results/a-n32-k5.json
-python city.py --stops 80 --time 60
-```
+## Benchmark: how good is it? (CVRPLIB X, verified 2026-10-01)
 
-## Where quantum fits (say it this way)
+The field's bar is the published mean gap to best-known solutions at
+Tmax = 2.4·n s: HGS-CVRP 0.11%, PyVRP 0.22%. Measured on 30 stratified
+instances (n 100-1000, `data/X/xsub.txt`), one seed, at the **full published
+budget** (one pinned core per instance, 54 min wall for all 30 on a 32-vCPU
+instance):
 
-- **Today:** QUBO/QAOA on sub-problems of about 16–20 variables, as a
-  *readiness experiment* that is always scored against the brute-force or MIP
-  optimum and by drawn shots. The example here runs QAOA on one 4-stop route
-  (16 qubits). Measured: P(optimal) 0.11–0.14% at p = 1–3, which is 30–40x *below*
-  choosing a random valid tour, because 97% of shots break the one-hot
-  constraints. Prefer constraint-preserving mixers before buying QPU time.
-  Formulation: one-hot stop × position with row and column
-  penalties, and the depot fixed. See **qubo-formulation** when it exists.
-- **Future:** Grover-type quadratic speedups inside tree search need fault
-  tolerance, and overheads cancel them at most sizes. Quantum-inspired
-  heuristics can be used today.
-- Before any QPU run, price it with `qbraid devices get <qrn>` and confirm with
-  the user. Example: IQM Garnet is 30 credits per task + 0.145 per shot, so
-  1000 shots cost 175 credits ($1.75).
+| Size | PyVRP | Race (PyVRP + cuOpt) |
+|---|---|---|
+| n 100-299 (13) | 0.15% | **0.14%** (beats the bar) |
+| n 300-599 (10) | 0.30% | 0.27% |
+| n 600-1000 (7) | 0.74% | 0.69% |
+| all 30 | 0.34% | **0.31%** |
+
+Verdict: **close, not reached** (bar 0.22%). The gap is on the largest instances;
+one seed and an uncalibrated CPU speed add noise. At 10% of the budget the race
+gives 0.49% (PyVRP 0.60%, cuOpt on an L4 0.99%, OR-Tools 7.96%). All 100
+instances at 3 seeds costs about $5 on `cpu-32v-128g`; `fullbench.py --cores <range>`
+runs one instance per pinned core, longest first. See `fleet-routing/README.md`
+for every number.
+
+## Traps (all hit for real)
+
+- **cuOpt minimises fleet size first, then distance.** On distance-only
+  benchmarks its default lost 13% on X-n101. Setting `min_vehicles = k_min + 1`
+  reached the best-known solution; an explicit zero fleet cost gave +0.2%. Choose
+  the setting on one instance, then freeze it. For real fleet-cost problems the
+  default is the right one.
+- **Asymmetric (road) distances: bound the directed model.** A symmetric
+  `min(d_ij, d_ji)` relaxation is valid but loose: 8.4% against 5.15% on Chicago.
+- **`highspy` 1.15 and `ortools` 9.15 cannot be imported into the same Python
+  process.** Each one's bundled HiGHS breaks the other's shared library
+  (undefined symbol at import). Run them in separate processes (the racing
+  harness does this).
+- **`overpass-api.de` returns HTTP 406 to cloud IPs.** Use the
+  `maps.mail.ru/osm/tools/overpass/api/interpreter` mirror (`OVERPASS_URL`
+  overrides it), or a city open-data portal for buildings.
+
+## Compute
+
+- Up to a few hundred customers and the known-answer checks: the subscription pod
+  or a `cpu-8v-32g` instance.
+- Benchmarks and long races: `cpu-32v-128g`, one instance per pinned core.
+- cuOpt: `gpu-l4` ($0.49/h) or `gpu-h100-sxm` for very large instances.
+- Launch through **qbraid-cloud-orchestration** with `--auto-stop`, copy results
+  back, and terminate when done. State the estimate before launching.
+
+## Quantum: the short answer
+
+**Runnable test today.** QUBO/QAOA fits sub-problems of about 16-20 binary
+variables, as a *readiness experiment* scored against the brute-force or MIP
+optimum, never as an advantage claim. Measured here (`qaoa_tsp.py`, one 4-stop
+route, 16 qubits, p = 1-3, 1000 shots): P(optimal) 0.11-0.14%, which is 70-90x
+better than a random bitstring but 30-40x *below* picking a random valid tour,
+because 97% of shots break the one-hot constraints. The next step is a
+constraint-preserving (XY) mixer or tuned penalties, in simulation, before buying
+QPU time. For more than ~20 binaries prefer IonQ Forte (36 qubits, all-to-all) or
+IBM Heron (156 qubits; needs the user's IBM token). Price it with
+`qbraid devices get <qrn>` and confirm with the user: IQM Garnet is 30 credits
+per task + 0.145 per shot, so p = 1-3 at 1000 shots each is about 525 credits
+($5.25). No annealer is online on qBraid today.
+
+For the full answer and the experiment protocol, use the **quantum-readiness**
+skill (section "Optimization").
+
+## Verification stamp
+
+- 2026-10-01: PyVRP 0.14.0, OR-Tools 9.15.6755, highspy 1.15.1, Qiskit 2.5.2, Python 3.12 (`requirements.txt`); cuopt-cu12 26.8.0 on a `gpu-l4` instance.
+- Full-budget CVRPLIB X run: 30 instances, 10 pinned cores of a `cpu-32v-128g` instance, 54 min wall, 8.3 CPU-hours.
+- Anchors, Chicago race and QAOA: the subscription pod, 3 processes x 1 thread, 60 s per race, 0 credits.
+- Chicago directed bound: 900 s on 2 threads.
+- Re-verify on any PyVRP, OR-Tools, HiGHS or cuOpt version bump.

@@ -95,7 +95,7 @@ tour = [
      "hold": 9, "t": 19.6, "off": [-3.8, 0.4, 3.6], "look": [1.2, 0, 0], "ghost": ""},
 ]
 stamp = (f"{a.date} · env: jax[cuda12] 0.11.2, playground 0.2.0, brax 0.14.2, mujoco 3.14.0\n"
-         f"machine: qBraid gpu-l4 (NVIDIA L4 24 GB, driver 595), shared pool\n"
+         f"machine: qBraid gpu-l4 (NVIDIA L4 24 GB, driver 595), shared instance\n"
          f"task: Go1JoystickFlatTerrain, official Playground PPO config, seed 0\n"
          f"training: {steps/1e6:.1f}M steps, {a.wall_s/60:.1f} min GPU, ${usd:.2f}")
 json.dump({"rows": rows, "tour": tour, "stamp": stamp, "screen_sub": f"Go1 joystick · Brax PPO · {steps/1e6:.0f}M steps · {a.wall_s/60:.0f} min · ${usd:.2f}"},
