@@ -1,10 +1,10 @@
 #!/bin/bash
 # Headless screenshots of key viewer states (both themes). On the qBraid pod the
-# Playwright headless shell needs conda-forge GUI libs: LD_LIBRARY_PATH=/tmp/ose-envs/chromelibs/lib
+# Playwright headless shell needs conda-forge GUI libs: LD_LIBRARY_PATH=/tmp/envs/chromelibs/lib
 set -euo pipefail
 cd "$(dirname "$0")"
 SH=${CHROME:-$(ls ~/.cache/ms-playwright/chromium_headless_shell-*/*/chrome-headless-shell | head -1)}
-export LD_LIBRARY_PATH=${CHROME_LIBS:-/tmp/ose-envs/chromelibs/lib}
+export LD_LIBRARY_PATH=${CHROME_LIBS:-/tmp/envs/chromelibs/lib}
 shot() { # name, hash
   timeout 120 "$SH" --no-sandbox --use-angle=swiftshader --enable-unsafe-swiftshader --hide-scrollbars \
     --window-size=1440,980 --virtual-time-budget=${VT:-15000} --screenshot="results/viewer_$1.png" \

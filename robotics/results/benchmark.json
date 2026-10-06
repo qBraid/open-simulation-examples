@@ -157,6 +157,6 @@
    "ghost": ""
   }
  ],
- "stamp": "2026-10-01 · env: jax[cuda12] 0.11.2, playground 0.2.0, brax 0.14.2, mujoco 3.14.0\nmachine: qBraid gpu-l4 (NVIDIA L4 24 GB, driver 595), shared pool\ntask: Go1JoystickFlatTerrain, official Playground PPO config, seed 0\ntraining: 217.9M steps, 36.7 min GPU, $0.30",
+ "stamp": "2026-10-01 · env: jax[cuda12] 0.11.2, playground 0.2.0, brax 0.14.2, mujoco 3.14.0\nmachine: qBraid gpu-l4 (NVIDIA L4 24 GB, driver 595), shared instance\ntask: Go1JoystickFlatTerrain, official Playground PPO config, seed 0\ntraining: 217.9M steps, 36.7 min GPU, $0.30",
  "screen_sub": "Go1 joystick · Brax PPO · 218M steps · 37 min · $0.30"
 }

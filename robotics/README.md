@@ -39,7 +39,7 @@ Legged-robot RL has no single leaderboard. The strongest public reference for th
 
 ## Method
 - **Task and recipe:** `Go1JoystickFlatTerrain`, with Playground's default environment config, `brax_ppo_config` and domain randomisation. That's 8,192 parallel environments, a 512-256-128 MLP with swish activations, a privileged critic and 200M environment steps. The physics backend is Playground 0.2.0's default, MuJoCo Warp. The report used MJX (JAX), but both share the same model and solver settings (`iterations=1`, `ls_iterations=5`).
-- **Capped GPU jobs:** the shared pool caps GPU jobs at 40 minutes. `train.py` saves `params_<step>.pkl` at every evaluation, and `run_resume.sh` restarts from the latest one with the step counter offset. The observation normaliser is restored with the parameters; the Adam optimiser state is not.
+- **Capped GPU jobs:** the shared instance's job queue capped GPU jobs at 40 minutes. `train.py` saves `params_<step>.pkl` at every evaluation, and `run_resume.sh` restarts from the latest one with the step counter offset. The observation normaliser is restored with the parameters; the Adam optimiser state is not.
 - **Evaluation (`evaluate.py`):**
   - Tracking metrics: 512 parallel 20 s episodes under the environment's own random command process, with a 1 s settling window after each command change.
   - The demo: a fixed 25 s joystick script (stand, walk, arc, strafe, reverse, spin, fast arc, stop), recorded for both the final and an early checkpoint.
@@ -87,7 +87,7 @@ python3 build_viewer.py --run runs/go1_flat --geometry geometry.json --ghost ear
 ## Verification stamp
 ```
 2026-10-01 · env: jax[cuda12] 0.11.2, playground 0.2.0, brax 0.14.2, mujoco 3.14.0
-machine: qBraid gpu-l4 (NVIDIA L4 24 GB, driver 595), shared pool
+machine: qBraid gpu-l4 (NVIDIA L4 24 GB, driver 595), shared instance
 task: Go1JoystickFlatTerrain, official Playground PPO config, seed 0
 training: 217.9M steps, 36.7 min GPU, $0.30
 ```

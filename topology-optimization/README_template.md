@@ -56,7 +56,7 @@ RESULTS_BRACKET
 How it was made, and what is still open:
 
 - **The run stopped at its 160-iteration cap, not on a convergence rule.** After the final projection step (β = 16) the OC update oscillates at its move limit, while the summed compliance stays within ±0.03 % (1517.2 to 1517.8). The design is settled; the stop rule is not met.
-- **Resolution: 2 mm, not the planned 1.5 mm.** The 1.5 mm run (64 × 32 × 24, 161k unknowns) waited 35 minutes for a slot on the shared pool box and was cancelled. On a dedicated `cpu-8v-32g` it is an estimated 1 to 2 hours. Finer bricks give thinner members and a smoother part; the layout should not change.
+- **Resolution: 2 mm, not the planned 1.5 mm.** The 1.5 mm run (64 × 32 × 24, 161k unknowns) waited 35 minutes for a slot on the shared instance and was cancelled. On a dedicated `cpu-8v-32g` it is an estimated 1 to 2 hours. Finer bricks give thinner members and a smoother part; the layout should not change.
 - **STL.** The density field is upsampled 2× (trilinear), contoured with marching cubes, and lightly Taubin-smoothed. The contour level (0.44) is chosen so the mesh carries exactly the optimized material volume (88.2 g), rather than using the nominal 0.5, which loses about 6 % on thin members.
 
 ## Reproduce

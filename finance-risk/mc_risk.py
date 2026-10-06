@@ -150,7 +150,7 @@ def part_b(vol, corr):
     loss = cp.concatenate(losses); cp.cuda.Stream.null.synchronize()
     tg = time.perf_counter() - t0
     var = float(cp.quantile(loss, A_VAR)); q = float(cp.quantile(loss, A_ES)); es = float(loss[loss >= q].mean())
-    # CPU timing on a smaller N (2 threads, the per-worker allowance on the pool box)
+    # CPU timing on a smaller N (2 threads, the per-worker allowance on the shared instance)
     n_cpu = 100_000
     t0 = time.perf_counter()
     revalue(np, b, rng.standard_normal((n_cpu, N_ASSET)), cl, vol, h)

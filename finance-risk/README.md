@@ -160,13 +160,13 @@ directly.
 - Public data only. No option chains, so no calibration to traded surfaces. The vol surface is an anchored model, as labelled.
 - The backtest universe is 30 industry portfolios, not single stocks, and has no shorting, leverage or factor models (Barra-style). The covariance shrinkage target is scaled identity.
 - The MC option book is synthetic (500 Black-Scholes options on 20 correlated GBM underlyings). Revaluation is exact Black-Scholes, not a vendor pricer.
-- GPU speed-ups are measured against 2 CPU threads, the per-worker allowance on the shared pool box, not a full server socket.
+- GPU speed-ups are measured against 2 CPU threads, the per-worker allowance on the shared instance, not a full server socket.
 
 ## Verification stamp
 
 - Date: 2026-10-01 (UTC).
-- Machine: shared qBraid pool box `gpu-l4` (NVIDIA L4, driver 595.91, about 5 CPUs by cgroup). Viewer builds and screenshots ran on the subscription pod.
+- Machine: shared qBraid `gpu-l4` instance (NVIDIA L4, driver 595.91, about 5 CPUs by cgroup). Viewer builds and screenshots ran on the subscription pod.
 - Environment: Python 3.12 venv, pinned in `requirements.lock`: QuantLib 1.43, CuPy 14.2 [ctk] (CUDA 12.9 runtime wheels), cvxpy 1.9.3 + Clarabel 0.11.1, NumPy 2.5.3, SciPy 1.18.1.
 - Wall times: `pricing.py` 194 s (1 core); `backtest.py` 23 s (1 core); `mc_risk.py` 32 s (L4); `vol_surface.py` under 5 s.
-- Compute cost: about 4.5 min of pool CPU plus 0.5 min of L4 GPU. At the gpu-l4 rate ($0.49/h for the whole box) this stream's share is **under $0.10**. Queue waits are not billed to the stream.
+- Compute cost: about 4.5 min of CPU plus 0.5 min of L4 GPU. At the gpu-l4 rate ($0.49/h for the whole box) this stream's share is **under $0.10**. Queue waits are not billed to the stream.
 - Data: Ken French Data Library (CRSP 202608 build) and CBOE index history to 2026-09-30, fetched 2026-10-01.

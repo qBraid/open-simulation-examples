@@ -123,7 +123,7 @@ the method, not against a vendor's marketing numbers.
 
 | Where | What | Time | Cost |
 |---|---|---|---|
-| Shared `gpu-l4` pool box, CPU queue, 2 MPI ranks | cylinder ×3, Ahmed 35° coarse, medium and fine, Ahmed 25° fine, extraction | about 3.3 slot-hours (the box has 2 CPU slots and is shared by 10 streams) | ≤ **$0.80** share of a $0.49/h instance |
+| Shared `gpu-l4` instance, CPU queue, 2 MPI ranks | cylinder ×3, Ahmed 35° coarse, medium and fine, Ahmed 25° fine, extraction | about 3.3 slot-hours (the box has 2 CPU slots and is shared by the 10 example streams) | ≤ **$0.80** share of a $0.49/h instance |
 | Subscription pod, serial lane | Ahmed 25° coarse and medium | about 1.7 h | $0 (subscription) |
 | GPU | none (XLB was not run, see below) | | |
 
@@ -245,5 +245,5 @@ qbraid-canvas wind-tunnel/viewer.html --title "Virtual wind tunnel"
 | Step | Machine | Estimate |
 |---|---|---|
 | 25° with IDDES, 20–40M cells, prism layers, ~20 convective times averaged | `cpu-64v-256g`, $3.84/h | 1–2 days, **$90–180** |
-| XLB (GPU lattice Boltzmann) transient run of the same body, to compare the unsteady wake. Not run: the shared pool's single L4 and 50 GB disk were saturated by ten streams | `gpu-l4` or `gpu-h100-sxm` | about 1 h, **$0.50–5.40** |
+| XLB (GPU lattice Boltzmann) transient run of the same body, to compare the unsteady wake. Not run: the shared gpu-l4 instance (single L4, 50 GB disk) was saturated by the ten example streams | `gpu-l4` or `gpu-h100-sxm` | about 1 h, **$0.50–5.40** |
 | 20-case slant × speed sweep with a PhysicsNeMo surrogate in the browser | `cpu-64v-256g` plus `gpu-h100-sxm` | about **$175** |

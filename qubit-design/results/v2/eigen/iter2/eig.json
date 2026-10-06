@@ -99,13 +99,13 @@
  },
  "Model": {
   "L0": 1e-06,
-  "Mesh": "/tmp/ose2/qubit-design/final2/mesh/transmon.msh2",
+  "Mesh": "/tmp/runs/qubit-design/final2/mesh/transmon.msh2",
   "Refinement": {
    "MaxIts": 0
   }
  },
  "Problem": {
-  "Output": "/tmp/ose2/qubit-design/final2/postpro",
+  "Output": "/tmp/runs/qubit-design/final2/postpro",
   "Type": "Eigenmode",
   "Verbose": 2,
   "OutputFormats": {

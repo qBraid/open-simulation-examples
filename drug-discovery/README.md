@@ -54,7 +54,7 @@ See `skills/md-cofold-stack/SKILL.md` for the qBraid-specific setup: weights cac
 - **The subset is filtered to ≤ 700 residues and ≤ 50 ligand heavy atoms** to fit an L4. Large multi-chain complexes are harder, so "84% vs 76–77%" is on an easier slice, not a head-to-head on the full set. A full-set run is about $8–10 (see Next).
 - **The affinity series may be in the training data.** The TYK2 and CDK2 JACS series (published 2015) are public and widely used, and binding data for them is in ChEMBL, which Boltz-2's affinity head was trained on. Read the Boltz-2 vs FEP+ comparison as "competitive on well-known series", not as evidence about novel chemistry. Affinity runs used 1 structure sample per ligand to save GPU time.
 - **The affinity head ranks;** it doesn't replace FEP for lead optimisation. The IC50 ≈ Kd conversion is approximate.
-- **No MD stability check.** It needs OpenFF or GAFF ligand parameters (a conda stack), which didn't fit the shared pool's disk and budget. It's listed as next.
+- **No MD stability check.** It needs OpenFF or GAFF ligand parameters (a conda stack), which didn't fit the shared instance's disk and budget. It's listed as next.
 
 ## Next, needs more compute
 - **The full PoseBusters V1/V2 sets:** about 2–3 min per complex on an L4, about $8–10 for all 428.
@@ -66,7 +66,7 @@ This is the Layer-1 `md-cofold-stack` pair in the qBraid skills design record. T
 
 ## Verification stamp
 - date: 2026-10-01
-- machine: qBraid gpu-l4 shared pool (NVIDIA L4 24 GB, driver 595, ~5 vCPU cgroup)
+- machine: qBraid gpu-l4 instance, shared (NVIDIA L4 24 GB, driver 595, ~5 vCPU cgroup)
 - env: Python 3.12, boltz 2.2.1, torch 2.14.1+cu130, posebusters 0.6.5, rdkit, gemmi
 - gpu_minutes: 171.4
 - gpu_jobs: 5

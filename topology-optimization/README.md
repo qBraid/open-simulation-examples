@@ -98,7 +98,7 @@ Design space 96 × 48 × 36 mm, 2.0 mm bricks (20,736 elements, 69,825 unknowns)
 How it was made, and what is still open:
 
 - **The run stopped at its 160-iteration cap, not on a convergence rule.** After the final projection step (β = 16) the OC update oscillates at its move limit, while the summed compliance stays within ±0.03 % (1517.2 to 1517.8). The design is settled; the stop rule is not met.
-- **Resolution: 2 mm, not the planned 1.5 mm.** The 1.5 mm run (64 × 32 × 24, 161k unknowns) waited 35 minutes for a slot on the shared pool box and was cancelled. On a dedicated `cpu-8v-32g` it is an estimated 1 to 2 hours. Finer bricks give thinner members and a smoother part; the layout should not change.
+- **Resolution: 2 mm, not the planned 1.5 mm.** The 1.5 mm run (64 × 32 × 24, 161k unknowns) waited 35 minutes for a slot on the shared instance and was cancelled. On a dedicated `cpu-8v-32g` it is an estimated 1 to 2 hours. Finer bricks give thinner members and a smoother part; the layout should not change.
 - **STL.** The density field is upsampled 2× (trilinear), contoured with marching cubes, and lightly Taubin-smoothed. The contour level (0.44) is chosen so the mesh carries exactly the optimized material volume (88.2 g), rather than using the nominal 0.5, which loses about 6 % on thin members.
 
 ## Reproduce
@@ -117,7 +117,7 @@ BRACKET_H_MM=2.0 BRACKET_TAG=_2mm python bracket.py   # or 1.5 mm (default) on a
 python export_viewer_data.py && python build_viewer.py # viewer.html
 ```
 
-**Verification stamp.** date: 2026-10-01; env: conda-forge python 3.12, numpy 2.5, scipy 1.18, scikit-sparse 0.5 (CHOLMOD), scikit-fem 12.0, Octave 10.3 for the reference codes; machine: qBraid subscription pod (1 thread, nice) for Python runs and the 2 mm bracket; shared qBraid L4 pool box (1 thread) for the Octave reference runs; wall: bracket 21 min, top88 suite 1 h (300x100 density filter alone 52 min), top3d 1.2-3.9 min, references about 50 min; cost: $0 on the pod; about 1 CPU-hour on the shared pool box
+**Verification stamp.** date: 2026-10-01; env: conda-forge python 3.12, numpy 2.5, scipy 1.18, scikit-sparse 0.5 (CHOLMOD), scikit-fem 12.0, Octave 10.3 for the reference codes; machine: qBraid subscription pod (1 thread, nice) for Python runs and the 2 mm bracket; shared qBraid gpu-l4 instance (1 thread) for the Octave reference runs; wall: bracket 21 min, top88 suite 1 h (300x100 density filter alone 52 min), top3d 1.2-3.9 min, references about 50 min; cost: $0 on the pod; about 1 CPU-hour on the shared instance
 
 ## Honest limits
 

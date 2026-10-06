@@ -3,9 +3,9 @@
 # Assumes build_palace.sh has installed Palace into $PREFIX and the Palace source
 # (for the mesh and the regression reference) is at $BUILD/palace.
 set -euo pipefail
-PREFIX=${PREFIX:-/tmp/ose-envs/palace}
-BUILD=${BUILD:-/tmp/ose-build}
-RUNDIR=${RUNDIR:-/tmp/ose-run}
+PREFIX=${PREFIX:-/tmp/envs/palace}
+BUILD=${BUILD:-/tmp/build/palace}
+RUNDIR=${RUNDIR:-/tmp/runs/qubit-design}
 NP=${NP:-3}
 HERE=$(cd "$(dirname "$0")" && pwd)
 export PATH="$PREFIX/bin:$PATH"

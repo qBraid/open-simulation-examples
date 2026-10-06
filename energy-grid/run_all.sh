@@ -1,10 +1,10 @@
 #!/bin/bash
 # End-to-end: environment, AC-OPF benchmark, expansion scenarios, viewer.
-# On the shared pool box, wrap heavy steps in /tmp/ose/cpu-run (see /tmp/ose/README).
+# Run on a CPU instance (not the subscription pod); one thread per solve.
 set -euo pipefail
-ENV=${ENV:-/tmp/ose/energy-grid/env}
-export MAMBA_ROOT_PREFIX=${MAMBA_ROOT_PREFIX:-/tmp/ose/mamba} PATH=$ENV/bin:$PATH OMP_NUM_THREADS=1
-HERE=$(cd "$(dirname "$0")" && pwd); WORK=${WORK:-/tmp/ose/energy-grid}; mkdir -p "$WORK"; cd "$WORK"
+ENV=${ENV:-/tmp/energy-grid/env}
+export MAMBA_ROOT_PREFIX=${MAMBA_ROOT_PREFIX:-/tmp/mamba} PATH=$ENV/bin:$PATH OMP_NUM_THREADS=1
+HERE=$(cd "$(dirname "$0")" && pwd); WORK=${WORK:-/tmp/energy-grid}; mkdir -p "$WORK"; cd "$WORK"
 
 [ -x "$ENV/bin/python" ] || { micromamba create -y -p "$ENV" -c conda-forge python=3.12 ipopt=3.14 pyomo pypsa highspy networkx scipy pandas numpy netcdf4
                             "$ENV/bin/pip" install gridx-egret "pandapower>=3"; }

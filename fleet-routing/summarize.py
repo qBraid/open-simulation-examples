@@ -137,7 +137,7 @@ def main():
         "full30": F,
         "verdict": verdict.upper(), "note": note, "short": short,
         "stamp": f"{date.today().isoformat()} · CPU solvers 1 thread each (21 instances on the qBraid subscription pod, "
-                 f"9 largest on the shared qBraid L4 pool box after a pod restart) · cuOpt on the pool L4 · "
+                 f"9 largest on the shared qBraid gpu-l4 instance after a pod restart) · cuOpt on the shared L4 · "
                  f"0.1 × 2.4·n s per solver; full-budget check 2.4·n s, PyVRP, 6 smallest instances",
     }
     with open(os.path.join(R, "xbench_summary.json"), "w") as f:

@@ -8,3 +8,9 @@ __pycache__/
 *.vtu
 *.vtk
 !**/results/*.json
+# local environments and caches
+.venv/
+venv/
+.cache/
+*.ckpt
+Untitled*.ipynb
