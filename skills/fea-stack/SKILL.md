@@ -3,8 +3,7 @@ name: fea-stack
 description: Structural finite elements and topology optimization on qBraid with open-source tools (SIMP top88/top3d ports, scikit-fem, FEniCSx, CHOLMOD). Use when a user wants to size, verify or lightweight a part, reproduce a published topology-optimization benchmark, design a bracket or beam for given loads, or export a printable STL, as an open alternative to Abaqus/ATOM, Ansys or OptiStruct for linear-elastic design.
 metadata:
   version: "0.3.0"
-  layer: "tool"
-  status: "draft"
+  status: "provisional"
   verified: "2026-10-01"
 ---
 

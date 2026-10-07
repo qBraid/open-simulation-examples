@@ -1,0 +1,4 @@
+QOBLIB/
+results/
+*.sampler.sol
+__pycache__/

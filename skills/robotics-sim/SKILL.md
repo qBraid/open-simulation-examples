@@ -3,8 +3,7 @@ name: robotics-sim
 description: Train and demo legged-robot locomotion policies on qBraid GPUs with MuJoCo Playground (MJX/Warp) + Brax PPO, benchmark them against the published Playground results, and ship a browser demo where the trained policy runs live (MuJoCo WASM + JS network) next to a three.js replay. Use for robot RL training, sim-to-sim checks, locomotion benchmarks, or "show a robot walking in the browser".
 metadata:
   version: "0.3.0"
-  layer: "tool"
-  status: "draft"
+  status: "provisional"
   verified: "2026-10-01"
 ---
 

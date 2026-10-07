@@ -3,8 +3,7 @@ name: em-qhw-stack
 description: Design and simulate superconducting quantum hardware (transmons, resonators, CPW, filters) with open-source electromagnetics on qBraid, including surface-loss (TLS) participation and a predicted T1. AWS Palace for 3D finite-element eigenmode, driven and electrostatic runs, energy-participation quantization into a circuit Hamiltonian, numerical simulation of that Hamiltonian, and comparison with real IBM device parameters. Use when asked to design a qubit or resonator, compute mode frequencies, Q or participation ratios, replace HFSS or Sonnet with open tools, or turn a chip layout into a Hamiltonian.
 metadata:
   version: "0.3.0"
-  layer: "tool"
-  status: "draft"
+  status: "provisional"
   verified: "2026-10-01"
 ---
 
