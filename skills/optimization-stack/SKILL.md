@@ -1,8 +1,8 @@
 ---
 name: optimization-stack
-description: Solve LP, MIP, vehicle-routing and scheduling problems on qBraid with open-source solvers (HiGHS, PyVRP, OR-Tools CP-SAT/routing, SCIP, NVIDIA cuOpt). Use when a user brings an optimization, routing, scheduling, supply-chain or planning problem, asks for a Gurobi/CPLEX alternative, or wants to know where QUBO/QAOA fits. Gives the which-solver decision rules, the known-answer check to run first, verified benchmark numbers and costs, the traps, and an honest, runnable quantum readiness test.
+description: Solve LP, MIP, vehicle-routing and scheduling problems on qBraid with open-source solvers (HiGHS, PyVRP, OR-Tools CP-SAT/routing, SCIP, NVIDIA cuOpt). Use when a user brings an optimization, routing, scheduling, supply-chain or planning problem (including turning it into a model), asks for a Gurobi/CPLEX alternative, or wants to know where QUBO/QAOA fits. Gives the which-solver decision rules, the known-answer check to run first, verified benchmark numbers and costs, the traps, and an honest, runnable quantum readiness test.
 metadata:
-  version: "0.3.0"
+  version: "0.4.0"
   status: "provisional"
   verified: "2026-10-01"
 ---
@@ -51,6 +51,38 @@ pip install --extra-index-url https://pypi.nvidia.com -r requirements-gpu.txt   
 To reuse it across instances, package it as a qBraid environment with the
 **manage-environments** skill and install it with `qbraid envs install <slug>`,
 rather than pip-installing into system Python.
+
+## Solve the user's problem (start here)
+
+Users bring a problem, not a model. Work through these four steps in order,
+and show the user each one.
+
+1. **Formulate.** Name the decisions (which truck serves which stop, who works
+   which shift), the hard constraints, and the objective, in the user's units.
+   Then classify it:
+   - continuous and linear: LP;
+   - yes/no or integer choices: MIP;
+   - routes over a road network: CVRP/VRPTW;
+   - shifts and sequences: CP-SAT scheduling;
+   - pure pairwise yes/no interactions: QUBO.
+
+   If the user trades off several objectives (cost vs service level vs carbon),
+   say so. Report a Pareto front, not one weighted answer; this is also the
+   multi-objective setting QAMOO targets. Start from a small instance the user
+   can check by hand, then scale it up.
+2. **Solve it classically, to a known quality.** Use the decision rules below.
+   Report the best solution *and* a lower bound, so the user knows how far from
+   optimal it can be. Race solvers when no single one is reliably best
+   (solver-racing).
+3. **Find the quantum-sized piece** (only if the user wants quantum, or both).
+   Look for a sub-problem with about 12-50 binary variables that is still
+   meaningful, such as one route, one shift block, or one asset subset. Write its QUBO and
+   check the QUBO's optimum matches the sub-problem's. Prefer
+   constraint-preserving mixers over large penalties (see the Quantum section).
+4. **Compare honestly.** Score the quantum result against the classical optimum
+   on the same instance, with the same metric. For public claims, use QOBLIB:
+   its per-class checkers and leaderboard are the field's yardstick
+   (`quantum-optimization/qoblib/` in the repo above).
 
 ## Pick the solver (decision rules)
 
