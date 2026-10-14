@@ -519,7 +519,7 @@ const segOf=time=>{let acc=0;for(let i=0;i<D.script.length;i++){acc+=D.script[i]
 const v3=new THREE.Vector3();
 let last=performance.now();
 function updateArrows(){
-  const i=Math.min(Math.round(t/DT),MAIN.n-1),b=robot.bodies[TRUNK],yaw=headingOf(b.quaternion),c=Math.cos(yaw),s=Math.sin(yaw);
+  const i=Math.max(0,Math.min(Math.round(t/DT),MAIN.n-1)),b=robot.bodies[TRUNK],yaw=headingOf(b.quaternion),c=Math.cos(yaw),s=Math.sin(yaw);
   const cx=MAIN.cmd[i*3],cy=MAIN.cmd[i*3+1],ax=MAIN.linvel[i*3],ay=MAIN.linvel[i*3+1];
   const base=new THREE.Vector3(b.position.x,b.position.y,b.position.z+0.17);
   const set=(arr,vx,vy)=>{const wx=c*vx-s*vy,wy=s*vx+c*vy,L=Math.hypot(wx,wy);arr.visible=L>0.05;if(!arr.visible)return;arr.position.copy(base);arr.setDirection(v3.set(wx/L,wy/L,0));arr.setLength(0.15+L*0.55);};
@@ -530,14 +530,14 @@ function updateArrows(){
 }
 function loop(now){
   if(hidden)return;
-  const dt=Math.min((now-last)/1000,0.05);last=now;
+  const dt=Math.max(0,Math.min((now-last)/1000,0.05));last=now;
   if(live.on&&live.ready){liveStep(dt);drawLive();liveFeet();}
   else if(!live.on){
-  if(playing){t+=dt*speed;if(t>T_END){jumpTo(0);}}
+  if(playing){t=Math.max(0,t+dt*speed);if(t>T_END){jumpTo(0);}}
   applyPose(robot,MAIN,t);
   const gk=ghostSel.value;ghost.root.visible=!!gk;Object.entries(ghostTrails).forEach(([k,l])=>l.visible=(k===gk));
   if(gk)applyPose(ghost,R[gk],Math.min(t,(R[gk].n-1)*DT));
-  updateArrows();const fr=Math.min(Math.round(t/DT),MAIN.n-1);updatePrints(fr);drawGait(fr);if(playing)replayPuffs(fr);else lastPuffFrame=fr;}
+  updateArrows();const fr=Math.max(0,Math.min(Math.round(t/DT),MAIN.n-1));updatePrints(fr);drawGait(fr);if(playing)replayPuffs(fr);else lastPuffFrame=fr;}
   stepDust(dt);
   $('#scrub').value=Math.round(1000*t/T_END);$('#time').textContent=t.toFixed(2)+' s / '+T_END.toFixed(0)+' s';
   // shadow camera follows the robot
