@@ -1,0 +1,11 @@
+{
+ "date": "2026-10-16",
+ "machine": "qBraid gpu-a100-sxm on-demand instance (NVIDIA A100-SXM4 80 GB, driver 580.159.04), terminated after the run",
+ "env": "openfold3 0.5.0 (torch 2.14.1, biotite 1.4.0, pytorch-lightning 2.5.6) and openfold3 0.3.1 (torch 2.10.0, biotite 1.2.0) venvs; aqaffinity 0.0.1 from Hugging Face; posebusters 0.6.5, rdkit",
+ "gpu_minutes_billed": 396,
+ "credits_billed": 1476.72,
+ "cost_usd": 14.77,
+ "compute_note": "About 2 h of the 6.6 h billed was model compute (OpenFold3 PoseBusters 12 min; each AQAffinity run about 45-90 min, dominated by ColabFold MSA server calls). The rest was setup, failed attempts fixed above, and idle time after the subscription pod was stopped mid-run. A clean rerun is about 2 A100-hours, about 450 credits.",
+ "aqpotency": "2 AqpotencyScreen jobs of 16 ligands on SandboxAQ's servers, 4-6 s each, about $0.21 of SandboxAQ starter credit (their price list: $0.01 per pair for the first 10, then $0.001)",
+ "viewer": "built on the subscription pod at no extra cost"
+}

@@ -1,0 +1,9 @@
+pl_trainer_args:
+  devices: 1
+  num_nodes: 1
+experiment_settings:
+  seeds: [16]
+data_module_args:
+  num_workers: 0
+msa_computation_settings:
+  msa_output_directory: ./msa_cache

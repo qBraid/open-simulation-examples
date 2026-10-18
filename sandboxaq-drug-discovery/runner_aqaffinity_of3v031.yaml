@@ -1,0 +1,16 @@
+pl_trainer_args:
+  devices: 1
+  num_nodes: 1
+experiment_settings:
+  seeds: [16]
+data_module_args:
+  num_workers: 0
+msa_computation_settings:
+  msa_output_directory: ./msa_cache_of3v031
+model_update:
+  presets: [predict, pae_enabled]
+  custom:
+    settings:
+      memory:
+        eval:
+          use_deepspeed_evo_attention: false
