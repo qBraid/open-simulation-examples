@@ -67,7 +67,13 @@ absence as "not set".
 - Start it detached so ssh can drop:
   `ssh $H 'cd <dir> && setsid nohup bash run.sh > run.out 2>&1 < /dev/null & echo started'`.
 - Wait for it with a polling loop in the background (`until ssh $H '<check>'; do sleep 30; done`)
-  and check exit codes, not just log words.
+  and check exit codes, not just log words. Make the loop end when a box goes
+  idle, not only when the whole job ends: a finished box bills until it is
+  terminated. Test the loop's exit condition once by hand: `pgrep -c` prints
+  `0` *and* exits 1 when nothing matches, so `n=$(ssh $H 'pgrep -fc ...' || echo 0)`
+  yields "0\n0", the test `[ "$n" = 0 ]` never fires, and two finished A100s
+  sat idle for 24-42 minutes (about 250 credits) that way. Use
+  `ssh $H 'pgrep -f ... >/dev/null' || echo idle` instead.
 - **Never `pkill -f` or `pgrep -f` a pattern that your own command line also
   contains.** `ssh $H 'pkill -f "python main.py"'` matches the remote shell
   running that very command and kills it (exit 143/144), and a local
