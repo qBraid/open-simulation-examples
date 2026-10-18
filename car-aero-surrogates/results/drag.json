@@ -7,6 +7,7 @@
    "name": "DrivAerML #202 (typical)",
    "short": "DrivAer 202",
    "id": "run_202",
+   "orig_of": null,
    "cd": {
     "geotransolver": 0.2877740645793222,
     "domino": 0.278847142713041,
@@ -21,6 +22,7 @@
    "name": "DrivAerML #419 (lowest-drag test car)",
    "short": "DrivAer 419",
    "id": "run_419",
+   "orig_of": null,
    "cd": {
     "geotransolver": 0.25211538555737206,
     "domino": 0.25388866465719256,
@@ -35,6 +37,7 @@
    "name": "DrivAerML #439 (highest-drag test car)",
    "short": "DrivAer 439",
    "id": "run_439",
+   "orig_of": null,
    "cd": {
     "domino": 0.3057475408870104,
     "geotransolver": 0.3051088679641052,
@@ -49,6 +52,7 @@
    "name": "Control: DrivAerML #202 shrink-wrapped",
    "short": "Wrap 202",
    "id": "run_9202",
+   "orig_of": "run_202",
    "cd": {
     "domino": 0.23925408022537678,
     "geotransolver": 0.2491608150451782,
@@ -63,6 +67,7 @@
    "name": "Control: DrivAerML #419 shrink-wrapped",
    "short": "Wrap 419",
    "id": "run_9419",
+   "orig_of": "run_419",
    "cd": {
     "geotransolver": 0.2192794614657595,
     "domino": 0.2350177480500859,
@@ -77,6 +82,7 @@
    "name": "Control: DrivAerML #439 shrink-wrapped",
    "short": "Wrap 439",
    "id": "run_9439",
+   "orig_of": "run_439",
    "cd": {
     "geotransolver": 0.2352297571047128,
     "domino": 0.26555236085062744,
@@ -88,6 +94,7 @@
   {
    "case": "run_9001",
    "kind": "production",
+   "src": "modelx",
    "name": "Tesla Model X",
    "short": "Model X",
    "licence": "CC-BY (Spark Models, Printables 916009)",
@@ -97,6 +104,7 @@
    },
    "url": "https://www.printables.com/model/916009",
    "id": "run_9001",
+   "orig_of": null,
    "cd": {
     "geotransolver": 0.136751273635365,
     "domino": 0.18542503470481986
@@ -107,6 +115,8 @@
   {
    "case": "run_9002",
    "kind": "production",
+   "src": "taycan",
+   "rot": "x180",
    "name": "Porsche Taycan",
    "short": "Taycan",
    "licence": "CC0 (Printables 1301846)",
@@ -116,6 +126,7 @@
    },
    "url": "https://www.printables.com/model/1301846",
    "id": "run_9002",
+   "orig_of": null,
    "cd": {
     "domino": 0.24725532387888505,
     "geotransolver": 0.1555526683771208
@@ -126,6 +137,8 @@
   {
    "case": "run_9003",
    "kind": "production",
+   "src": "ioniq5",
+   "rot": "x180",
    "name": "Hyundai Ioniq 5",
    "short": "Ioniq 5",
    "licence": "CC-BY-SA (low-poly by andikapratamaw, Printables 962998)",
@@ -135,6 +148,7 @@
    },
    "url": "https://www.printables.com/model/962998",
    "id": "run_9003",
+   "orig_of": null,
    "cd": {
     "domino": 0.2528433826077414,
     "geotransolver": 0.19763328997577514
@@ -145,6 +159,8 @@
   {
    "case": "run_9004",
    "kind": "production",
+   "src": "i8",
+   "rot": "y180",
    "name": "BMW i8",
    "short": "BMW i8",
    "licence": "CC0 (Printables 1253551), toy-grade mesh",
@@ -154,6 +170,7 @@
    },
    "url": "https://www.printables.com/model/1253551",
    "id": "run_9004",
+   "orig_of": null,
    "cd": {
     "geotransolver": 0.14749303869833008,
     "domino": 0.22143127278264735
@@ -164,6 +181,8 @@
   {
    "case": "run_9006",
    "kind": "production",
+   "src": "e92",
+   "rot": "y180",
    "name": "BMW M3 (E92)",
    "short": "M3 E92",
    "licence": "CC-BY (Printables 779483)",
@@ -173,6 +192,7 @@
    },
    "url": "https://www.printables.com/model/779483",
    "id": "run_9006",
+   "orig_of": null,
    "cd": {
     "geotransolver": 0.15662356002828925,
     "domino": 0.22525843730970538
@@ -183,6 +203,7 @@
   {
    "case": "run_9007",
    "kind": "production",
+   "src": "bmw_e30",
    "name": "BMW M3 (E30)",
    "short": "M3 E30",
    "licence": "CC BY 4.0 (Martin Trafas, Wikimedia Commons)",
@@ -192,6 +213,7 @@
    },
    "url": "https://commons.wikimedia.org/wiki/File:BMW_M3_(E30).stl",
    "id": "run_9007",
+   "orig_of": null,
    "cd": {
     "geotransolver": 0.1743609136064005,
     "domino": 0.29057742055293917

@@ -86,6 +86,8 @@ tbody tr{cursor:pointer}
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
 const D = /*__DATA__*/null;
 const $ = id => document.getElementById(id);
 async function b64(s, T) {   // base64 -> gunzip -> typed array
@@ -126,29 +128,45 @@ const grid = new THREE.GridHelper(14, 28, 0x2a3438, 0x1a2124); grid.rotation.x =
 const floor = new THREE.Mesh(new THREE.CircleGeometry(7, 64), new THREE.MeshBasicMaterial({ color: 0x0e1416, transparent: true, opacity: 0.65 }));
 floor.position.set(1.5, 0, -0.32); scene.add(floor);
 const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.42, metalness: 0.05, side: THREE.DoubleSide });
+// plain mode: the car as itself, in a clear-coated paint lit by a studio environment
+const paint = new THREE.MeshPhysicalMaterial({ color: 0xc8ccd0, metalness: 0.55, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.06, side: THREE.DoubleSide });
+paint.envMap = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture; paint.envMapIntensity = 0.9;
+const PAINT = { run_9001: 0xe9e9e4, run_9002: 0x3b5b7a, run_9003: 0x8d9a8c, run_9004: 0xd8dde0, run_9006: 0x23324f, run_9007: 0x9c1c22 };
 let mesh = null;
 const cache = {};
+async function decodeGeom(g) { return { g, q: await b64(g.pts, Uint16Array), tri: await b64(g.tri, g.idx16 ? Uint16Array : Uint32Array) }; }
+function buildGeom({ g, q, tri }) {   // de-quantise positions into a BufferGeometry
+  const pos = new Float32Array(q.length);
+  for (let i = 0; i < q.length; i++) pos[i] = g.lo[i % 3] + q[i] * g.scale[i % 3];
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setIndex(new THREE.BufferAttribute(tri, 1));
+  return geo;
+}
 async function decodeCar(car) {
-  const g = car.geom, q = await b64(g.pts, Uint16Array), tri = await b64(g.tri, g.idx16 ? Uint16Array : Uint32Array), f = {};
+  const { q, tri } = await decodeGeom(car.geom), f = {};
+  if (car.orig) car._o = await decodeGeom(car.orig);
   for (const [k, s] of Object.entries(car.fields)) { const u = await b64(s, Uint8Array), a = new Float32Array(u.length);
     for (let i = 0; i < u.length; i++) a[i] = u[i] === 255 ? NaN : CP_LO + u[i] / 254 * (CP_HI - CP_LO); f[k] = a; }   // 255 = model returned NaN
   car._d = { q, tri, f };
 }
 function geomFor(car) {
   if (cache[car.id]) return cache[car.id];
-  const g = car.geom, q = car._d.q, lo = g.lo, sc = g.scale, n = q.length / 3;
-  const pos = new Float32Array(q.length);
-  for (let i = 0; i < q.length; i++) pos[i] = lo[i % 3] + q[i] * sc[i % 3];
-  const half = new THREE.BufferGeometry();
-  half.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  half.setIndex(new THREE.BufferAttribute(car._d.tri, 1));
+  const n = car._d.q.length / 3, half = buildGeom({ g: car.geom, q: car._d.q, tri: car._d.tri });
   half.computeVertexNormals();
   half.setAttribute('color', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
   return cache[car.id] = { g: half, f: car._d.f, n };
 }
+function origFor(car) {   // the car as itself: the downloaded mesh, the DrivAerML car a control came from, or the CFD surface
+  const key = car.id + ':orig';
+  if (cache[key]) return cache[key];
+  if (car._o) return cache[key] = { g: toCreasedNormals(buildGeom(car._o), Math.PI / 5) };   // keep the fan model's hard edges
+  const base = car.orig_of && D.cars.find(c => c.id === car.orig_of) || car;
+  return cache[key] = { g: geomFor(base).g };
+}
 
-const st = { car: 0, src: 'geotransolver', mode: 'cp', view: 'iso' };
-const SRC = [['truth', 'High-fidelity CFD'], ['geotransolver', 'GeoTransolver'], ['domino', 'DoMINO']];
+const st = { car: 0, src: 'orig', mode: 'paint', view: 'iso' };
+const SRC = [['orig', 'Original mesh'], ['truth', 'High-fidelity CFD'], ['geotransolver', 'GeoTransolver'], ['domino', 'DoMINO']];
+const has = (car, k) => k === 'orig' || !!car.fields[k];
 function seg(el, items, key, onPick) {
   el.innerHTML = ''; for (const [k, lab, dis] of items) { const b = document.createElement('button'); b.textContent = lab; b.disabled = !!dis;
     b.setAttribute('aria-pressed', String(st[key] === k)); b.onclick = () => { st[key] = k; onPick && onPick(); render(); }; el.appendChild(b); }
@@ -163,24 +181,31 @@ function setView() {
 }
 function render() {
   const car = D.cars[st.car];
-  if (!car.fields[st.src]) st.src = Object.keys(car.fields).find(k => k !== 'truth') || 'truth';
+  const firstPred = () => Object.keys(car.fields).find(k => k !== 'truth') || 'truth';
+  if (!has(car, st.src)) st.src = firstPred();
   if (st.mode === 'err' && !car.fields.truth) st.mode = 'cp';
-  if (st.mode === 'err' && st.src === 'truth') st.src = Object.keys(car.fields).find(k => k !== 'truth');
+  if (st.src === 'orig' && st.mode !== 'paint') st.src = st.mode === 'err' ? firstPred() : (car.fields.geotransolver ? 'geotransolver' : firstPred());   // picked a colour map: show it on a model's surface
+  if (st.mode === 'err' && st.src === 'truth') st.src = firstPred();
   seg($('carSeg'), D.cars.map((c, i) => [i, c.short]), 'car');
-  seg($('srcSeg'), SRC.map(([k, l]) => [k, l, !car.fields[k] || (st.mode === 'err' && k === 'truth')]), 'src');
-  seg($('modeSeg'), [['cp', 'Pressure'], ['err', 'Error vs CFD', !car.fields.truth]], 'mode');
+  seg($('srcSeg'), SRC.map(([k, l]) => [k, l, !has(car, k) || (st.mode === 'err' && k === 'truth')]), 'src', () => { if (st.src === 'orig') st.mode = 'paint'; });
+  seg($('modeSeg'), [['paint', 'Plain'], ['cp', 'Pressure'], ['err', 'Error vs CFD', !car.fields.truth]], 'mode');
   seg($('viewSeg'), [['iso', 'Iso'], ['side', 'Side'], ['front', 'Front'], ['top', 'Top']], 'view', setView);
-  const G = geomFor(car), col = G.g.attributes.color.array, a = G.f[st.src], t = G.f.truth;
-  for (let i = 0; i < G.n; i++) st.mode === 'err' ? erColor(a[i] - t[i], col, 3 * i) : cpColor(a[i], col, 3 * i);
-  G.g.attributes.color.needsUpdate = true;
-  if (!mesh) { mesh = new THREE.Mesh(G.g, mat); scene.add(mesh); } else mesh.geometry = G.g;
+  const plain = st.mode === 'paint', G = st.src === 'orig' ? origFor(car) : geomFor(car);
+  if (!plain) { const col = G.g.attributes.color.array, a = G.f[st.src], t = G.f.truth;
+    for (let i = 0; i < G.n; i++) st.mode === 'err' ? erColor(a[i] - t[i], col, 3 * i) : cpColor(a[i], col, 3 * i);
+    G.g.attributes.color.needsUpdate = true; }
+  paint.color.set(PAINT[car.id] ?? PAINT[car.orig_of] ?? 0xc8ccd0);
+  if (!mesh) { mesh = new THREE.Mesh(G.g, plain ? paint : mat); scene.add(mesh); } else { mesh.geometry = G.g; mesh.material = plain ? paint : mat; }
+  document.querySelector('.hud.cbar').style.visibility = plain ? 'hidden' : '';
   // tag
-  const cd = car.cd, pred = cd[st.src];
+  const cd = car.cd, pred = st.src === 'orig' ? null : cd[st.src];
   const cfd = car.kind !== 'production';
   let ref = cfd ? ['High-fidelity CFD', cd.truth] : ['Published', car.published?.cd];
   const e = st.src === 'truth' ? null : pct(pred, ref[1]);
   $('tag').innerHTML = `<div class="name">${car.name}</div><div class="muted">${car.kind === 'drivaerml' ? 'DrivAerML test car (held out from training)' : car.kind === 'control' ? 'Control: this DrivAerML car put through the same shrink-wrap as the production cars' : 'Fan-made mesh, open licence: ' + car.licence}</div>
-    <div style="margin-top:6px">${SRC.find(s => s[0] === st.src)[1]} Cd</div><div class="big">${fmt(pred)}</div>
+    ${st.src === 'orig' ? `<div style="margin-top:6px;font-size:11.5px">${car.kind === 'production' ? 'The mesh as downloaded, before the shrink-wrap the models were given. Pick a model or Pressure to see the wrapped surface they scored.' : car.kind === 'control' ? 'The original DrivAerML car this control was wrapped from.' : 'The DrivAerML car itself: the surface the CFD was run on.'}</div>
+    <div style="margin-top:6px">Cd: GeoTransolver <b class="mono">${fmt(cd.geotransolver)}</b> · DoMINO <b class="mono">${fmt(cd.domino)}</b></div>`
+    : `${plain && car.kind !== 'drivaerml' ? '<div style="margin-top:6px;font-size:11.5px">The shrink-wrapped surface the models were given.</div>' : ''}<div style="margin-top:6px">${SRC.find(s => s[0] === st.src)[1]} Cd</div><div class="big">${fmt(pred)}</div>`}
     <div>${ref[0]}: <b class="mono">${fmt(ref[1])}</b>${e == null ? '' : ` <span class="${cls(e)} mono">(${e > 0 ? '+' : ''}${e.toFixed(1)}%)</span>`}</div>
     ${car.nan_note ? `<div class="bad" style="margin-top:4px;font-size:11px">${car.nan_note}</div>` : ''}
     ${car.kind === 'production' ? `<div class="muted" style="margin-top:4px;font-size:11px">${car.published?.src || ''}</div>` : ''}`;

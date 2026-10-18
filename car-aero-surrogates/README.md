@@ -133,7 +133,10 @@ keep a control like the one here to know which regime you are in.
    (rasterised at 5 mm) for production cars.
 5. **Viewer** (`build_viewer.py`, `viewer_template.html`): each surface is
    decimated to about 120k triangles (quadric), Cp quantised to 8 bits (255 = no value), geometry to
-   16 bits, gzipped and inlined into `viewer.html`.
+   16 bits, gzipped and inlined into `viewer.html`. Each production car's mesh as downloaded is
+   inlined too, with the artist's own triangles: `build_viewer.py` recovers the transform `prep_fan.py`
+   applied by matching the source to the prepared mesh (median gap under 0.01 mm), then places it
+   as `wrap_mesh.py` placed the wrap.
 
 ## The cars
 
@@ -146,13 +149,18 @@ keep a control like the one here to know which regime you are in.
 | [BMW M3 (E92)](https://www.printables.com/model/779483) | CC-BY (Printables 779483) | 0.31 | auto-data.net (not confirmed by BMW) |
 | [BMW M3 (E30)](https://commons.wikimedia.org/wiki/File:BMW_M3_(E30).stl) | CC BY 4.0 (Martin Trafas, Wikimedia Commons) | 0.33 | Wikipedia / Hagerty (no BMW primary source found) |
 
-The meshes are not redistributed here; each name links to its download page. Each was scaled to the
-real car's overall length; the per-car rotations are in `wrap_all.sh`.
+Each name links to its download page. The repository does not ship the STL files; `viewer.html`
+embeds each mesh, under its licence and with its attribution shown beside it. Each was scaled to
+the real car's overall length; the per-car rotations are in `wrap_all.sh` and `cars.json`.
 
 ## The viewer
 
-`viewer.html` is one self-contained file (about 15 MB, so the canvas serves it
-from a local server rather than inline):
+`viewer.html` is one self-contained file. **Surface** picks what is drawn: *Original mesh* (the
+car as itself: the downloaded mesh for a production car, the DrivAerML car a control was
+wrapped from, the CFD surface for a DrivAerML car), the high-fidelity CFD, or a model's
+prediction on the surface it was given. **Colour** is *Plain* (clear-coat paint), *Pressure*
+(Cp) or *Error vs CFD*. At about 19 MB the canvas serves it from a local server rather than
+inline:
 
 ```bash
 mkdir -p /tmp/carview && ln -sf "$PWD/car-aero-surrogates/viewer.html" /tmp/carview/index.html
@@ -200,7 +208,7 @@ ssh $H 'cd /home/jovyan/aero && pn/bin/python mkconf.py && C="[$(sed s/^/run_/ v
 # drag and viewer surfaces, then pull and build
 ssh $H 'cd /home/jovyan/aero && mkdir -p vnpz && ls out/*/inference_*.vtp | xargs -P 8 -I{} pn/bin/python postproc.py {} drivaerml /dev/null vnpz'
 scp -r $H:/home/jovyan/aero/vnpz/. work/viewer_npz/      # and out/*/metrics_cache into work/out/
-python3 build_viewer.py
+python3 build_viewer.py                                   # needs src/ and fanml/ for the original meshes
 qbraid compute instances terminate $L --yes
 ```
 

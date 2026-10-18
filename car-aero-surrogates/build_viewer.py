@@ -4,9 +4,10 @@ Inputs (pulled from the GPU box into work/): viewer_npz/<model>_<case>.npz and .
 the benchmark's per-case metrics caches (out/<model>*/metrics_cache/*/run_*.json), and cars.json (published Cd).
 Drag is integrated by postproc.py from the predicted surface fields: Cd = D / (q A), q = U^2/2 with U = 38.889 m/s,
 A = aRef for DrivAerML cars and controls, and the mesh's frontal area for the production cars.
-usage: build_viewer.py   (run from this directory; REAL_ONLY=1 leaves out the production cars)
+usage: build_viewer.py   (run from this directory; REAL_ONLY=1 leaves out the production cars;
+       SRC_DIR / FAN_DIR: the downloaded meshes and prep_fan.py's output, default src/ and fanml/)
 """
-import base64, glob, gzip, json, math, os, numpy as np
+import base64, glob, gzip, itertools, json, math, os, numpy as np
 from scipy.spatial import cKDTree
 
 HERE = os.path.dirname(os.path.abspath(__file__)); W = f"{HERE}/work"
@@ -20,6 +21,40 @@ def qcp(p):   # Cp in 0..254, 255 = NaN (the model returned no value there)
     return np.where(np.isfinite(p), u, 255).astype(np.uint8)
 MODEL = {"geotransolver": "GeoTransolver", "domino": "DoMINO"}
 fin = lambda v: v if v is not None and math.isfinite(v) else None
+def pack(pts, tri):   # positions quantised to 16 bits per axis over the bounding box
+    lo = pts.min(0); sc = np.maximum(np.ptp(pts, 0), 1e-6) / 65535; i16 = bool(len(pts) < 65536)
+    return dict(pts=b64(np.round((pts - lo) / sc).astype(np.uint16)), tri=b64(tri.astype(np.uint16 if i16 else np.uint32)), idx16=i16, lo=lo.tolist(), scale=sc.tolist())
+
+# the production cars as themselves, before the shrink-wrap. prep_fan.py rotated, scaled and placed each downloaded mesh
+# (src/<name>.stl) and subdivided it to 3 cm edges (fanml/run_<id>/drivaer_<id>.stl); the transform is recovered by
+# matching the source to that prepared mesh, so the page carries the artist's own triangles, then the car is turned over
+# and placed exactly as wrap_mesh.py does, so it lines up with the wrap the models saw.
+SRC = os.environ.get("SRC_DIR", f"{HERE}/src"); FAN = os.environ.get("FAN_DIR") or next((d for d in (f"{HERE}/fanml", f"{W}/fanml") if os.path.isdir(d)), "")
+X0, Z0 = -0.924, -0.3176
+def read_stl(f):   # binary STL -> (vertices, faces), duplicate corners merged
+    b = open(f, "rb").read(); n = int(np.frombuffer(b, np.uint32, 1, 80)[0])
+    t = np.frombuffer(b, np.dtype([("n", "<f4", 3), ("v", "<f4", (3, 3)), ("a", "<u2")]), n, 84)["v"].reshape(-1, 3)
+    v, inv = np.unique(np.round(t.astype(np.float64), 5), axis=0, return_inverse=True)
+    return v, inv.reshape(-1, 3)
+def fit_to(vs, vf):   # signed axis permutation + scale + offset taking source vertices onto the prepared mesh
+    T = cKDTree(vf); c = (vs.max(0) + vs.min(0)) / 2; smp = vs[np.random.default_rng(0).choice(len(vs), min(4000, len(vs)), replace=False)]
+    best = None
+    for perm in itertools.permutations(range(3)):
+        for sg in itertools.product([1, -1], repeat=3):
+            P = np.zeros((3, 3)); P[range(3), perm] = sg
+            w = (vs - c) @ P.T; k = np.ptp(vf[:, 0]) / np.ptp(w[:, 0]); w *= k
+            off = np.array([vf[:, 0].min() - w[:, 0].min(), (vf[:, 1].max() + vf[:, 1].min() - w[:, 1].max() - w[:, 1].min()) / 2, vf[:, 2].min() - w[:, 2].min()])
+            d = np.median(T.query((smp - c) @ P.T * k + off)[0])
+            if best is None or d < best[0]: best = (d, w + off)
+    assert best[0] < 1e-3, f"source does not match the prepared mesh (median gap {best[0]:.4f} m)"
+    return best[1]
+def orig_geom(c):
+    rid = c["case"][4:]; fs, ff = f"{SRC}/{c.get('src')}.stl", f"{FAN}/run_{rid}/drivaer_{rid}.stl"
+    if not (os.path.exists(fs) and os.path.exists(ff)): return None
+    v, t = read_stl(fs); v = fit_to(v, read_stl(ff)[0])
+    if c.get("rot"): v = v * {"x180": [1, -1, -1], "y180": [-1, 1, -1]}[c["rot"]]
+    v[:, 0] += X0 - v[:, 0].min(); v[:, 1] -= (v[:, 1].max() + v[:, 1].min()) / 2; v[:, 2] += Z0 - v[:, 2].min()
+    return pack(v, t)
 
 out = []
 for c in cars:
@@ -29,7 +64,6 @@ for c in cars:
     if not npz: continue
     ref = npz.get("geotransolver", next(iter(npz.values())))
     pts, tri = ref["pts"], ref["tri"]
-    lo = pts.min(0); sc = np.maximum(np.ptp(pts, 0), 1e-6) / 65535
     fields = {}
     if c["kind"] != "production": fields["truth"] = b64(qcp(ref["p_true"]))
     for m, z in npz.items():
@@ -39,7 +73,10 @@ for c in cars:
     if c["kind"] != "production": cd["truth"] = next(iter(rs.values()))["Cd_hifi"]
     nan = {MODEL[m]: r["nan_frac"] for m, r in rs.items() if r["nan_frac"] > 0}
     note = "; ".join(f"{k} returned NaN on {100 * v:.0f}% of the surface" for k, v in nan.items()) or None
-    out.append(dict(c, id=c["case"], geom=dict(pts=b64(np.round((pts - lo) / sc).astype(np.uint16)), tri=b64(tri.astype(np.uint16 if len(pts) < 65536 else np.uint32)), idx16=bool(len(pts) < 65536), lo=lo.tolist(), scale=sc.tolist()),
+    # the car as itself: DrivAerML cars are their own CFD surface; a control shows the DrivAerML car it was wrapped from
+    orig = orig_geom(c) if c["kind"] == "production" else None
+    if c["kind"] == "production" and orig is None: print("no original mesh for", c["case"], "(needs SRC_DIR/<src>.stl and FAN_DIR from prep_fan.py)")
+    out.append(dict(c, id=c["case"], geom=pack(pts, tri), orig=orig, orig_of=f"run_{int(c['case'][4:]) - 9000}" if c["kind"] == "control" else None,
                     fields=fields, cd=cd, nan_note=note, A_frontal=next(iter(rs.values()))["A_frontal"]))
 
 # accuracy from the benchmark's own metrics (relative drag error, area-weighted pressure L2), per case set
@@ -67,6 +104,6 @@ data = dict(cars=out, bench=dict(models=bench, control=control, note="Relative d
             caveats=json.load(open(f"{HERE}/caveats.json")), footer=json.load(open(f"{HERE}/results/stamp.json"))["footer"])
 html = open(f"{HERE}/viewer_template.html").read().replace("/*__DATA__*/null", json.dumps(data, separators=(",", ":")))
 open(f"{HERE}/viewer.html", "w").write(html)
-json.dump(dict(q=Q, cars=[{k: v for k, v in c.items() if k not in ("geom", "fields")} for c in out], bench=bench, control=control),
+json.dump(dict(q=Q, cars=[{k: v for k, v in c.items() if k not in ("geom", "orig", "fields")} for c in out], bench=bench, control=control),
           open(f"{HERE}/results/drag.json", "w"), indent=1)
 print("viewer.html", round(len(html) / 1e6, 2), "MB;", len(out), "cars")

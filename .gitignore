@@ -16,3 +16,6 @@ venv/
 Untitled*.ipynb
 # car-aero-surrogates: raw GPU outputs and prediction surfaces (~300 MB), regenerable
 car-aero-surrogates/work/
+# downloaded car meshes: not ours to redistribute (licences per car in car-aero-surrogates/README.md)
+car-aero-surrogates/src/
+car-aero-surrogates/fanml/
