@@ -1,0 +1,156 @@
+{
+ "9001": {
+  "run": 9001,
+  "src": "drivaer_9001.stl",
+  "h": 0.008,
+  "r": 0.024,
+  "faces": 1681212,
+  "area_in": 63.03,
+  "area_out": 42.38,
+  "volume": 11.478,
+  "watertight": true,
+  "min_face_area": 7.290255505750554e-07,
+  "extents": [
+   5.043,
+   2.144,
+   1.68
+  ]
+ },
+ "9002": {
+  "run": 9002,
+  "src": "drivaer_9002.stl",
+  "h": 0.008,
+  "r": 0.024,
+  "faces": 1181524,
+  "area_in": 32.81,
+  "area_out": 29.3,
+  "volume": 7.613,
+  "watertight": true,
+  "min_face_area": 6.780748342467952e-07,
+  "extents": [
+   4.969,
+   2.117,
+   1.424
+  ]
+ },
+ "9003": {
+  "run": 9003,
+  "src": "drivaer_9003.stl",
+  "h": 0.008,
+  "r": 0.024,
+  "faces": 1287024,
+  "area_in": 35.84,
+  "area_out": 33.09,
+  "volume": 8.341,
+  "watertight": true,
+  "min_face_area": 6.945966545137663e-07,
+  "extents": [
+   4.637,
+   2.152,
+   1.623
+  ]
+ },
+ "9004": {
+  "run": 9004,
+  "src": "drivaer_9004.stl",
+  "h": 0.008,
+  "r": 0.05,
+  "faces": 1059468,
+  "area_in": 53.46,
+  "area_out": 26.54,
+  "volume": 6.683,
+  "watertight": true,
+  "min_face_area": 2.532146132169372e-06,
+  "extents": [
+   4.692,
+   2.155,
+   1.34
+  ],
+  "note": "rewrapped with r = 0.05 (open underside); area_out 26.54, volume 6.683"
+ },
+ "9006": {
+  "run": 9006,
+  "src": "drivaer_9006.stl",
+  "h": 0.008,
+  "r": 0.024,
+  "faces": 982552,
+  "area_in": 33.05,
+  "area_out": 25.01,
+  "volume": 6.941,
+  "watertight": true,
+  "min_face_area": 7.074191104620731e-07,
+  "extents": [
+   4.622,
+   2.006,
+   1.392
+  ]
+ },
+ "9007": {
+  "run": 9007,
+  "src": "drivaer_9007.stl",
+  "h": 0.008,
+  "r": 0.024,
+  "faces": 1019924,
+  "area_in": 40.71,
+  "area_out": 26.01,
+  "volume": 5.625,
+  "watertight": true,
+  "min_face_area": 1.3354441388402982e-06,
+  "extents": [
+   4.352,
+   1.872,
+   1.36
+  ]
+ },
+ "9202": {
+  "run": 9202,
+  "src": "drivaer_202.stl",
+  "h": 0.008,
+  "r": 0.024,
+  "faces": 1404120,
+  "area_in": 37.22,
+  "area_out": 34.16,
+  "volume": 6.938,
+  "watertight": true,
+  "min_face_area": 1.0314404698012846e-06,
+  "extents": [
+   4.824,
+   2.126,
+   1.407
+  ]
+ },
+ "9419": {
+  "run": 9419,
+  "src": "drivaer_419.stl",
+  "h": 0.008,
+  "r": 0.024,
+  "faces": 1173404,
+  "area_in": 31.32,
+  "area_out": 28.18,
+  "volume": 5.259,
+  "watertight": true,
+  "min_face_area": 6.695244862055582e-07,
+  "extents": [
+   4.487,
+   1.798,
+   1.333
+  ]
+ },
+ "9439": {
+  "run": 9439,
+  "src": "drivaer_439.stl",
+  "h": 0.008,
+  "r": 0.024,
+  "faces": 1402872,
+  "area_in": 37.17,
+  "area_out": 34.0,
+  "volume": 7.621,
+  "watertight": true,
+  "min_face_area": 1.524925455613318e-06,
+  "extents": [
+   4.567,
+   2.203,
+   1.535
+  ]
+ }
+}

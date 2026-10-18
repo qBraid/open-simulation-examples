@@ -1,0 +1,14 @@
+[
+ {"case": "run_202", "kind": "drivaerml", "name": "DrivAerML #202 (typical)", "short": "DrivAer 202"},
+ {"case": "run_419", "kind": "drivaerml", "name": "DrivAerML #419 (lowest-drag test car)", "short": "DrivAer 419"},
+ {"case": "run_439", "kind": "drivaerml", "name": "DrivAerML #439 (highest-drag test car)", "short": "DrivAer 439"},
+ {"case": "run_9202", "kind": "control", "name": "Control: DrivAerML #202 shrink-wrapped", "short": "Wrap 202"},
+ {"case": "run_9419", "kind": "control", "name": "Control: DrivAerML #419 shrink-wrapped", "short": "Wrap 419"},
+ {"case": "run_9439", "kind": "control", "name": "Control: DrivAerML #439 shrink-wrapped", "short": "Wrap 439"},
+ {"case": "run_9001", "kind": "production", "name": "Tesla Model X", "short": "Model X", "licence": "CC-BY (Spark Models, Printables 916009)", "published": {"cd": 0.24, "src": "Tesla: Model X design page (tesla.com/modelx/design)"}, "url": "https://www.printables.com/model/916009"},
+ {"case": "run_9002", "kind": "production", "name": "Porsche Taycan", "short": "Taycan", "licence": "CC0 (Printables 1301846)", "published": {"cd": 0.22, "src": "Porsche Taycan technical data (newsroom.porsche.com), A = 2.33 m2"}, "url": "https://www.printables.com/model/1301846"},
+ {"case": "run_9003", "kind": "production", "name": "Hyundai Ioniq 5", "short": "Ioniq 5", "licence": "CC-BY-SA (low-poly by andikapratamaw, Printables 962998)", "published": {"cd": 0.288, "src": "Hyundai Motor Group (hyundaimotorgroup.com)"}, "url": "https://www.printables.com/model/962998"},
+ {"case": "run_9004", "kind": "production", "name": "BMW i8", "short": "BMW i8", "licence": "CC0 (Printables 1253551), toy-grade mesh", "published": {"cd": 0.26, "src": "BMW i8 2014 efficiency page (bmw.mn)"}, "url": "https://www.printables.com/model/1253551"},
+ {"case": "run_9006", "kind": "production", "name": "BMW M3 (E92)", "short": "M3 E92", "licence": "CC-BY (Printables 779483)", "published": {"cd": 0.31, "src": "auto-data.net (not confirmed by BMW)"}, "url": "https://www.printables.com/model/779483"},
+ {"case": "run_9007", "kind": "production", "name": "BMW M3 (E30)", "short": "M3 E30", "licence": "CC BY 4.0 (Martin Trafas, Wikimedia Commons)", "published": {"cd": 0.33, "src": "Wikipedia / Hagerty (no BMW primary source found)"}, "url": "https://commons.wikimedia.org/wiki/File:BMW_M3_(E30).stl"}
+]

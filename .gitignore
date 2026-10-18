@@ -14,3 +14,5 @@ venv/
 .cache/
 *.ckpt
 Untitled*.ipynb
+# car-aero-surrogates: raw GPU outputs and prediction surfaces (~300 MB), regenerable
+car-aero-surrogates/work/

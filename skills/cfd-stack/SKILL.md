@@ -69,6 +69,7 @@ share it.
 | Compressible aero, or gradient-based shape optimisation (adjoint) | SU2 (`conda-forge::su2`) |
 | Transient, highly resolved, GPU available, simple geometry | XLB (lattice Boltzmann, JAX/Warp) on a GPU instance |
 | Many design points, interactive exploration | Sweep with OpenFOAM, then train a surrogate (PhysicsNeMo) on the sweep |
+| Car aerodynamics in minutes, many variants, no CFD budget | A pretrained NVIDIA surrogate on one GPU: the **cfd-surrogates** skill. Screening only; confirm the shortlist with CFD |
 
 Machine by mesh size (OpenFOAM, about 1 GB RAM per million cells for RANS).
 Pick a profile from `qbraid compute list`:

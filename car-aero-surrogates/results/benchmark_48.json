@@ -1,0 +1,390 @@
+{
+ "geotransolver": {
+  "run_4": {
+   "drag_error": 0.003171928437662364,
+   "l2_pressure_area_weighted": 0.031030884986115965
+  },
+  "run_17": {
+   "drag_error": 0.010142479706678531,
+   "l2_pressure_area_weighted": 0.028838832453654557
+  },
+  "run_18": {
+   "drag_error": 0.01692057163071408,
+   "l2_pressure_area_weighted": 0.0596149415224899
+  },
+  "run_27": {
+   "drag_error": 0.0012455787691262312,
+   "l2_pressure_area_weighted": 0.05125510945654086
+  },
+  "run_62": {
+   "drag_error": 0.014706572670999306,
+   "l2_pressure_area_weighted": 0.05086375365731642
+  },
+  "run_71": {
+   "drag_error": 0.0002448679770935474,
+   "l2_pressure_area_weighted": 0.030537655633348062
+  },
+  "run_86": {
+   "drag_error": 0.018793311620416597,
+   "l2_pressure_area_weighted": 0.04040038399632542
+  },
+  "run_112": {
+   "drag_error": 0.004787133539300089,
+   "l2_pressure_area_weighted": 0.04138746526249663
+  },
+  "run_115": {
+   "drag_error": 0.014606008482620477,
+   "l2_pressure_area_weighted": 0.04324718902688978
+  },
+  "run_118": {
+   "drag_error": 0.016052045750897075,
+   "l2_pressure_area_weighted": 0.03413765907223501
+  },
+  "run_129": {
+   "drag_error": 0.01284976204736865,
+   "l2_pressure_area_weighted": 0.030685358477922035
+  },
+  "run_145": {
+   "drag_error": 0.008349947320361824,
+   "l2_pressure_area_weighted": 0.038832907601619324
+  },
+  "run_149": {
+   "drag_error": 0.018751130442045013,
+   "l2_pressure_area_weighted": 0.0641397395497388
+  },
+  "run_159": {
+   "drag_error": 0.0035362179253741323,
+   "l2_pressure_area_weighted": 0.030673346897429957
+  },
+  "run_171": {
+   "drag_error": 0.004436039662290826,
+   "l2_pressure_area_weighted": 0.037165610813454444
+  },
+  "run_183": {
+   "drag_error": 0.00968427409161607,
+   "l2_pressure_area_weighted": 0.030761864976026655
+  },
+  "run_197": {
+   "drag_error": 0.006002627105028114,
+   "l2_pressure_area_weighted": 0.03029730063337996
+  },
+  "run_202": {
+   "drag_error": 0.005613752264520543,
+   "l2_pressure_area_weighted": 0.03739173215880652
+  },
+  "run_204": {
+   "drag_error": 0.003652152245384426,
+   "l2_pressure_area_weighted": 0.04145006929815325
+  },
+  "run_225": {
+   "drag_error": 0.005850306730426499,
+   "l2_pressure_area_weighted": 0.03596243569091004
+  },
+  "run_269": {
+   "drag_error": 0.005325843419462347,
+   "l2_pressure_area_weighted": 0.040030503969109975
+  },
+  "run_270": {
+   "drag_error": 0.0032234467652033196,
+   "l2_pressure_area_weighted": 0.04025073330197311
+  },
+  "run_271": {
+   "drag_error": 0.010359715268846915,
+   "l2_pressure_area_weighted": 0.03628642719998727
+  },
+  "run_298": {
+   "drag_error": 0.004123938471996575,
+   "l2_pressure_area_weighted": 0.0353024258634899
+  },
+  "run_305": {
+   "drag_error": 0.006904685344690515,
+   "l2_pressure_area_weighted": 0.027483492039096957
+  },
+  "run_320": {
+   "drag_error": 2.672089551242439e-05,
+   "l2_pressure_area_weighted": 0.04022861521832459
+  },
+  "run_345": {
+   "drag_error": 0.006032938956696332,
+   "l2_pressure_area_weighted": 0.03347645106230956
+  },
+  "run_367": {
+   "drag_error": 0.016265391228337384,
+   "l2_pressure_area_weighted": 0.040499057620379184
+  },
+  "run_380": {
+   "drag_error": 0.016128570952900004,
+   "l2_pressure_area_weighted": 0.0410436173201332
+  },
+  "run_382": {
+   "drag_error": 0.0044746392051609836,
+   "l2_pressure_area_weighted": 0.03165417750452581
+  },
+  "run_399": {
+   "drag_error": 0.014695013766498753,
+   "l2_pressure_area_weighted": 0.03527349831365954
+  },
+  "run_409": {
+   "drag_error": 0.010608506740239769,
+   "l2_pressure_area_weighted": 0.049768901999215444
+  },
+  "run_417": {
+   "drag_error": 0.015199600344611267,
+   "l2_pressure_area_weighted": 0.04068256143586845
+  },
+  "run_419": {
+   "drag_error": 0.0012804408329328974,
+   "l2_pressure_area_weighted": 0.039184476240812297
+  },
+  "run_421": {
+   "drag_error": 0.02175720444670791,
+   "l2_pressure_area_weighted": 0.040896222139410146
+  },
+  "run_424": {
+   "drag_error": 0.012714687273160167,
+   "l2_pressure_area_weighted": 0.033666424558909835
+  },
+  "run_429": {
+   "drag_error": 0.001764552337909721,
+   "l2_pressure_area_weighted": 0.03133915634107145
+  },
+  "run_431": {
+   "drag_error": 0.011227137482692025,
+   "l2_pressure_area_weighted": 0.03129038440505217
+  },
+  "run_439": {
+   "drag_error": 0.01126545839156913,
+   "l2_pressure_area_weighted": 0.03678262543268435
+  },
+  "run_460": {
+   "drag_error": 0.005198898983984833,
+   "l2_pressure_area_weighted": 0.026886330990872353
+  },
+  "run_465": {
+   "drag_error": 0.00027878915312034257,
+   "l2_pressure_area_weighted": 0.05750719246538958
+  },
+  "run_468": {
+   "drag_error": 0.006302607472415978,
+   "l2_pressure_area_weighted": 0.028967171301850832
+  },
+  "run_469": {
+   "drag_error": 0.005144527047313414,
+   "l2_pressure_area_weighted": 0.03415906723121038
+  },
+  "run_478": {
+   "drag_error": 0.003997873340816815,
+   "l2_pressure_area_weighted": 0.029326180091279703
+  },
+  "run_483": {
+   "drag_error": 0.00022771112454669356,
+   "l2_pressure_area_weighted": 0.03669435875250849
+  },
+  "run_489": {
+   "drag_error": 0.006825682250628234,
+   "l2_pressure_area_weighted": 0.037479937032158454
+  },
+  "run_490": {
+   "drag_error": 0.011577365392849391,
+   "l2_pressure_area_weighted": 0.03738320013111344
+  },
+  "run_495": {
+   "drag_error": 0.011240563286448067,
+   "l2_pressure_area_weighted": 0.050889024877967946
+  }
+ },
+ "domino": {
+  "run_4": {
+   "drag_error": 0.05066007010868561,
+   "l2_pressure_area_weighted": 0.09371747684550367
+  },
+  "run_17": {
+   "drag_error": 0.00868800838163633,
+   "l2_pressure_area_weighted": 0.0989840720267043
+  },
+  "run_18": {
+   "drag_error": 0.02043154028457583,
+   "l2_pressure_area_weighted": 0.12614428059237423
+  },
+  "run_27": {
+   "drag_error": 0.019458007323240267,
+   "l2_pressure_area_weighted": 0.12694892290886117
+  },
+  "run_62": {
+   "drag_error": 0.02658494791092122,
+   "l2_pressure_area_weighted": 0.15411378108806906
+  },
+  "run_71": {
+   "drag_error": 0.007953934976255675,
+   "l2_pressure_area_weighted": 0.12223208617337158
+  },
+  "run_86": {
+   "drag_error": 0.003918639210162734,
+   "l2_pressure_area_weighted": 0.08960053786435838
+  },
+  "run_112": {
+   "drag_error": 0.017550081471542512,
+   "l2_pressure_area_weighted": 0.1087569098810303
+  },
+  "run_115": {
+   "drag_error": 0.012440020598178234,
+   "l2_pressure_area_weighted": 0.10734695894399547
+  },
+  "run_118": {
+   "drag_error": 0.004265219018714905,
+   "l2_pressure_area_weighted": 0.096488010975507
+  },
+  "run_129": {
+   "drag_error": 0.01672967268014382,
+   "l2_pressure_area_weighted": 0.09887118746208387
+  },
+  "run_145": {
+   "drag_error": 0.015229016114954497,
+   "l2_pressure_area_weighted": 0.1267942655796955
+  },
+  "run_149": {
+   "drag_error": 0.01115786744244239,
+   "l2_pressure_area_weighted": 0.10742275242896401
+  },
+  "run_159": {
+   "drag_error": 0.003988733578160083,
+   "l2_pressure_area_weighted": 0.12833702500912852
+  },
+  "run_171": {
+   "drag_error": 0.0032357934037805193,
+   "l2_pressure_area_weighted": 0.10523845762160339
+  },
+  "run_183": {
+   "drag_error": 0.0037145865025941813,
+   "l2_pressure_area_weighted": 0.12696590740989605
+  },
+  "run_197": {
+   "drag_error": 0.01219215176986841,
+   "l2_pressure_area_weighted": 0.08778169087446494
+  },
+  "run_202": {
+   "drag_error": 0.025581045187286294,
+   "l2_pressure_area_weighted": 0.09563861307332666
+  },
+  "run_204": {
+   "drag_error": 0.005080373072384768,
+   "l2_pressure_area_weighted": 0.109735538288757
+  },
+  "run_225": {
+   "drag_error": 0.00042475668498366276,
+   "l2_pressure_area_weighted": 0.12821854580978354
+  },
+  "run_269": {
+   "drag_error": 0.009560969944162454,
+   "l2_pressure_area_weighted": 0.13584519424114352
+  },
+  "run_270": {
+   "drag_error": 0.0032525351641621916,
+   "l2_pressure_area_weighted": 0.09850100131215783
+  },
+  "run_271": {
+   "drag_error": 0.011683737160792048,
+   "l2_pressure_area_weighted": 0.10648537077370812
+  },
+  "run_298": {
+   "drag_error": 0.001070831730837492,
+   "l2_pressure_area_weighted": 0.12566374363770821
+  },
+  "run_305": {
+   "drag_error": 0.01862177382694902,
+   "l2_pressure_area_weighted": 0.10562865933561816
+  },
+  "run_320": {
+   "drag_error": 0.005281406260772418,
+   "l2_pressure_area_weighted": 0.10683003563558151
+  },
+  "run_345": {
+   "drag_error": 5.0605266825661705e-05,
+   "l2_pressure_area_weighted": 0.10677045396373869
+  },
+  "run_367": {
+   "drag_error": 0.0021786138222293946,
+   "l2_pressure_area_weighted": 0.10569654765483918
+  },
+  "run_380": {
+   "drag_error": 0.0030109459616101983,
+   "l2_pressure_area_weighted": 0.11279493860634345
+  },
+  "run_382": {
+   "drag_error": 0.0395956147225256,
+   "l2_pressure_area_weighted": 0.10475674669925833
+  },
+  "run_399": {
+   "drag_error": 0.03397617658098078,
+   "l2_pressure_area_weighted": 0.10865062594449226
+  },
+  "run_409": {
+   "drag_error": 0.034955229263745356,
+   "l2_pressure_area_weighted": 0.12759684630789675
+  },
+  "run_417": {
+   "drag_error": 0.023845672477452597,
+   "l2_pressure_area_weighted": 0.09746282987952788
+  },
+  "run_419": {
+   "drag_error": 0.00832305902123911,
+   "l2_pressure_area_weighted": 0.1446492299458163
+  },
+  "run_421": {
+   "drag_error": 0.05683111587502016,
+   "l2_pressure_area_weighted": 0.12208873471112613
+  },
+  "run_424": {
+   "drag_error": 0.03176731806037986,
+   "l2_pressure_area_weighted": 0.09819999401542491
+  },
+  "run_429": {
+   "drag_error": 0.016264884571877407,
+   "l2_pressure_area_weighted": 0.08831255792835023
+  },
+  "run_431": {
+   "drag_error": 0.008464225090737753,
+   "l2_pressure_area_weighted": 0.10622047770046762
+  },
+  "run_439": {
+   "drag_error": 0.009195261467110255,
+   "l2_pressure_area_weighted": 0.09720045312167648
+  },
+  "run_460": {
+   "drag_error": 0.0005514183036170125,
+   "l2_pressure_area_weighted": 0.09661138292530658
+  },
+  "run_465": {
+   "drag_error": 0.0030106391228278077,
+   "l2_pressure_area_weighted": 0.1156147058791235
+  },
+  "run_468": {
+   "drag_error": 0.022562388006564748,
+   "l2_pressure_area_weighted": 0.10671905099084
+  },
+  "run_469": {
+   "drag_error": 0.026563013600412785,
+   "l2_pressure_area_weighted": 0.10117276387532961
+  },
+  "run_478": {
+   "drag_error": 0.00375324018093302,
+   "l2_pressure_area_weighted": 0.10508337917380103
+  },
+  "run_483": {
+   "drag_error": 0.013936887973837808,
+   "l2_pressure_area_weighted": 0.14754462099673044
+  },
+  "run_489": {
+   "drag_error": 0.026799888084050327,
+   "l2_pressure_area_weighted": 0.12837959252594844
+  },
+  "run_490": {
+   "drag_error": 0.01250734171133245,
+   "l2_pressure_area_weighted": 0.10274815167327643
+  },
+  "run_495": {
+   "drag_error": 0.02162277216284538,
+   "l2_pressure_area_weighted": 0.11366187284985992
+  }
+ }
+}

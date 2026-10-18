@@ -1,0 +1,7 @@
+[
+ "<b>DrivAerML test cars are the real test.</b> They are held out from training and have a high-fidelity (hybrid RANS-LES) answer on the same mesh, so the error numbers are meaningful.",
+ "<b>The production cars are outside what these models learned.</b> Both models were trained only on 400-odd morphs of one car, the DrivAer (an Audi A4 / BMW 3 Series blend). A Model X or a Taycan is a different shape, so a large error there says the model does not generalise, not that the car's drag is wrong.",
+ "<b>The fan meshes are not wind-tunnel geometry.</b> They have a smoothed underbody, closed grilles and simplified wheels, and we scaled each to the published length. Each was shrink-wrapped into one watertight outer skin before inference (the raw meshes had zero-area faces, interior shells and some were upside down). Published drag values come from different tunnels and conditions (see table sources).",
+ "<b>The controls test the wrap, not the car.</b> Three DrivAerML cars went through the same shrink-wrap, with the CFD answer carried over. If the models stay accurate on those, the wrap is not what moves the production-car numbers.",
+ "<b>No CFD truth for the production cars.</b> The 'Error vs CFD' view is only available for DrivAerML cars and the controls."
+]

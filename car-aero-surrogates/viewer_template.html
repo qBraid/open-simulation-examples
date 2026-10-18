@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Car Aerodynamics</title>
+<style>
+:root{
+  --bg:#f4f5f2;--surface:#ffffff;--surface-2:#eceee9;--ink:#171b1d;--muted:#5b656a;--line:#d5dad5;
+  --accent:#0f6e66;--good:#1d7f56;--mid:#a86106;--bad:#b3372b;--stage:#0b0f11;--stage-ink:#1b2124;
+  --hud:rgba(255,255,255,.88);--hud-line:rgba(20,30,28,.12);
+  --shadow:0 1px 2px rgba(20,30,28,.06),0 10px 30px -18px rgba(20,30,28,.35);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c1012;--surface:#141a1c;--surface-2:#1c2427;--ink:#e6ebe9;--muted:#98a4a1;--line:#27322e;
+  --accent:#45c2b3;--good:#4cc38a;--mid:#e7a640;--bad:#f07a6c;--stage:#070a0b;--stage-ink:#dfe7e4;
+  --hud:rgba(14,19,21,.8);--hud-line:rgba(255,255,255,.08);--shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -18px rgba(0,0,0,.7);
+}}
+:root[data-theme="dark"]{
+  --bg:#0c1012;--surface:#141a1c;--surface-2:#1c2427;--ink:#e6ebe9;--muted:#98a4a1;--line:#27322e;
+  --accent:#45c2b3;--good:#4cc38a;--mid:#e7a640;--bad:#f07a6c;--stage:#070a0b;--stage-ink:#dfe7e4;
+  --hud:rgba(14,19,21,.8);--hud-line:rgba(255,255,255,.08);--shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -18px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:14.5px/1.5 "Inter","Helvetica Neue",Arial,sans-serif}
+.mono{font-family:"JetBrains Mono","SFMono-Regular",Menlo,monospace}
+header{max-width:1500px;margin:0 auto;padding:22px 16px 10px}
+h1{margin:0;font-size:26px;letter-spacing:-.01em}
+.sub{margin:4px 0 0;color:var(--muted);max-width:90ch}
+.layout{max-width:1500px;margin:0 auto;padding:0 16px 40px;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px}
+.stage{position:relative;height:min(74vh,760px);min-height:440px;border-radius:14px;overflow:hidden;background:var(--stage);box-shadow:var(--shadow)}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hud{position:absolute;background:var(--hud);border:1px solid var(--hud-line);color:var(--stage-ink);border-radius:10px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.hud.ctl{bottom:10px;left:10px;padding:10px;display:grid;gap:7px;width:260px;font-size:12px}
+.hud.ctl .lab{font:600 10.5px/1 "Inter",sans-serif;letter-spacing:.06em;text-transform:uppercase;opacity:.7;margin-top:2px}
+.seg{display:flex;flex-wrap:wrap;gap:5px}
+.seg button{font:500 12px/1 "Inter",sans-serif;border:1px solid var(--hud-line);background:transparent;color:inherit;padding:6px 9px;border-radius:7px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+.seg button:disabled{opacity:.35;cursor:not-allowed}
+.hud.tag{top:10px;left:10px;padding:10px 12px;font-size:12px;min-width:220px;max-width:min(360px,70%)}
+.hud.tag .name{font-weight:700;font-size:15px}
+.hud.tag .big{font:700 22px/1.1 "JetBrains Mono",Menlo,monospace}
+.hud.cbar{right:10px;bottom:10px;padding:8px 10px;font-size:11px;width:220px}
+.hud.cbar canvas{width:100%;height:10px;border-radius:3px;display:block;margin:4px 0 2px}
+.ticks{display:flex;justify-content:space-between}
+.ok{color:var(--good)}.warn{color:var(--mid)}.bad{color:var(--bad)}
+aside{display:grid;gap:12px;align-content:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow)}
+.card h3{margin:0 0 8px;font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.card p{margin:6px 0;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:right;padding:4px 4px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+tr.sel td{background:var(--surface-2)}
+tbody tr{cursor:pointer}
+.muted{color:var(--muted)}
+.foot{max-width:1500px;margin:0 auto;padding:0 16px 30px;color:var(--muted);font-size:12px}
+@media (max-width:980px){.layout{grid-template-columns:1fr}.stage{height:62vh;min-height:380px}.hud.ctl{width:min(260px,calc(100% - 20px))}.hud.cbar{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>AI car aerodynamics on qBraid</h1>
+  <p class="sub">NVIDIA's pretrained surrogate models (GeoTransolver, DoMINO) predict surface pressure and drag in seconds. On DrivAerML test cars they are scored against high-fidelity CFD. On fan-made production-car meshes there is no CFD truth, only the manufacturer's published drag coefficient; three shrink-wrapped DrivAer controls show how much the mesh repair alone moves the answer.</p>
+</header>
+<div class="layout">
+  <div class="stage">
+    <canvas id="gl"></canvas>
+    <div class="hud tag" id="tag"></div>
+    <div class="hud ctl">
+      <div class="lab">Car</div><div class="seg" id="carSeg"></div>
+      <div class="lab">Surface</div><div class="seg" id="srcSeg"></div>
+      <div class="lab">Colour</div><div class="seg" id="modeSeg"></div>
+      <div class="lab">View</div><div class="seg" id="viewSeg"></div>
+    </div>
+    <div class="hud cbar"><div id="cbTitle">Pressure coefficient Cp</div><canvas id="cb" width="200" height="10"></canvas><div class="ticks mono" id="cbTicks"></div></div>
+  </div>
+  <aside>
+    <div class="card"><h3>Drag coefficient</h3><table id="cdTable"></table><p class="muted" id="cdNote"></p></div>
+    <div class="card"><h3>Accuracy on DrivAerML test cars</h3><table id="benchTable"></table><p class="muted" id="benchNote"></p></div>
+    <div class="card"><h3>Read this first</h3><div id="caveats"></div></div>
+  </aside>
+</div>
+<div class="foot" id="foot"></div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+const D = /*__DATA__*/null;
+const $ = id => document.getElementById(id);
+async function b64(s, T) {   // base64 -> gunzip -> typed array
+  const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i);
+  return new T(await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
+}
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+// colour maps: Cp diverging (blue suction, red stagnation), error sequential
+const CP_LO = -1.6, CP_HI = 1.0, ER_HI = 0.3;
+function cpColor(v, out, o) {   // piecewise: deep blue -> light -> deep red, light at Cp = 0
+  const stops = [[-1.6, [0.10, 0.20, 0.55]], [-0.8, [0.25, 0.52, 0.85]], [0, [0.93, 0.93, 0.90]], [0.5, [0.94, 0.55, 0.32]], [1.0, [0.62, 0.10, 0.12]]];
+  if (isNaN(v)) { out[o] = out[o + 1] = out[o + 2] = 0.42; return; }   // grey: no prediction
+  v = Math.max(CP_LO, Math.min(CP_HI, v));
+  for (let i = 1; i < stops.length; i++) if (v <= stops[i][0]) { const [a, ca] = stops[i - 1], [b, cb] = stops[i], t = (v - a) / (b - a);
+    for (let k = 0; k < 3; k++) out[o + k] = ca[k] + t * (cb[k] - ca[k]); return; }
+}
+function erColor(v, out, o) {
+  if (isNaN(v)) { out[o] = out[o + 1] = out[o + 2] = 0.42; return; }
+  const t = Math.min(1, Math.abs(v) / ER_HI), a = [0.13, 0.16, 0.18], m = [0.95, 0.62, 0.20], b = [1.0, 0.96, 0.85];
+  const [c0, c1, s] = t < 0.6 ? [a, m, t / 0.6] : [m, b, (t - 0.6) / 0.4];
+  for (let k = 0; k < 3; k++) out[o + k] = c0[k] + s * (c1[k] - c0[k]);
+}
+
+// scene
+const canvas = $('gl'), renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.outputColorSpace = THREE.SRGBColorSpace;
+const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(32, 1, 0.05, 200);
+cam.up.set(0, 0, 1);   // z is up in the DrivAerML frame; must be set BEFORE OrbitControls, which fixes its orbit axis at construction
+const ctl = new OrbitControls(cam, canvas);
+ctl.enableDamping = true; ctl.dampingFactor = 0.08; ctl.rotateSpeed = 0.7; ctl.panSpeed = 0.8;
+ctl.minDistance = 1.5; ctl.maxDistance = 25; ctl.maxPolarAngle = Math.PI * 0.72;   // a little below the ground plane, enough to see the underbody
+ctl.target.set(1.5, 0, 0.35);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x223030, 1.6));
+const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(-4, -6, 8); scene.add(sun);
+const grid = new THREE.GridHelper(14, 28, 0x2a3438, 0x1a2124); grid.rotation.x = Math.PI / 2; grid.position.set(1.5, 0, -0.318); scene.add(grid);
+const floor = new THREE.Mesh(new THREE.CircleGeometry(7, 64), new THREE.MeshBasicMaterial({ color: 0x0e1416, transparent: true, opacity: 0.65 }));
+floor.position.set(1.5, 0, -0.32); scene.add(floor);
+const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.42, metalness: 0.05, side: THREE.DoubleSide });
+let mesh = null;
+const cache = {};
+async function decodeCar(car) {
+  const g = car.geom, q = await b64(g.pts, Uint16Array), tri = await b64(g.tri, g.idx16 ? Uint16Array : Uint32Array), f = {};
+  for (const [k, s] of Object.entries(car.fields)) { const u = await b64(s, Uint8Array), a = new Float32Array(u.length);
+    for (let i = 0; i < u.length; i++) a[i] = u[i] === 255 ? NaN : CP_LO + u[i] / 254 * (CP_HI - CP_LO); f[k] = a; }   // 255 = model returned NaN
+  car._d = { q, tri, f };
+}
+function geomFor(car) {
+  if (cache[car.id]) return cache[car.id];
+  const g = car.geom, q = car._d.q, lo = g.lo, sc = g.scale, n = q.length / 3;
+  const pos = new Float32Array(q.length);
+  for (let i = 0; i < q.length; i++) pos[i] = lo[i % 3] + q[i] * sc[i % 3];
+  const half = new THREE.BufferGeometry();
+  half.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  half.setIndex(new THREE.BufferAttribute(car._d.tri, 1));
+  half.computeVertexNormals();
+  half.setAttribute('color', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
+  return cache[car.id] = { g: half, f: car._d.f, n };
+}
+
+const st = { car: 0, src: 'geotransolver', mode: 'cp', view: 'iso' };
+const SRC = [['truth', 'High-fidelity CFD'], ['geotransolver', 'GeoTransolver'], ['domino', 'DoMINO']];
+function seg(el, items, key, onPick) {
+  el.innerHTML = ''; for (const [k, lab, dis] of items) { const b = document.createElement('button'); b.textContent = lab; b.disabled = !!dis;
+    b.setAttribute('aria-pressed', String(st[key] === k)); b.onclick = () => { st[key] = k; onPick && onPick(); render(); }; el.appendChild(b); }
+}
+function fmt(v, d = 3) { return v == null || isNaN(v) ? '–' : v.toFixed(d); }
+function pct(a, b) { return a == null || b == null ? null : 100 * (a - b) / b; }
+function cls(e) { const a = Math.abs(e); return a <= 3 ? 'ok' : a <= 10 ? 'warn' : 'bad'; }
+
+function setView() {
+  const v = { iso: [-3.2, -5.2, 2.6], side: [1.5, -8.5, 0.5], front: [-7.5, 0, 0.6], top: [1.5, -0.6, 9.5] }[st.view];   // top: offset a little so the view never sits exactly on the up axis
+  cam.position.set(...v); ctl.target.set(1.5, 0, 0.3); ctl.update();
+}
+function render() {
+  const car = D.cars[st.car];
+  if (!car.fields[st.src]) st.src = Object.keys(car.fields).find(k => k !== 'truth') || 'truth';
+  if (st.mode === 'err' && !car.fields.truth) st.mode = 'cp';
+  if (st.mode === 'err' && st.src === 'truth') st.src = Object.keys(car.fields).find(k => k !== 'truth');
+  seg($('carSeg'), D.cars.map((c, i) => [i, c.short]), 'car');
+  seg($('srcSeg'), SRC.map(([k, l]) => [k, l, !car.fields[k] || (st.mode === 'err' && k === 'truth')]), 'src');
+  seg($('modeSeg'), [['cp', 'Pressure'], ['err', 'Error vs CFD', !car.fields.truth]], 'mode');
+  seg($('viewSeg'), [['iso', 'Iso'], ['side', 'Side'], ['front', 'Front'], ['top', 'Top']], 'view', setView);
+  const G = geomFor(car), col = G.g.attributes.color.array, a = G.f[st.src], t = G.f.truth;
+  for (let i = 0; i < G.n; i++) st.mode === 'err' ? erColor(a[i] - t[i], col, 3 * i) : cpColor(a[i], col, 3 * i);
+  G.g.attributes.color.needsUpdate = true;
+  if (!mesh) { mesh = new THREE.Mesh(G.g, mat); scene.add(mesh); } else mesh.geometry = G.g;
+  // tag
+  const cd = car.cd, pred = cd[st.src];
+  const cfd = car.kind !== 'production';
+  let ref = cfd ? ['High-fidelity CFD', cd.truth] : ['Published', car.published?.cd];
+  const e = st.src === 'truth' ? null : pct(pred, ref[1]);
+  $('tag').innerHTML = `<div class="name">${car.name}</div><div class="muted">${car.kind === 'drivaerml' ? 'DrivAerML test car (held out from training)' : car.kind === 'control' ? 'Control: this DrivAerML car put through the same shrink-wrap as the production cars' : 'Fan-made mesh, open licence: ' + car.licence}</div>
+    <div style="margin-top:6px">${SRC.find(s => s[0] === st.src)[1]} Cd</div><div class="big">${fmt(pred)}</div>
+    <div>${ref[0]}: <b class="mono">${fmt(ref[1])}</b>${e == null ? '' : ` <span class="${cls(e)} mono">(${e > 0 ? '+' : ''}${e.toFixed(1)}%)</span>`}</div>
+    ${car.nan_note ? `<div class="bad" style="margin-top:4px;font-size:11px">${car.nan_note}</div>` : ''}
+    ${car.kind === 'production' ? `<div class="muted" style="margin-top:4px;font-size:11px">${car.published?.src || ''}</div>` : ''}`;
+  // colour bar
+  const cb = $('cb'), cx = cb.getContext('2d'), tmp = [0, 0, 0];
+  for (let x = 0; x < 200; x++) { st.mode === 'err' ? erColor(x / 199 * ER_HI, tmp, 0) : cpColor(CP_LO + x / 199 * (CP_HI - CP_LO), tmp, 0);
+    cx.fillStyle = `rgb(${tmp.map(v => Math.round(255 * Math.pow(v, 1 / 2.2))).join(',')})`; cx.fillRect(x, 0, 1, 10); }
+  $('cbTitle').textContent = st.mode === 'err' ? '|Cp error| vs high-fidelity CFD' : 'Pressure coefficient Cp';
+  $('cbTicks').innerHTML = st.mode === 'err' ? '<span>0</span><span>0.15</span><span>0.3+</span>' : '<span>-1.6</span><span>0</span><span>1.0</span>';
+  // tables
+  const rows = D.cars.map((c, i) => { const r = c.kind !== 'production' ? c.cd.truth : c.published?.cd;
+    const cell = k => { const v = c.cd[k], e = pct(v, r); return v == null ? '<td>–</td>' : `<td class="mono">${fmt(v)}${e == null ? '' : `<br><span class="${cls(e)}">${e > 0 ? '+' : ''}${e.toFixed(0)}%</span>`}</td>`; };
+    return `<tr class="${i === st.car ? 'sel' : ''}" data-i="${i}"><td>${c.short}</td><td class="mono">${fmt(r)}<br><span class="muted">${c.kind === 'production' ? 'pub.' : 'CFD'}</span></td>${cell('geotransolver')}${cell('domino')}</tr>`; }).join('');
+  $('cdTable').innerHTML = `<thead><tr><th>Car</th><th>Reference</th><th>GeoTrans.</th><th>DoMINO</th></tr></thead><tbody>${rows}</tbody>`;
+  $('cdTable').querySelectorAll('tbody tr').forEach(tr => tr.onclick = () => { st.car = +tr.dataset.i; render(); });
+}
+function sizeIt() { const r = canvas.parentElement.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); cam.aspect = r.width / r.height; cam.updateProjectionMatrix(); }
+addEventListener('resize', sizeIt);
+function theme() { renderer.setClearColor(new THREE.Color(css('--stage') || '#0b0f11')); }
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { theme(); render(); });
+
+// static cards
+const B = D.bench;
+$('benchTable').innerHTML = `<thead><tr><th>Model</th><th>Cars</th><th>|Cd err| mean</th><th>max</th><th>p L2</th></tr></thead><tbody>${
+  Object.entries(B.models).map(([k, m]) => `<tr><td>${m.label}</td><td>${m.n}</td><td class="mono">${fmt(m.drag_err_mean_pct, 1)}%</td><td class="mono">${fmt(m.drag_err_max_pct, 1)}%</td><td class="mono">${fmt(m.l2_p_mean, 3)}</td></tr>`).join('')}</tbody>`;
+$('benchNote').textContent = B.note;
+if (B.control && Object.keys(B.control).length) $('benchNote').insertAdjacentHTML('afterend', `<table style="margin-top:10px"><thead><tr><th>Wrapped controls</th><th>Cars</th><th>Cd bias</th><th>worst</th></tr></thead><tbody>${
+  Object.values(B.control).map(m => `<tr><td>${m.label}</td><td>${m.n}</td><td class="mono">${m.cd_err_mean_pct > 0 ? '+' : ''}${fmt(m.cd_err_mean_pct, 1)}%</td><td class="mono">${fmt(m.cd_err_abs_max_pct, 1)}%</td></tr>`).join('')}</tbody></table>
+  <p class="muted">The same three DrivAerML cars after the shrink-wrap used for the production cars, scored against their original CFD drag. This is the error bar the wrap adds before any question of shape.</p>`);
+$('cdNote').textContent = D.cd_note;
+$('caveats').innerHTML = D.caveats.map(c => `<p>${c}</p>`).join('');
+$('foot').textContent = D.footer;
+await Promise.all(D.cars.map(decodeCar));
+sizeIt(); theme(); setView(); render();
+(function loop() { ctl.update(); renderer.render(scene, cam); requestAnimationFrame(loop); })();
+</script>
+</body>
+</html>

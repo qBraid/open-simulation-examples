@@ -1,0 +1,333 @@
+{
+ "q": 756.1771605000001,
+ "cars": [
+  {
+   "case": "run_202",
+   "kind": "drivaerml",
+   "name": "DrivAerML #202 (typical)",
+   "short": "DrivAer 202",
+   "id": "run_202",
+   "cd": {
+    "geotransolver": 0.2877740645793222,
+    "domino": 0.278847142713041,
+    "truth": 0.2861657
+   },
+   "nan_note": null,
+   "A_frontal": 2.2399750000000003
+  },
+  {
+   "case": "run_419",
+   "kind": "drivaerml",
+   "name": "DrivAerML #419 (lowest-drag test car)",
+   "short": "DrivAer 419",
+   "id": "run_419",
+   "cd": {
+    "geotransolver": 0.25211538555737206,
+    "domino": 0.25388866465719256,
+    "truth": 0.251791
+   },
+   "nan_note": null,
+   "A_frontal": 1.7905000000000002
+  },
+  {
+   "case": "run_439",
+   "kind": "drivaerml",
+   "name": "DrivAerML #439 (highest-drag test car)",
+   "short": "DrivAer 439",
+   "id": "run_439",
+   "cd": {
+    "domino": 0.3057475408870104,
+    "geotransolver": 0.3051088679641052,
+    "truth": 0.3085837
+   },
+   "nan_note": null,
+   "A_frontal": 2.535925
+  },
+  {
+   "case": "run_9202",
+   "kind": "control",
+   "name": "Control: DrivAerML #202 shrink-wrapped",
+   "short": "Wrap 202",
+   "id": "run_9202",
+   "cd": {
+    "domino": 0.23925408022537678,
+    "geotransolver": 0.2491608150451782,
+    "truth": 0.2861657
+   },
+   "nan_note": null,
+   "A_frontal": 2.2820500000000004
+  },
+  {
+   "case": "run_9419",
+   "kind": "control",
+   "name": "Control: DrivAerML #419 shrink-wrapped",
+   "short": "Wrap 419",
+   "id": "run_9419",
+   "cd": {
+    "geotransolver": 0.2192794614657595,
+    "domino": 0.2350177480500859,
+    "truth": 0.251791
+   },
+   "nan_note": null,
+   "A_frontal": 1.8265250000000002
+  },
+  {
+   "case": "run_9439",
+   "kind": "control",
+   "name": "Control: DrivAerML #439 shrink-wrapped",
+   "short": "Wrap 439",
+   "id": "run_9439",
+   "cd": {
+    "geotransolver": 0.2352297571047128,
+    "domino": 0.26555236085062744,
+    "truth": 0.3085837
+   },
+   "nan_note": null,
+   "A_frontal": 2.5774500000000002
+  },
+  {
+   "case": "run_9001",
+   "kind": "production",
+   "name": "Tesla Model X",
+   "short": "Model X",
+   "licence": "CC-BY (Spark Models, Printables 916009)",
+   "published": {
+    "cd": 0.24,
+    "src": "Tesla: Model X design page (tesla.com/modelx/design)"
+   },
+   "url": "https://www.printables.com/model/916009",
+   "id": "run_9001",
+   "cd": {
+    "geotransolver": 0.136751273635365,
+    "domino": 0.18542503470481986
+   },
+   "nan_note": null,
+   "A_frontal": 3.3043
+  },
+  {
+   "case": "run_9002",
+   "kind": "production",
+   "name": "Porsche Taycan",
+   "short": "Taycan",
+   "licence": "CC0 (Printables 1301846)",
+   "published": {
+    "cd": 0.22,
+    "src": "Porsche Taycan technical data (newsroom.porsche.com), A = 2.33 m2"
+   },
+   "url": "https://www.printables.com/model/1301846",
+   "id": "run_9002",
+   "cd": {
+    "domino": 0.24725532387888505,
+    "geotransolver": 0.1555526683771208
+   },
+   "nan_note": null,
+   "A_frontal": 2.3364000000000003
+  },
+  {
+   "case": "run_9003",
+   "kind": "production",
+   "name": "Hyundai Ioniq 5",
+   "short": "Ioniq 5",
+   "licence": "CC-BY-SA (low-poly by andikapratamaw, Printables 962998)",
+   "published": {
+    "cd": 0.288,
+    "src": "Hyundai Motor Group (hyundaimotorgroup.com)"
+   },
+   "url": "https://www.printables.com/model/962998",
+   "id": "run_9003",
+   "cd": {
+    "domino": 0.2528433826077414,
+    "geotransolver": 0.19763328997577514
+   },
+   "nan_note": null,
+   "A_frontal": 2.529
+  },
+  {
+   "case": "run_9004",
+   "kind": "production",
+   "name": "BMW i8",
+   "short": "BMW i8",
+   "licence": "CC0 (Printables 1253551), toy-grade mesh",
+   "published": {
+    "cd": 0.26,
+    "src": "BMW i8 2014 efficiency page (bmw.mn)"
+   },
+   "url": "https://www.printables.com/model/1253551",
+   "id": "run_9004",
+   "cd": {
+    "geotransolver": 0.14749303869833008,
+    "domino": 0.22143127278264735
+   },
+   "nan_note": null,
+   "A_frontal": 2.20685
+  },
+  {
+   "case": "run_9006",
+   "kind": "production",
+   "name": "BMW M3 (E92)",
+   "short": "M3 E92",
+   "licence": "CC-BY (Printables 779483)",
+   "published": {
+    "cd": 0.31,
+    "src": "auto-data.net (not confirmed by BMW)"
+   },
+   "url": "https://www.printables.com/model/779483",
+   "id": "run_9006",
+   "cd": {
+    "geotransolver": 0.15662356002828925,
+    "domino": 0.22525843730970538
+   },
+   "nan_note": null,
+   "A_frontal": 2.175925
+  },
+  {
+   "case": "run_9007",
+   "kind": "production",
+   "name": "BMW M3 (E30)",
+   "short": "M3 E30",
+   "licence": "CC BY 4.0 (Martin Trafas, Wikimedia Commons)",
+   "published": {
+    "cd": 0.33,
+    "src": "Wikipedia / Hagerty (no BMW primary source found)"
+   },
+   "url": "https://commons.wikimedia.org/wiki/File:BMW_M3_(E30).stl",
+   "id": "run_9007",
+   "cd": {
+    "geotransolver": 0.1743609136064005,
+    "domino": 0.29057742055293917
+   },
+   "nan_note": null,
+   "A_frontal": 2.0031
+  }
+ ],
+ "bench": {
+  "geotransolver": {
+   "label": "GeoTransolver",
+   "n": 48,
+   "drag_err_mean_pct": 0.8407692054107846,
+   "drag_err_max_pct": 2.175720444670791,
+   "l2_p_mean": 0.03818971783344204,
+   "cases": [
+    "run_112",
+    "run_115",
+    "run_118",
+    "run_129",
+    "run_145",
+    "run_149",
+    "run_159",
+    "run_17",
+    "run_171",
+    "run_18",
+    "run_183",
+    "run_197",
+    "run_202",
+    "run_204",
+    "run_225",
+    "run_269",
+    "run_27",
+    "run_270",
+    "run_271",
+    "run_298",
+    "run_305",
+    "run_320",
+    "run_345",
+    "run_367",
+    "run_380",
+    "run_382",
+    "run_399",
+    "run_4",
+    "run_409",
+    "run_417",
+    "run_419",
+    "run_421",
+    "run_424",
+    "run_429",
+    "run_431",
+    "run_439",
+    "run_460",
+    "run_465",
+    "run_468",
+    "run_469",
+    "run_478",
+    "run_483",
+    "run_489",
+    "run_490",
+    "run_495",
+    "run_62",
+    "run_71",
+    "run_86"
+   ]
+  },
+  "domino": {
+   "label": "DoMINO",
+   "n": 48,
+   "drag_err_mean_pct": 1.4969208982007147,
+   "drag_err_max_pct": 5.683111587502016,
+   "l2_p_mean": 0.1115880621492202,
+   "cases": [
+    "run_112",
+    "run_115",
+    "run_118",
+    "run_129",
+    "run_145",
+    "run_149",
+    "run_159",
+    "run_17",
+    "run_171",
+    "run_18",
+    "run_183",
+    "run_197",
+    "run_202",
+    "run_204",
+    "run_225",
+    "run_269",
+    "run_27",
+    "run_270",
+    "run_271",
+    "run_298",
+    "run_305",
+    "run_320",
+    "run_345",
+    "run_367",
+    "run_380",
+    "run_382",
+    "run_399",
+    "run_4",
+    "run_409",
+    "run_417",
+    "run_419",
+    "run_421",
+    "run_424",
+    "run_429",
+    "run_431",
+    "run_439",
+    "run_460",
+    "run_465",
+    "run_468",
+    "run_469",
+    "run_478",
+    "run_483",
+    "run_489",
+    "run_490",
+    "run_495",
+    "run_62",
+    "run_71",
+    "run_86"
+   ]
+  }
+ },
+ "control": {
+  "geotransolver": {
+   "label": "GeoTransolver",
+   "n": 3,
+   "cd_err_mean_pct": -16.538185925109318,
+   "cd_err_abs_max_pct": 23.771165779426198
+  },
+  "domino": {
+   "label": "DoMINO",
+   "n": 3,
+   "cd_err_mean_pct": -12.333176868582681,
+   "cd_err_abs_max_pct": 16.39316653764698
+  }
+ }
+}
