@@ -39,6 +39,7 @@ h1{margin:0;font-size:26px;letter-spacing:-.01em}
 .seg button:disabled{opacity:.35;cursor:not-allowed}
 .hud.tag{top:10px;left:10px;padding:10px 12px;font-size:12px;min-width:220px;max-width:min(360px,70%)}
 .hud.tag .name{font-weight:700;font-size:15px}
+.hud.tag a{color:var(--accent)}
 .hud.tag .big{font:700 22px/1.1 "JetBrains Mono",Menlo,monospace}
 .hud.cbar{right:10px;bottom:10px;padding:8px 10px;font-size:11px;width:220px}
 .hud.cbar canvas{width:100%;height:10px;border-radius:3px;display:block;margin:4px 0 2px}
@@ -67,6 +68,7 @@ tbody tr{cursor:pointer}
   <div class="stage">
     <canvas id="gl"></canvas>
     <div class="hud tag" id="tag"></div>
+    <div class="hud" id="loading" style="display:none;top:50%;left:50%;transform:translate(-50%,-50%);padding:8px 12px;font-size:12px">Loading display model…</div>
     <div class="hud ctl">
       <div class="lab">Car</div><div class="seg" id="carSeg"></div>
       <div class="lab">Surface</div><div class="seg" id="srcSeg"></div>
@@ -88,6 +90,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 const D = /*__DATA__*/null;
 const $ = id => document.getElementById(id);
 async function b64(s, T) {   // base64 -> gunzip -> typed array
@@ -130,7 +134,24 @@ floor.position.set(1.5, 0, -0.32); scene.add(floor);
 const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.42, metalness: 0.05, side: THREE.DoubleSide });
 // plain mode: the car as itself, in a clear-coated paint lit by a studio environment
 const paint = new THREE.MeshPhysicalMaterial({ color: 0xc8ccd0, metalness: 0.55, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.06, side: THREE.DoubleSide });
-paint.envMap = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture; paint.envMapIntensity = 0.9;
+const env = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+paint.envMap = env; paint.envMapIntensity = 0.9;
+// display models: artists' glTF cars (own materials), placed on the simulation mesh by the fitted matrix in cars.json
+const gltf = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder), shown = {};
+let display = null, want = null;
+function showDisplay(car) {
+  want = car && car.display ? car.id : null;
+  if (display) { scene.remove(display); display = null; }
+  if (!want) return;
+  const k = want;
+  shown[k] ??= gltf.loadAsync(car.display.file).then(g => { const root = new THREE.Group(); root.add(g.scene);
+    root.matrixAutoUpdate = false; root.matrix.fromArray(car.display.matrix);
+    g.scene.traverse(o => { if (o.isMesh) for (const m of [].concat(o.material)) if ('envMap' in m && !m.envMap) { m.envMap = env; m.envMapIntensity = 1.0; m.needsUpdate = true; } });
+    return root; });
+  $('loading').style.display = '';
+  shown[k].then(root => { $('loading').style.display = 'none'; if (want === k) { display = root; scene.add(root); } })
+    .catch(e => { $('loading').textContent = 'Could not load the display model (' + e.message + ')'; });
+}
 const PAINT = { run_9001: 0xe9e9e4, run_9002: 0x3b5b7a, run_9003: 0x8d9a8c, run_9004: 0xd8dde0, run_9006: 0x23324f, run_9007: 0x9c1c22 };
 let mesh = null;
 const cache = {};
@@ -165,8 +186,9 @@ function origFor(car) {   // the car as itself: the downloaded mesh, the DrivAer
 }
 
 const st = { car: 0, src: 'orig', mode: 'paint', view: 'iso' };
-const SRC = [['orig', 'Original mesh'], ['truth', 'High-fidelity CFD'], ['geotransolver', 'GeoTransolver'], ['domino', 'DoMINO']];
-const has = (car, k) => k === 'orig' || !!car.fields[k];
+const SRC = [['display', 'Display model'], ['orig', 'Original mesh'], ['truth', 'High-fidelity CFD'], ['geotransolver', 'GeoTransolver'], ['domino', 'DoMINO']];
+const has = (car, k) => k === 'orig' ? true : k === 'display' ? !!car.display : !!car.fields[k];
+const look = k => k === 'orig' || k === 'display';   // geometry only, no field to colour
 function seg(el, items, key, onPick) {
   el.innerHTML = ''; for (const [k, lab, dis] of items) { const b = document.createElement('button'); b.textContent = lab; b.disabled = !!dis;
     b.setAttribute('aria-pressed', String(st[key] === k)); b.onclick = () => { st[key] = k; onPick && onPick(); render(); }; el.appendChild(b); }
@@ -176,34 +198,37 @@ function pct(a, b) { return a == null || b == null ? null : 100 * (a - b) / b; }
 function cls(e) { const a = Math.abs(e); return a <= 3 ? 'ok' : a <= 10 ? 'warn' : 'bad'; }
 
 function setView() {
-  const v = { iso: [-3.2, -5.2, 2.6], side: [1.5, -8.5, 0.5], front: [-7.5, 0, 0.6], top: [1.5, -0.6, 9.5] }[st.view];   // top: offset a little so the view never sits exactly on the up axis
-  cam.position.set(...v); ctl.target.set(1.5, 0, 0.3); ctl.update();
+  const v = { iso: [-4.3, -7.6, 3.4], side: [1.6, -11.5, 0.7], front: [-9.5, 0, 0.8], top: [1.6, -0.8, 12.5] }[st.view];   // top: offset a little so the view never sits exactly on the up axis
+  cam.position.set(...v); ctl.target.set(1.6, 0, 0.3); ctl.update();
 }
 function render() {
   const car = D.cars[st.car];
   const firstPred = () => Object.keys(car.fields).find(k => k !== 'truth') || 'truth';
   if (!has(car, st.src)) st.src = firstPred();
   if (st.mode === 'err' && !car.fields.truth) st.mode = 'cp';
-  if (st.src === 'orig' && st.mode !== 'paint') st.src = st.mode === 'err' ? firstPred() : (car.fields.geotransolver ? 'geotransolver' : firstPred());   // picked a colour map: show it on a model's surface
+  if (look(st.src) && st.mode !== 'paint') st.src = st.mode === 'err' ? firstPred() : (car.fields.geotransolver ? 'geotransolver' : firstPred());   // picked a colour map: show it on a model's surface
   if (st.mode === 'err' && st.src === 'truth') st.src = firstPred();
-  seg($('carSeg'), D.cars.map((c, i) => [i, c.short]), 'car');
-  seg($('srcSeg'), SRC.map(([k, l]) => [k, l, !has(car, k) || (st.mode === 'err' && k === 'truth')]), 'src', () => { if (st.src === 'orig') st.mode = 'paint'; });
+  seg($('carSeg'), D.cars.map((c, i) => [i, c.short]), 'car', () => { const c = D.cars[st.car]; if (look(st.src)) st.src = c.display ? 'display' : 'orig'; });
+  seg($('srcSeg'), SRC.map(([k, l]) => [k, l, !has(car, k) || (st.mode === 'err' && k === 'truth')]), 'src', () => { if (look(st.src)) st.mode = 'paint'; });
   seg($('modeSeg'), [['paint', 'Plain'], ['cp', 'Pressure'], ['err', 'Error vs CFD', !car.fields.truth]], 'mode');
   seg($('viewSeg'), [['iso', 'Iso'], ['side', 'Side'], ['front', 'Front'], ['top', 'Top']], 'view', setView);
-  const plain = st.mode === 'paint', G = st.src === 'orig' ? origFor(car) : geomFor(car);
+  const plain = st.mode === 'paint', G = look(st.src) ? origFor(car) : geomFor(car);
   if (!plain) { const col = G.g.attributes.color.array, a = G.f[st.src], t = G.f.truth;
     for (let i = 0; i < G.n; i++) st.mode === 'err' ? erColor(a[i] - t[i], col, 3 * i) : cpColor(a[i], col, 3 * i);
     G.g.attributes.color.needsUpdate = true; }
   paint.color.set(PAINT[car.id] ?? PAINT[car.orig_of] ?? 0xc8ccd0);
   if (!mesh) { mesh = new THREE.Mesh(G.g, plain ? paint : mat); scene.add(mesh); } else { mesh.geometry = G.g; mesh.material = plain ? paint : mat; }
+  mesh.visible = st.src !== 'display'; showDisplay(st.src === 'display' ? car : null);
   document.querySelector('.hud.cbar').style.visibility = plain ? 'hidden' : '';
   // tag
-  const cd = car.cd, pred = st.src === 'orig' ? null : cd[st.src];
+  const cd = car.cd, pred = look(st.src) ? null : cd[st.src];
   const cfd = car.kind !== 'production';
   let ref = cfd ? ['High-fidelity CFD', cd.truth] : ['Published', car.published?.cd];
   const e = st.src === 'truth' ? null : pct(pred, ref[1]);
   $('tag').innerHTML = `<div class="name">${car.name}</div><div class="muted">${car.kind === 'drivaerml' ? 'DrivAerML test car (held out from training)' : car.kind === 'control' ? 'Control: this DrivAerML car put through the same shrink-wrap as the production cars' : 'Fan-made mesh, open licence: ' + car.licence}</div>
-    ${st.src === 'orig' ? `<div style="margin-top:6px;font-size:11.5px">${car.kind === 'production' ? 'The mesh as downloaded, before the shrink-wrap the models were given. Pick a model or Pressure to see the wrapped surface they scored.' : car.kind === 'control' ? 'The original DrivAerML car this control was wrapped from.' : 'The DrivAerML car itself: the surface the CFD was run on.'}</div>
+    ${st.src === 'display' ? `<div style="margin-top:6px;font-size:11.5px">Display model: <a href="${car.display.url}" target="_blank" rel="noopener">${car.display.title}</a> by ${car.display.author}, ${car.display.licence}. For looks only: the AI was scored on the mesh under Original mesh, after the shrink-wrap.</div>
+    <div style="margin-top:6px">Cd: GeoTransolver <b class="mono">${fmt(cd.geotransolver)}</b> · DoMINO <b class="mono">${fmt(cd.domino)}</b></div>`
+    : st.src === 'orig' ? `<div style="margin-top:6px;font-size:11.5px">${car.kind === 'production' ? 'The mesh as downloaded, before the shrink-wrap the models were given. Pick a model or Pressure to see the wrapped surface they scored.' : car.kind === 'control' ? 'The original DrivAerML car this control was wrapped from.' : 'The DrivAerML car itself: the surface the CFD was run on.'}</div>
     <div style="margin-top:6px">Cd: GeoTransolver <b class="mono">${fmt(cd.geotransolver)}</b> · DoMINO <b class="mono">${fmt(cd.domino)}</b></div>`
     : `${plain && car.kind !== 'drivaerml' ? '<div style="margin-top:6px;font-size:11.5px">The shrink-wrapped surface the models were given.</div>' : ''}<div style="margin-top:6px">${SRC.find(s => s[0] === st.src)[1]} Cd</div><div class="big">${fmt(pred)}</div>`}
     <div>${ref[0]}: <b class="mono">${fmt(ref[1])}</b>${e == null ? '' : ` <span class="${cls(e)} mono">(${e > 0 ? '+' : ''}${e.toFixed(1)}%)</span>`}</div>
@@ -222,7 +247,9 @@ function render() {
   $('cdTable').innerHTML = `<thead><tr><th>Car</th><th>Reference</th><th>GeoTrans.</th><th>DoMINO</th></tr></thead><tbody>${rows}</tbody>`;
   $('cdTable').querySelectorAll('tbody tr').forEach(tr => tr.onclick = () => { st.car = +tr.dataset.i; render(); });
 }
-function sizeIt() { const r = canvas.parentElement.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); cam.aspect = r.width / r.height; cam.updateProjectionMatrix(); }
+function sizeIt() { const r = canvas.parentElement.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); cam.aspect = r.width / r.height;
+  if (r.width > 900) cam.setViewOffset(r.width, r.height, -130, 0, r.width, r.height); else cam.clearViewOffset();   // keep the car clear of the controls panel
+  cam.updateProjectionMatrix(); }
 addEventListener('resize', sizeIt);
 function theme() { renderer.setClearColor(new THREE.Color(css('--stage') || '#0b0f11')); }
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { theme(); render(); });
@@ -239,6 +266,7 @@ $('cdNote').textContent = D.cd_note;
 $('caveats').innerHTML = D.caveats.map(c => `<p>${c}</p>`).join('');
 $('foot').textContent = D.footer;
 await Promise.all(D.cars.map(decodeCar));
+st.src = D.cars[st.car].display ? 'display' : 'orig';
 sizeIt(); theme(); setView(); render();
 (function loop() { ctl.update(); renderer.render(scene, cam); requestAnimationFrame(loop); })();
 </script>

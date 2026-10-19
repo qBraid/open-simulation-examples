@@ -149,13 +149,29 @@ keep a control like the one here to know which regime you are in.
 | [BMW M3 (E92)](https://www.printables.com/model/779483) | CC-BY (Printables 779483) | 0.31 | auto-data.net (not confirmed by BMW) |
 | [BMW M3 (E30)](https://commons.wikimedia.org/wiki/File:BMW_M3_(E30).stl) | CC BY 4.0 (Martin Trafas, Wikimedia Commons) | 0.33 | Wikipedia / Hagerty (no BMW primary source found) |
 
+**Display models** (for looks only; the AI never saw them). Three cars also carry an artist's glTF
+model with its own paint, glass and wheels, in `display/`, compressed (meshopt geometry, 1024 px WebP
+textures) and placed on the simulation mesh by `fit_display.py`:
+
+| Car | Display model | Author | Licence | Gap to the simulation mesh |
+|---|---|---|---|---|
+| Tesla Model X | [Tesla Model X](https://sketchfab.com/3d-models/f7058c61cfb04f2c8ab2ead42401b29a) | rajj91783 | CC BY 4.0 | about 7 cm (the simulation mesh is a simpler fan model) |
+| Porsche Taycan | [Porshe Taycan](https://sketchfab.com/3d-models/c6004141452e4d3ab048bf0fee52666d) | mihailhamanovich | CC BY 4.0 | about 3 cm |
+| BMW M3 (E30) | [[FREE] BMW M3 E30](https://sketchfab.com/3d-models/ac3c7013434e403e8faff87948caf422) | TinoD2 | CC BY 4.0 | 0 (the simulation mesh is this model's geometry) |
+
+Only models whose uploader evidently made them (modelling tool, portfolio or source files named) are
+used. Many free car models are extracted from video games and relabelled CC-BY by whoever uploaded
+them, which the game studio's copyright does not allow; none was found for a stock i8, E92 or Ioniq 5
+that passed that test, so those three show their simulation mesh.
+
 Each name links to its download page. The repository does not ship the STL files; `viewer.html`
 embeds each mesh, under its licence and with its attribution shown beside it. Each was scaled to
 the real car's overall length; the per-car rotations are in `wrap_all.sh` and `cars.json`.
 
 ## The viewer
 
-`viewer.html` is one self-contained file. **Surface** picks what is drawn: *Original mesh* (the
+`viewer.html` is one self-contained file, plus `display/*.glb`. **Surface** picks what is drawn:
+*Display model* (the artist's car, where there is one), *Original mesh* (the
 car as itself: the downloaded mesh for a production car, the DrivAerML car a control was
 wrapped from, the CFD surface for a DrivAerML car), the high-fidelity CFD, or a model's
 prediction on the surface it was given. **Colour** is *Plain* (clear-coat paint), *Pressure*

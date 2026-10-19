@@ -103,6 +103,31 @@
     "src": "Tesla: Model X design page (tesla.com/modelx/design)"
    },
    "url": "https://www.printables.com/model/916009",
+   "display": {
+    "file": "display/modelx.glb",
+    "author": "rajj91783",
+    "title": "Tesla Model X",
+    "url": "https://sketchfab.com/3d-models/f7058c61cfb04f2c8ab2ead42401b29a",
+    "licence": "CC BY 4.0",
+    "matrix": [
+     0.0,
+     -0.9905,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.9905,
+     0.0,
+     -0.9905,
+     0.0,
+     0.0,
+     0.0,
+     1.562395,
+     0.070177,
+     0.537585,
+     1.0
+    ]
+   },
    "id": "run_9001",
    "orig_of": null,
    "cd": {
@@ -125,6 +150,31 @@
     "src": "Porsche Taycan technical data (newsroom.porsche.com), A = 2.33 m2"
    },
    "url": "https://www.printables.com/model/1301846",
+   "display": {
+    "file": "display/taycan.glb",
+    "author": "mihailhamanovich",
+    "title": "Porshe Taycan",
+    "url": "https://sketchfab.com/3d-models/c6004141452e4d3ab048bf0fee52666d",
+    "licence": "CC BY 4.0",
+    "matrix": [
+     0.0,
+     -1.001382,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1.001382,
+     0.0,
+     -1.001382,
+     0.0,
+     0.0,
+     0.0,
+     1.551146,
+     -0.0,
+     -0.275883,
+     1.0
+    ]
+   },
    "id": "run_9002",
    "orig_of": null,
    "cd": {
@@ -212,6 +262,31 @@
     "src": "Wikipedia / Hagerty (no BMW primary source found)"
    },
    "url": "https://commons.wikimedia.org/wiki/File:BMW_M3_(E30).stl",
+   "display": {
+    "file": "display/e30.glb",
+    "author": "TinoD2",
+    "title": "[FREE] BMW M3 E30",
+    "url": "https://sketchfab.com/3d-models/ac3c7013434e403e8faff87948caf422",
+    "licence": "CC BY 4.0",
+    "matrix": [
+     0.0,
+     -0.996092,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.996092,
+     0.0,
+     -0.996092,
+     0.0,
+     0.0,
+     0.0,
+     1.189847,
+     -0.0,
+     -0.31669,
+     1.0
+    ]
+   },
    "id": "run_9007",
    "orig_of": null,
    "cd": {
