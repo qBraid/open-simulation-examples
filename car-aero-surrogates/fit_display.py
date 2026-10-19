@@ -3,7 +3,7 @@ Tries the 24 axis-aligned rotations, scales to the simulation mesh's length, ali
 and keeps the rotation whose surface sits closest to the simulation mesh. Writes the 4x4 matrix into cars.json.
 Download each model's glb from its Sketchfab page (cars.json display.url; the download API needs a free account token)
 as <dir>/<src>.glb. The committed display/*.glb are those files after:
-  gltf-transform optimize in.glb out.glb --compress meshopt --texture-compress webp --texture-size 1024 --simplify-ratio <0.3-1>
+  gltf-transform optimize in.glb out.glb --instance false --compress meshopt --texture-compress webp --texture-size 1024 --simplify-ratio <0.3-1>
 usage: fit_display.py <dir>   (SRC_DIR / FAN_DIR as for build_viewer.py; needs trimesh)
 """
 import itertools, json, os, sys, numpy as np, trimesh
